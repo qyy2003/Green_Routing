@@ -1,0 +1,655 @@
+{
+  "count": 42,
+  "links": [
+    {
+      "id": "AG-LZ",
+      "endpoints": [
+        "AG",
+        "LZ"
+      ],
+      "capacity_bps": 100000000000.0,
+      "members": [
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "ag2",
+          "file": "hundredgige0_0_0_5.csv"
+        }
+      ]
+    },
+    {
+      "id": "AG-RA",
+      "endpoints": [
+        "AG",
+        "RA"
+      ],
+      "capacity_bps": 100000000000.0,
+      "members": [
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "ra4",
+          "file": "hundredgige0_0_0_29.csv"
+        }
+      ]
+    },
+    {
+      "id": "AG-SA",
+      "endpoints": [
+        "AG",
+        "SA"
+      ],
+      "capacity_bps": 100000000000.0,
+      "members": [
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "ag2",
+          "file": "hundredgige0_0_0_6.csv"
+        }
+      ]
+    },
+    {
+      "id": "BA-EZ",
+      "endpoints": [
+        "BA",
+        "EZ"
+      ],
+      "capacity_bps": 200000000000.0,
+      "members": [
+        {
+          "speed_bps": 200000000000.0,
+          "dir": "ba3",
+          "file": "bundle-ether2.csv"
+        }
+      ]
+    },
+    {
+      "id": "BE-FR",
+      "endpoints": [
+        "BE",
+        "FR"
+      ],
+      "capacity_bps": 110000000000.0,
+      "members": [
+        {
+          "speed_bps": 10000000000.0,
+          "dir": "be1",
+          "file": "tengige0_0_0_12.csv"
+        },
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "be1",
+          "file": "hundredgige0_0_1_5.csv"
+        }
+      ]
+    },
+    {
+      "id": "BLU-SI",
+      "endpoints": [
+        "BLU",
+        "SI"
+      ],
+      "capacity_bps": 10000000000.0,
+      "members": [
+        {
+          "speed_bps": 10000000000.0,
+          "dir": "si2",
+          "file": "tengige0_0_0_2.csv"
+        }
+      ]
+    },
+    {
+      "id": "BU-SA",
+      "endpoints": [
+        "BU",
+        "SA"
+      ],
+      "capacity_bps": 200000000000.0,
+      "members": [
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "bu3",
+          "file": "hundredgige0_0_0_30.csv"
+        },
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "bu4",
+          "file": "hundredgige0_0_1_3.csv"
+        }
+      ]
+    },
+    {
+      "id": "BU-SG",
+      "endpoints": [
+        "BU",
+        "SG"
+      ],
+      "capacity_bps": 100000000000.0,
+      "members": [
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "bu4",
+          "file": "hundredgige0_0_1_1.csv"
+        }
+      ]
+    },
+    {
+      "id": "CE-EZ",
+      "endpoints": [
+        "CE",
+        "EZ"
+      ],
+      "capacity_bps": 400000000000.0,
+      "members": [
+        {
+          "speed_bps": 400000000000.0,
+          "dir": "ce1",
+          "file": "fourhundredgige0_0_0_2.csv"
+        }
+      ]
+    },
+    {
+      "id": "CE-GE",
+      "endpoints": [
+        "CE",
+        "GE"
+      ],
+      "capacity_bps": 200000000000.0,
+      "members": [
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "ce2",
+          "file": "hundredgige0_0_0_10.csv"
+        },
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "ce2",
+          "file": "hundredgige0_0_0_19.csv"
+        }
+      ]
+    },
+    {
+      "id": "CE-LG",
+      "endpoints": [
+        "CE",
+        "LG"
+      ],
+      "capacity_bps": 400000000000.0,
+      "members": [
+        {
+          "speed_bps": 400000000000.0,
+          "dir": "ce2",
+          "file": "fourhundredgige0_0_0_0.csv"
+        }
+      ]
+    },
+    {
+      "id": "CE-LS",
+      "endpoints": [
+        "CE",
+        "LS"
+      ],
+      "capacity_bps": 110000000000.0,
+      "members": [
+        {
+          "speed_bps": 10000000000.0,
+          "dir": "ce1",
+          "file": "tengige0_0_0_29.csv"
+        },
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "ce1",
+          "file": "hundredgige0_0_0_1.csv"
+        }
+      ]
+    },
+    {
+      "id": "EHL-EL",
+      "endpoints": [
+        "EHL",
+        "EL"
+      ],
+      "capacity_bps": 10000000000.0,
+      "members": [
+        {
+          "speed_bps": 10000000000.0,
+          "dir": "ehl2",
+          "file": "tengigabitethernet0_0_26.csv"
+        }
+      ]
+    },
+    {
+      "id": "EL-GE",
+      "endpoints": [
+        "EL",
+        "GE"
+      ],
+      "capacity_bps": 100000000000.0,
+      "members": [
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "el3",
+          "file": "hundredgige0_0_0_2.csv"
+        }
+      ]
+    },
+    {
+      "id": "EL-LS",
+      "endpoints": [
+        "EL",
+        "LS"
+      ],
+      "capacity_bps": 100000000000.0,
+      "members": [
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "el3",
+          "file": "hundredgige0_0_0_0.csv"
+        }
+      ]
+    },
+    {
+      "id": "EL-SI",
+      "endpoints": [
+        "EL",
+        "SI"
+      ],
+      "capacity_bps": 100000000000.0,
+      "members": [
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "el3",
+          "file": "hundredgige0_0_0_3.csv"
+        }
+      ]
+    },
+    {
+      "id": "ENSI-ZH",
+      "endpoints": [
+        "ENSI",
+        "ZH"
+      ],
+      "capacity_bps": 10000000000.0,
+      "members": [
+        {
+          "speed_bps": 10000000000.0,
+          "dir": "ensi1",
+          "file": "tengige0_0_2_3.csv"
+        }
+      ]
+    },
+    {
+      "id": "EZ-IX",
+      "endpoints": [
+        "EZ",
+        "IX"
+      ],
+      "capacity_bps": 300000000000.0,
+      "members": [
+        {
+          "speed_bps": 300000000000.0,
+          "dir": "ez2",
+          "file": "bundle-ether3.csv"
+        }
+      ]
+    },
+    {
+      "id": "EZ-SGD",
+      "endpoints": [
+        "EZ",
+        "SGD"
+      ],
+      "capacity_bps": 100000000000.0,
+      "members": [
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "ez2",
+          "file": "hundredgige0_0_0_15.csv"
+        }
+      ]
+    },
+    {
+      "id": "EZ-WSL",
+      "endpoints": [
+        "EZ",
+        "WSL"
+      ],
+      "capacity_bps": 100000000000.0,
+      "members": [
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "wsl4",
+          "file": "hundredgige0_0_0_29.csv"
+        }
+      ]
+    },
+    {
+      "id": "EZ-ZH",
+      "endpoints": [
+        "EZ",
+        "ZH"
+      ],
+      "capacity_bps": 400000000000.0,
+      "members": [
+        {
+          "speed_bps": 400000000000.0,
+          "dir": "ez2",
+          "file": "fourhundredgige0_0_0_10.csv"
+        }
+      ]
+    },
+    {
+      "id": "FHSG-SG",
+      "endpoints": [
+        "FHSG",
+        "SG"
+      ],
+      "capacity_bps": 100000000000.0,
+      "members": [
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "fhsg2",
+          "file": "hundredgige0_0_0_28.csv"
+        }
+      ]
+    },
+    {
+      "id": "FHSG-SGE",
+      "endpoints": [
+        "FHSG",
+        "SGE"
+      ],
+      "capacity_bps": 100000000000.0,
+      "members": [
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "fhsg2",
+          "file": "hundredgige0_0_0_29.csv"
+        }
+      ]
+    },
+    {
+      "id": "FR-LS",
+      "endpoints": [
+        "FR",
+        "LS"
+      ],
+      "capacity_bps": 100000000000.0,
+      "members": [
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "fr1",
+          "file": "hundredgige0_0_1_3.csv"
+        }
+      ]
+    },
+    {
+      "id": "GL-LS",
+      "endpoints": [
+        "GL",
+        "LS"
+      ],
+      "capacity_bps": 10000000000.0,
+      "members": [
+        {
+          "speed_bps": 10000000000.0,
+          "dir": "ls1",
+          "file": "tengige0_0_0_15.csv"
+        }
+      ]
+    },
+    {
+      "id": "GO-KR",
+      "endpoints": [
+        "GO",
+        "KR"
+      ],
+      "capacity_bps": 10000000000.0,
+      "members": [
+        {
+          "speed_bps": 10000000000.0,
+          "dir": "go2",
+          "file": "tengigabitethernet0_0_5.csv"
+        }
+      ]
+    },
+    {
+      "id": "HEPVD-LS",
+      "endpoints": [
+        "HEPVD",
+        "LS"
+      ],
+      "capacity_bps": 10000000000.0,
+      "members": [
+        {
+          "speed_bps": 10000000000.0,
+          "dir": "hepvd2",
+          "file": "tengigabitethernet0_0_27.csv"
+        }
+      ]
+    },
+    {
+      "id": "IBM-IX",
+      "endpoints": [
+        "IBM",
+        "IX"
+      ],
+      "capacity_bps": 100000000000.0,
+      "members": [
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "ibm3",
+          "file": "hundredgige0_0_0_29.csv"
+        }
+      ]
+    },
+    {
+      "id": "IBM-WSL",
+      "endpoints": [
+        "IBM",
+        "WSL"
+      ],
+      "capacity_bps": 100000000000.0,
+      "members": [
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "ibm4",
+          "file": "hundredgige0_0_0_29.csv"
+        }
+      ]
+    },
+    {
+      "id": "IX-TO",
+      "endpoints": [
+        "IX",
+        "TO"
+      ],
+      "capacity_bps": 100000000000.0,
+      "members": [
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "ix3",
+          "file": "hundredgige0_0_0_0.csv"
+        }
+      ]
+    },
+    {
+      "id": "IX-ZH",
+      "endpoints": [
+        "IX",
+        "ZH"
+      ],
+      "capacity_bps": 100000000000.0,
+      "members": [
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "zh3",
+          "file": "hundredgige0_0_0_14.csv"
+        }
+      ]
+    },
+    {
+      "id": "IXG-ZH",
+      "endpoints": [
+        "IXG",
+        "ZH"
+      ],
+      "capacity_bps": 200000000000.0,
+      "members": [
+        {
+          "speed_bps": 200000000000.0,
+          "dir": "ixg3",
+          "file": "bundle-ether50.csv"
+        }
+      ]
+    },
+    {
+      "id": "LG-SA",
+      "endpoints": [
+        "LG",
+        "SA"
+      ],
+      "capacity_bps": 100000000000.0,
+      "members": [
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "lg2",
+          "file": "hundredgige0_0_0_20.csv"
+        }
+      ]
+    },
+    {
+      "id": "LG-ZH",
+      "endpoints": [
+        "LG",
+        "ZH"
+      ],
+      "capacity_bps": 400000000000.0,
+      "members": [
+        {
+          "speed_bps": 400000000000.0,
+          "dir": "lg2",
+          "file": "fourhundredgige0_0_0_1.csv"
+        }
+      ]
+    },
+    {
+      "id": "LS-NE",
+      "endpoints": [
+        "LS",
+        "NE"
+      ],
+      "capacity_bps": 10000000000.0,
+      "members": [
+        {
+          "speed_bps": 10000000000.0,
+          "dir": "ls1",
+          "file": "tengige0_0_0_21_0.csv"
+        }
+      ]
+    },
+    {
+      "id": "LS-YV",
+      "endpoints": [
+        "LS",
+        "YV"
+      ],
+      "capacity_bps": 10000000000.0,
+      "members": [
+        {
+          "speed_bps": 10000000000.0,
+          "dir": "ls1",
+          "file": "tengige0_0_0_17.csv"
+        }
+      ]
+    },
+    {
+      "id": "NE-YV",
+      "endpoints": [
+        "NE",
+        "YV"
+      ],
+      "capacity_bps": 10000000000.0,
+      "members": [
+        {
+          "speed_bps": 10000000000.0,
+          "dir": "ne1",
+          "file": "tengige0_0_2_3.csv"
+        }
+      ]
+    },
+    {
+      "id": "PS-ZH",
+      "endpoints": [
+        "PS",
+        "ZH"
+      ],
+      "capacity_bps": 200000000000.0,
+      "members": [
+        {
+          "speed_bps": 200000000000.0,
+          "dir": "ps2",
+          "file": "bundle-ether1.csv"
+        }
+      ]
+    },
+    {
+      "id": "RA-SA",
+      "endpoints": [
+        "RA",
+        "SA"
+      ],
+      "capacity_bps": 100000000000.0,
+      "members": [
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "ra3",
+          "file": "hundredgige0_0_0_29.csv"
+        }
+      ]
+    },
+    {
+      "id": "RA-SG",
+      "endpoints": [
+        "RA",
+        "SG"
+      ],
+      "capacity_bps": 100000000000.0,
+      "members": [
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "ra3",
+          "file": "hundredgige0_0_0_30.csv"
+        }
+      ]
+    },
+    {
+      "id": "RA-ZH",
+      "endpoints": [
+        "RA",
+        "ZH"
+      ],
+      "capacity_bps": 100000000000.0,
+      "members": [
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "ra4",
+          "file": "hundredgige0_0_0_30.csv"
+        }
+      ]
+    },
+    {
+      "id": "TO-ZH",
+      "endpoints": [
+        "TO",
+        "ZH"
+      ],
+      "capacity_bps": 100000000000.0,
+      "members": [
+        {
+          "speed_bps": 100000000000.0,
+          "dir": "to1",
+          "file": "hundredgige0_0_1_5.csv"
+        }
+      ]
+    }
+  ]
+}

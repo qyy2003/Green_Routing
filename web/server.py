@@ -1,155 +1,144 @@
 #!/usr/bin/env python3
-"""Step 3 — viewer backend.
+"""Viewer backend (Cricket dataset).
 
-Serves the static web/ folder and a small on-demand traffic API backed by the
-index built in step 2. Month files are parsed lazily and cached in memory, so
-the first query for a month is a one-off cost and every later query (e.g.
-dragging the time slider within that month) is an in-memory binary search.
+Serves the static site plus a time-indexed traffic/telemetry API backed by the
+compact per-month frames produced by build_frames.py. Month files are loaded
+lazily and cached, so scrubbing the time slider within a month is instant.
 
 Endpoints
-  GET /api/meta                  -> index.json (links, span, interval, units)
-  GET /api/nodes                 -> nodes.json (map coordinates per node)
-  GET /api/traffic?t=<unixts>    -> { t, matched, links: { id: {in, out, ts} } }
+  GET /api/meta                -> links (with capacity), node positions, months, span
+  GET /api/frame?t=<unixts>    -> { t, slot_ts, links:{id:{in,out}}, nodes:{code:{cpu,pw,temp}} }
 
 Run:  python3 server.py [port]   (default 8137)
 """
 
-import bisect
 import json
 import os
 import sys
+from datetime import datetime, timezone
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))   # data repo lives here
-INDEX_PATH = os.path.join(HERE, "data", "index.json")
-NODES_PATH = os.path.join(HERE, "data", "nodes.json")
+DATA = os.path.join(HERE, "data")
+FRAMES = os.path.join(DATA, "frames")
 
-with open(INDEX_PATH) as f:
-    INDEX = json.load(f)
+LINKS = json.load(open(os.path.join(DATA, "links.json")))["links"]
+NODES = json.load(open(os.path.join(DATA, "nodes.json")))
+try:
+    MANIFEST = json.load(open(os.path.join(FRAMES, "manifest.json")))["months"]
+except FileNotFoundError:
+    MANIFEST = sorted(f[:-5] for f in os.listdir(FRAMES)
+                      if f.endswith(".json") and f != "manifest.json") if os.path.isdir(FRAMES) else []
 
-INTERVAL = INDEX["interval_seconds"]
-# Accept a sample as "the value at t" only if within this many seconds of t.
-TOLERANCE = INTERVAL * 2
-
-# link id -> sorted list of (first, last, abspath)
-MONTHS = {}
-for link in INDEX["links"]:
-    MONTHS[link["id"]] = sorted(
-        (m["first"], m["last"], os.path.join(ROOT, m["file"]))
-        for m in link["months"]
-    )
-
-# Cache: abspath -> (times[], ins[], outs[])
-_FILE_CACHE = {}
+STEP = 300
+_MONTH_CACHE = {}
 
 
-def load_file(path):
-    cached = _FILE_CACHE.get(path)
-    if cached is not None:
-        return cached
-    times, ins, outs = [], [], []
-    with open(path) as f:
-        for line in f:
-            parts = line.split()
-            # format: <ts> <in> inMbps <out> outMbps
-            if len(parts) < 4 or not parts[0].isdigit():
-                continue
-            times.append(int(parts[0]))
-            ins.append(float(parts[1]))
-            outs.append(float(parts[3]))
-    cached = (times, ins, outs)
-    _FILE_CACHE[path] = cached
-    return cached
+def month_key(ts):
+    return datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y%m")
 
 
-def sample_at(link_id, t):
-    """Nearest in/out (Mbps) for link at unix time t, or None if no data."""
-    months = MONTHS.get(link_id)
-    if not months:
-        return None
-    # Find a month whose span contains t (fall back to nearest by edge).
-    chosen = None
-    for first, last, path in months:
-        if first <= t <= last:
-            chosen = path
-            break
-    if chosen is None:
-        # nearest month by distance to its [first,last] span
-        best, bestd = None, None
-        for first, last, path in months:
-            d = 0 if first <= t <= last else min(abs(t - first), abs(t - last))
-            if bestd is None or d < bestd:
-                best, bestd = path, d
-        if bestd is None or bestd > TOLERANCE:
-            return None
-        chosen = best
-
-    times, ins, outs = load_file(chosen)
-    if not times:
-        return None
-    i = bisect.bisect_left(times, t)
-    cands = []
-    if i < len(times):
-        cands.append(i)
-    if i > 0:
-        cands.append(i - 1)
-    best = min(cands, key=lambda j: abs(times[j] - t))
-    if abs(times[best] - t) > TOLERANCE:
-        return None
-    return {"in": round(ins[best], 1), "out": round(outs[best], 1), "ts": times[best]}
+def load_month(ym):
+    if ym in _MONTH_CACHE:
+        return _MONTH_CACHE[ym]
+    path = os.path.join(FRAMES, f"{ym}.json")
+    data = None
+    if os.path.exists(path):
+        with open(path) as f:
+            data = json.load(f)
+    _MONTH_CACHE[ym] = data
+    return data
 
 
-def traffic_frame(t):
-    out = {}
-    matched = 0
-    for link in INDEX["links"]:
-        s = sample_at(link["id"], t)
-        if s is not None:
-            out[link["id"]] = s
-            matched += 1
-    return {"t": t, "matched": matched, "links": out}
+def span():
+    if not MANIFEST:
+        return {"first": 0, "last": 0}
+    first_mo = load_month(MANIFEST[0])
+    last_mo = load_month(MANIFEST[-1])
+    first = first_mo["t0"] if first_mo else 0
+    last = (last_mo["t0"] + (last_mo["n"] - 1) * STEP) if last_mo else 0
+    return {"first": first, "last": last}
+
+
+def frame_at(t):
+    ym = month_key(t)
+    mo = load_month(ym)
+    out = {"t": t, "slot_ts": None, "links": {}, "nodes": {}}
+    if not mo:
+        return out
+    i = (t - mo["t0"]) // STEP
+    if i < 0 or i >= mo["n"]:
+        return out
+    out["slot_ts"] = mo["t0"] + i * STEP
+    for lid, rec in mo["links"].items():
+        d = {}
+        for k in ("in", "out"):
+            arr = rec.get(k)
+            if arr is not None and arr[i] is not None:
+                d[k] = arr[i]
+        if d:
+            out["links"][lid] = d
+    for code, rec in mo["nodes"].items():
+        d = {}
+        for k in ("cpu", "pw", "temp"):
+            arr = rec.get(k)
+            if arr is not None and arr[i] is not None:
+                d[k] = arr[i]
+        if d:
+            out["nodes"][code] = d
+    return out
+
+
+META = {
+    "links": LINKS,
+    "nodes": NODES,
+    "months": MANIFEST,
+    "interval_seconds": STEP,
+    "units": {"traffic": "Mbps", "capacity": "bps", "cpu": "%", "pw": "W", "temp": "C"},
+    "time_span": span(),
+}
 
 
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *a, **k):
         super().__init__(*a, directory=HERE, **k)
 
+    def end_headers(self):
+        # Never let browsers cache the app/data (avoids stale app.js calling
+        # removed API routes -> HTML 404 -> JSON.parse errors).
+        self.send_header("Cache-Control", "no-store, max-age=0")
+        super().end_headers()
+
     def _json(self, obj, code=200):
         body = json.dumps(obj).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(body)
 
     def do_GET(self):
-        parsed = urlparse(self.path)
-        if parsed.path == "/api/meta":
-            return self._json(INDEX)
-        if parsed.path == "/api/nodes":
-            with open(NODES_PATH) as f:
-                return self._json(json.load(f))
-        if parsed.path == "/api/traffic":
-            q = parse_qs(parsed.query)
+        u = urlparse(self.path)
+        if u.path == "/api/meta":
+            return self._json(META)
+        if u.path == "/api/frame":
+            q = parse_qs(u.query)
             try:
                 t = int(float(q.get("t", ["0"])[0]))
             except ValueError:
                 return self._json({"error": "bad t"}, 400)
-            return self._json(traffic_frame(t))
+            return self._json(frame_at(t))
         return super().do_GET()
 
-    def log_message(self, *a):  # quieter console
+    def log_message(self, *a):
         pass
 
 
 def main():
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8137
     srv = ThreadingHTTPServer(("0.0.0.0", port), Handler)
-    print(f"serving http://localhost:{port}/  (root: {HERE})")
-    print(f"data repo: {ROOT}")
+    print(f"serving http://localhost:{port}/  (months: {len(MANIFEST)})")
     srv.serve_forever()
 
 

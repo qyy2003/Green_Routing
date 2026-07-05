@@ -1,0 +1,420 @@
+{
+  "AG": {
+    "routers": [
+      "swiag1.csv",
+      "swiag2.csv"
+    ],
+    "psus": [
+      "swiag1_psu0.csv",
+      "swiag1_psu1.csv"
+    ]
+  },
+  "BA": {
+    "routers": [
+      "swiba3.csv"
+    ],
+    "psus": [
+      "swiba3_psu0.csv",
+      "swiba3_psu1.csv"
+    ]
+  },
+  "BE": {
+    "routers": [
+      "swibe1.csv"
+    ],
+    "psus": [
+      "swibe1_psu0.csv",
+      "swibe1_psu1.csv"
+    ]
+  },
+  "BLU": {
+    "routers": [
+      "blu1.csv",
+      "blu2.csv",
+      "swiblu1.csv",
+      "swiblu2.csv"
+    ],
+    "psus": [
+      "swiblu1_psu0.csv",
+      "swiblu1_psu1.csv",
+      "swiblu2_psu0.csv",
+      "swiblu2_psu1.csv"
+    ]
+  },
+  "BU": {
+    "routers": [
+      "swibu1.csv",
+      "swibu2.csv",
+      "swibu3.csv",
+      "swibu4.csv"
+    ],
+    "psus": [
+      "swibu1_psu0.csv",
+      "swibu1_psu1.csv"
+    ]
+  },
+  "CE": {
+    "routers": [
+      "swice1.csv",
+      "swice2.csv",
+      "swice4.csv"
+    ],
+    "psus": [
+      "swice1_psu0.csv",
+      "swice1_psu1.csv",
+      "swice2_psu0.csv",
+      "swice2_psu1.csv",
+      "swice4_psu0.csv",
+      "swice4_psu1.csv"
+    ]
+  },
+  "CR": {
+    "routers": [
+      "swicr1.csv",
+      "swicr2.csv"
+    ],
+    "psus": [
+      "swicr1_psu0.csv",
+      "swicr1_psu1.csv",
+      "swicr2_psu0.csv",
+      "swicr2_psu1.csv"
+    ]
+  },
+  "EHL": {
+    "routers": [
+      "swiehl2.csv"
+    ],
+    "psus": [
+      "swiehl2_psu0.csv",
+      "swiehl2_psu1.csv"
+    ]
+  },
+  "EL": {
+    "routers": [
+      "swiel3.csv"
+    ],
+    "psus": [
+      "swiel3_psu0.csv",
+      "swiel3_psu1.csv"
+    ]
+  },
+  "ENSI": {
+    "routers": [
+      "swiensi1.csv",
+      "swiensi2.csv"
+    ],
+    "psus": [
+      "swiensi1_psu0.csv",
+      "swiensi1_psu1.csv",
+      "swiensi2_psu0.csv",
+      "swiensi2_psu1.csv"
+    ]
+  },
+  "EZ": {
+    "routers": [
+      "swiez-ggc1.csv",
+      "swiez1.csv",
+      "swiez11.csv",
+      "swiez2.csv",
+      "swiez3-test.csv",
+      "swiez3.csv",
+      "swiez31.csv"
+    ],
+    "psus": [
+      "swiez11_psu0.csv",
+      "swiez11_psu1.csv",
+      "swiez2_psu0.csv",
+      "swiez2_psu1.csv",
+      "swiez31_psu0.csv",
+      "swiez31_psu1.csv",
+      "swiez3_psu0.csv",
+      "swiez3_psu1.csv",
+      "swiez3_psu2.csv",
+      "swiez3_psu3.csv"
+    ]
+  },
+  "FHSG": {
+    "routers": [
+      "swifhsg1.csv",
+      "swifhsg2.csv"
+    ],
+    "psus": []
+  },
+  "FR": {
+    "routers": [
+      "swifr1.csv",
+      "swifr2.csv"
+    ],
+    "psus": [
+      "swifr1_psu0.csv",
+      "swifr1_psu1.csv",
+      "swifr2_psu0.csv",
+      "swifr2_psu1.csv"
+    ]
+  },
+  "GE": {
+    "routers": [
+      "swige2.csv",
+      "swige3.csv"
+    ],
+    "psus": [
+      "swige2_psu0.csv",
+      "swige2_psu1.csv",
+      "swige3_psu0.csv",
+      "swige3_psu1.csv"
+    ]
+  },
+  "GL": {
+    "routers": [
+      "swigl1.csv",
+      "swigl2.csv"
+    ],
+    "psus": [
+      "swigl1_psu0.csv",
+      "swigl1_psu1.csv",
+      "swigl2_psu0.csv",
+      "swigl2_psu1.csv"
+    ]
+  },
+  "GO": {
+    "routers": [
+      "swigo2.csv"
+    ],
+    "psus": []
+  },
+  "HEPVD": {
+    "routers": [
+      "swihepvd1.csv",
+      "swihepvd2.csv"
+    ],
+    "psus": [
+      "swihepvd2_psu0.csv",
+      "swihepvd2_psu1.csv"
+    ]
+  },
+  "IBM": {
+    "routers": [
+      "swiibm1.csv",
+      "swiibm2.csv",
+      "swiibm3.csv",
+      "swiibm4.csv"
+    ],
+    "psus": [
+      "swiibm1_psu0.csv",
+      "swiibm1_psu1.csv",
+      "swiibm2_psu0.csv",
+      "swiibm2_psu1.csv"
+    ]
+  },
+  "IX": {
+    "routers": [
+      "swiix1.csv",
+      "swiix3.csv"
+    ],
+    "psus": [
+      "swiix1_psu0.csv",
+      "swiix1_psu1.csv",
+      "swiix3_psu0.csv",
+      "swiix3_psu1.csv"
+    ]
+  },
+  "IXG": {
+    "routers": [
+      "swiixg3.csv"
+    ],
+    "psus": [
+      "swiixg3_psu0.csv",
+      "swiixg3_psu1.csv"
+    ]
+  },
+  "KR": {
+    "routers": [
+      "swikr1.csv",
+      "swikr2.csv"
+    ],
+    "psus": []
+  },
+  "LG": {
+    "routers": [
+      "swilg1.csv",
+      "swilg2.csv"
+    ],
+    "psus": [
+      "swilg1_psu0.csv",
+      "swilg1_psu1.csv",
+      "swilg2_psu0.csv",
+      "swilg2_psu1.csv"
+    ]
+  },
+  "LS": {
+    "routers": [
+      "swils1.csv",
+      "swils3.csv"
+    ],
+    "psus": [
+      "swils1_psu0.csv",
+      "swils1_psu1.csv",
+      "swils3_psu0.csv",
+      "swils3_psu1.csv"
+    ]
+  },
+  "LZ": {
+    "routers": [
+      "swilz1.csv",
+      "swilz2.csv"
+    ],
+    "psus": []
+  },
+  "NE": {
+    "routers": [
+      "swine1.csv",
+      "swine2.csv"
+    ],
+    "psus": [
+      "swine1_psu0.csv",
+      "swine1_psu1.csv",
+      "swine2_psu0.csv",
+      "swine2_psu1.csv"
+    ]
+  },
+  "PS": {
+    "routers": [
+      "swips1.csv",
+      "swips2.csv"
+    ],
+    "psus": [
+      "swips1_psu0.csv",
+      "swips1_psu1.csv",
+      "swips2_psu0.csv",
+      "swips2_psu1.csv"
+    ]
+  },
+  "RA": {
+    "routers": [
+      "swira1.csv",
+      "swira2.csv",
+      "swira3.csv",
+      "swira4.csv"
+    ],
+    "psus": [
+      "swira1_psu0.csv",
+      "swira1_psu1.csv",
+      "swira2_psu0.csv",
+      "swira2_psu1.csv"
+    ]
+  },
+  "SA": {
+    "routers": [
+      "swisa1.csv",
+      "swisa2.csv"
+    ],
+    "psus": [
+      "swisa2_psu0.csv",
+      "swisa2_psu1.csv"
+    ]
+  },
+  "SG": {
+    "routers": [
+      "swisg1.csv",
+      "swisg2.csv"
+    ],
+    "psus": []
+  },
+  "SGD": {
+    "routers": [
+      "swisgd1.csv",
+      "swisgd2.csv",
+      "swisgd3.csv",
+      "swisgd4.csv"
+    ],
+    "psus": [
+      "swisgd1_psu0.csv",
+      "swisgd1_psu1.csv",
+      "swisgd2_psu0.csv",
+      "swisgd2_psu1.csv",
+      "swisgd3_psu0.csv",
+      "swisgd3_psu1.csv",
+      "swisgd4_psu0.csv",
+      "swisgd4_psu1.csv"
+    ]
+  },
+  "SGE": {
+    "routers": [
+      "swisge1.csv",
+      "swisge2.csv",
+      "swisge3.csv"
+    ],
+    "psus": [
+      "swisge1_psu0.csv",
+      "swisge1_psu1.csv",
+      "swisge2_psu0.csv",
+      "swisge2_psu1.csv"
+    ]
+  },
+  "SI": {
+    "routers": [
+      "swisi1.csv",
+      "swisi2.csv"
+    ],
+    "psus": [
+      "swisi1_psu0.csv",
+      "swisi1_psu1.csv",
+      "swisi2_psu0.csv",
+      "swisi2_psu1.csv"
+    ]
+  },
+  "TO": {
+    "routers": [
+      "swito1.csv"
+    ],
+    "psus": [
+      "swito1_psu0.csv",
+      "swito1_psu1.csv"
+    ]
+  },
+  "WI": {
+    "routers": [
+      "swiwi1.csv"
+    ],
+    "psus": []
+  },
+  "WSL": {
+    "routers": [
+      "swiwsl1.csv",
+      "swiwsl2.csv",
+      "swiwsl3.csv",
+      "swiwsl4.csv"
+    ],
+    "psus": [
+      "swiwsl1_psu0.csv",
+      "swiwsl1_psu1.csv",
+      "swiwsl2_psu0.csv",
+      "swiwsl2_psu1.csv"
+    ]
+  },
+  "YV": {
+    "routers": [
+      "swiyv1.csv",
+      "swiyv2.csv"
+    ],
+    "psus": [
+      "swiyv2_psu0.csv",
+      "swiyv2_psu1.csv"
+    ]
+  },
+  "ZH": {
+    "routers": [
+      "swizh1.csv",
+      "swizh2.csv",
+      "swizh3.csv"
+    ],
+    "psus": [
+      "swizh1_psu0.csv",
+      "swizh1_psu1.csv",
+      "swizh2_psu0.csv",
+      "swizh2_psu1.csv",
+      "swizh3_psu0.csv",
+      "swizh3_psu1.csv"
+    ]
+  }
+}
