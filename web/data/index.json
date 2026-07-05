@@ -1,0 +1,6144 @@
+{
+  "source": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs",
+  "interval_seconds": 300,
+  "units": "Mbps",
+  "fields": [
+    "timestamp",
+    "inMbps",
+    "outMbps"
+  ],
+  "time_span": {
+    "first": 1609455600,
+    "last": 1693518900
+  },
+  "link_count": 48,
+  "links": [
+    {
+      "id": "AG-EZ",
+      "endpoints": [
+        "AG",
+        "EZ"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202101",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202101",
+          "first": 1609455600,
+          "last": 1612133700,
+          "samples": 8928
+        },
+        {
+          "ym": "202102",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202102",
+          "first": 1612134000,
+          "last": 1614552900,
+          "samples": 8062
+        },
+        {
+          "ym": "202103",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202103",
+          "first": 1614553200,
+          "last": 1617227700,
+          "samples": 8916
+        },
+        {
+          "ym": "202104",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202104",
+          "first": 1617228000,
+          "last": 1619819700,
+          "samples": 8623
+        },
+        {
+          "ym": "202105",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202105",
+          "first": 1619820000,
+          "last": 1622498100,
+          "samples": 8928
+        },
+        {
+          "ym": "202106",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202106",
+          "first": 1622498400,
+          "last": 1625090100,
+          "samples": 8640
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8927
+        },
+        {
+          "ym": "202108",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202108",
+          "first": 1627768800,
+          "last": 1630446900,
+          "samples": 8928
+        },
+        {
+          "ym": "202109",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202109",
+          "first": 1630447200,
+          "last": 1633038900,
+          "samples": 8640
+        },
+        {
+          "ym": "202110",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202110",
+          "first": 1633039200,
+          "last": 1635720900,
+          "samples": 8940
+        },
+        {
+          "ym": "202111",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202111",
+          "first": 1635721200,
+          "last": 1638312900,
+          "samples": 8636
+        },
+        {
+          "ym": "202112",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202112",
+          "first": 1638313200,
+          "last": 1640991300,
+          "samples": 8928
+        },
+        {
+          "ym": "202201",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202201",
+          "first": 1640991600,
+          "last": 1643669700,
+          "samples": 8928
+        },
+        {
+          "ym": "202202",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202202",
+          "first": 1643670000,
+          "last": 1646088900,
+          "samples": 8064
+        },
+        {
+          "ym": "202203",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202203",
+          "first": 1646089200,
+          "last": 1648763700,
+          "samples": 8916
+        },
+        {
+          "ym": "202204",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202204",
+          "first": 1648764000,
+          "last": 1651355700,
+          "samples": 8640
+        },
+        {
+          "ym": "202205",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202205",
+          "first": 1651356000,
+          "last": 1654034100,
+          "samples": 8928
+        },
+        {
+          "ym": "202206",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202206",
+          "first": 1654034400,
+          "last": 1656626100,
+          "samples": 8639
+        },
+        {
+          "ym": "202207",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202207",
+          "first": 1656626400,
+          "last": 1659304500,
+          "samples": 8928
+        },
+        {
+          "ym": "202208",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202208",
+          "first": 1659304800,
+          "last": 1661982900,
+          "samples": 8928
+        },
+        {
+          "ym": "202209",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202209",
+          "first": 1661983200,
+          "last": 1664574900,
+          "samples": 8640
+        },
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8940
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202211",
+          "first": 1667257200,
+          "last": 1669848900,
+          "samples": 8640
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8928
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8928
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-EZ.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1609455600,
+      "last": 1693518900
+    },
+    {
+      "id": "AG-LZ",
+      "endpoints": [
+        "AG",
+        "LZ"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202110",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-LZ.202110",
+          "first": 1633039200,
+          "last": 1635720900,
+          "samples": 8940
+        },
+        {
+          "ym": "202111",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-LZ.202111",
+          "first": 1635721200,
+          "last": 1638312900,
+          "samples": 8636
+        },
+        {
+          "ym": "202112",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-LZ.202112",
+          "first": 1638313200,
+          "last": 1640991300,
+          "samples": 8928
+        },
+        {
+          "ym": "202201",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-LZ.202201",
+          "first": 1640991600,
+          "last": 1643669700,
+          "samples": 8928
+        },
+        {
+          "ym": "202202",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-LZ.202202",
+          "first": 1643670000,
+          "last": 1646088900,
+          "samples": 8064
+        },
+        {
+          "ym": "202203",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-LZ.202203",
+          "first": 1646089200,
+          "last": 1648763700,
+          "samples": 8916
+        },
+        {
+          "ym": "202204",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-LZ.202204",
+          "first": 1648764000,
+          "last": 1651355700,
+          "samples": 8640
+        },
+        {
+          "ym": "202205",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-LZ.202205",
+          "first": 1651356000,
+          "last": 1654034100,
+          "samples": 8928
+        },
+        {
+          "ym": "202206",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-LZ.202206",
+          "first": 1654034400,
+          "last": 1656626100,
+          "samples": 8639
+        },
+        {
+          "ym": "202207",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-LZ.202207",
+          "first": 1656626400,
+          "last": 1659304500,
+          "samples": 8928
+        },
+        {
+          "ym": "202208",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-LZ.202208",
+          "first": 1659304800,
+          "last": 1661982900,
+          "samples": 8928
+        },
+        {
+          "ym": "202209",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-LZ.202209",
+          "first": 1661983200,
+          "last": 1664574900,
+          "samples": 8640
+        },
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-LZ.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8940
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-LZ.202211",
+          "first": 1667257200,
+          "last": 1669848900,
+          "samples": 8640
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-LZ.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8928
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-LZ.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8928
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-LZ.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-LZ.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-LZ.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-LZ.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-LZ.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-LZ.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-LZ.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1633039200,
+      "last": 1693518900
+    },
+    {
+      "id": "AG-RA",
+      "endpoints": [
+        "AG",
+        "RA"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202207",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-RA.202207",
+          "first": 1656626400,
+          "last": 1659304500,
+          "samples": 8928
+        },
+        {
+          "ym": "202208",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-RA.202208",
+          "first": 1659304800,
+          "last": 1661982900,
+          "samples": 8928
+        },
+        {
+          "ym": "202209",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-RA.202209",
+          "first": 1661983200,
+          "last": 1664574900,
+          "samples": 8640
+        },
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-RA.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8940
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-RA.202211",
+          "first": 1667257200,
+          "last": 1669848900,
+          "samples": 8640
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-RA.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8928
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-RA.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8928
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-RA.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-RA.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-RA.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-RA.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-RA.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-RA.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-RA.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1656626400,
+      "last": 1693518900
+    },
+    {
+      "id": "AG-SA",
+      "endpoints": [
+        "AG",
+        "SA"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202101",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202101",
+          "first": 1609455600,
+          "last": 1612133700,
+          "samples": 8928
+        },
+        {
+          "ym": "202102",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202102",
+          "first": 1612134000,
+          "last": 1614552900,
+          "samples": 8062
+        },
+        {
+          "ym": "202103",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202103",
+          "first": 1614553200,
+          "last": 1617227700,
+          "samples": 8916
+        },
+        {
+          "ym": "202104",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202104",
+          "first": 1617228000,
+          "last": 1619819700,
+          "samples": 8623
+        },
+        {
+          "ym": "202105",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202105",
+          "first": 1619820000,
+          "last": 1622498100,
+          "samples": 8928
+        },
+        {
+          "ym": "202106",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202106",
+          "first": 1622498400,
+          "last": 1625090100,
+          "samples": 8640
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8927
+        },
+        {
+          "ym": "202108",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202108",
+          "first": 1627768800,
+          "last": 1630446900,
+          "samples": 8928
+        },
+        {
+          "ym": "202112",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202112",
+          "first": 1638313200,
+          "last": 1640991300,
+          "samples": 8928
+        },
+        {
+          "ym": "202201",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202201",
+          "first": 1640991600,
+          "last": 1643669700,
+          "samples": 8928
+        },
+        {
+          "ym": "202202",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202202",
+          "first": 1643670000,
+          "last": 1646088900,
+          "samples": 8064
+        },
+        {
+          "ym": "202203",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202203",
+          "first": 1646089200,
+          "last": 1648763700,
+          "samples": 8916
+        },
+        {
+          "ym": "202204",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202204",
+          "first": 1648764000,
+          "last": 1651355700,
+          "samples": 8640
+        },
+        {
+          "ym": "202205",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202205",
+          "first": 1651356000,
+          "last": 1654034100,
+          "samples": 8928
+        },
+        {
+          "ym": "202206",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202206",
+          "first": 1654034400,
+          "last": 1656626100,
+          "samples": 8639
+        },
+        {
+          "ym": "202207",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202207",
+          "first": 1656626400,
+          "last": 1659304500,
+          "samples": 8928
+        },
+        {
+          "ym": "202208",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202208",
+          "first": 1659304800,
+          "last": 1661982900,
+          "samples": 8928
+        },
+        {
+          "ym": "202209",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202209",
+          "first": 1661983200,
+          "last": 1664574900,
+          "samples": 8640
+        },
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8940
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202211",
+          "first": 1667257200,
+          "last": 1669848900,
+          "samples": 8640
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8928
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8928
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/AG-SA.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1609455600,
+      "last": 1693518900
+    },
+    {
+      "id": "BA-PS",
+      "endpoints": [
+        "BA",
+        "PS"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202103",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202103",
+          "first": 1614553200,
+          "last": 1617227700,
+          "samples": 8916
+        },
+        {
+          "ym": "202104",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202104",
+          "first": 1617228000,
+          "last": 1619819700,
+          "samples": 8624
+        },
+        {
+          "ym": "202105",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202105",
+          "first": 1619820000,
+          "last": 1622498100,
+          "samples": 8928
+        },
+        {
+          "ym": "202106",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202106",
+          "first": 1622498400,
+          "last": 1625090100,
+          "samples": 8640
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8927
+        },
+        {
+          "ym": "202108",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202108",
+          "first": 1627768800,
+          "last": 1630446900,
+          "samples": 8928
+        },
+        {
+          "ym": "202109",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202109",
+          "first": 1630447200,
+          "last": 1633038900,
+          "samples": 8640
+        },
+        {
+          "ym": "202110",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202110",
+          "first": 1633039200,
+          "last": 1635720900,
+          "samples": 8940
+        },
+        {
+          "ym": "202111",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202111",
+          "first": 1635721200,
+          "last": 1638312900,
+          "samples": 8635
+        },
+        {
+          "ym": "202112",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202112",
+          "first": 1638313200,
+          "last": 1640991300,
+          "samples": 8928
+        },
+        {
+          "ym": "202201",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202201",
+          "first": 1640991600,
+          "last": 1643669700,
+          "samples": 8928
+        },
+        {
+          "ym": "202202",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202202",
+          "first": 1643670000,
+          "last": 1646088900,
+          "samples": 8064
+        },
+        {
+          "ym": "202203",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202203",
+          "first": 1646089200,
+          "last": 1648763700,
+          "samples": 8916
+        },
+        {
+          "ym": "202204",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202204",
+          "first": 1648764000,
+          "last": 1651355700,
+          "samples": 8641
+        },
+        {
+          "ym": "202205",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202205",
+          "first": 1651356000,
+          "last": 1654034100,
+          "samples": 8928
+        },
+        {
+          "ym": "202206",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202206",
+          "first": 1654034400,
+          "last": 1656626100,
+          "samples": 8639
+        },
+        {
+          "ym": "202207",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202207",
+          "first": 1656626400,
+          "last": 1659304500,
+          "samples": 8928
+        },
+        {
+          "ym": "202208",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202208",
+          "first": 1659304800,
+          "last": 1661982900,
+          "samples": 8928
+        },
+        {
+          "ym": "202209",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202209",
+          "first": 1661983200,
+          "last": 1664574900,
+          "samples": 8640
+        },
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8940
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202211",
+          "first": 1667257200,
+          "last": 1669848900,
+          "samples": 8640
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8928
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8928
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8065
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8557
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BA-PS.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1614553200,
+      "last": 1693518900
+    },
+    {
+      "id": "BE-CE",
+      "endpoints": [
+        "BE",
+        "CE"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202101",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-CE.202101",
+          "first": 1609455600,
+          "last": 1612133700,
+          "samples": 8928
+        },
+        {
+          "ym": "202102",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-CE.202102",
+          "first": 1612134000,
+          "last": 1614552900,
+          "samples": 8062
+        },
+        {
+          "ym": "202103",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-CE.202103",
+          "first": 1615373700,
+          "last": 1617227700,
+          "samples": 6182
+        },
+        {
+          "ym": "202104",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-CE.202104",
+          "first": 1617228000,
+          "last": 1619819700,
+          "samples": 8623
+        },
+        {
+          "ym": "202105",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-CE.202105",
+          "first": 1619820000,
+          "last": 1622498100,
+          "samples": 8928
+        },
+        {
+          "ym": "202106",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-CE.202106",
+          "first": 1622498400,
+          "last": 1625090100,
+          "samples": 8640
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-CE.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8927
+        }
+      ],
+      "first": 1609455600,
+      "last": 1627768500
+    },
+    {
+      "id": "BE-FR",
+      "endpoints": [
+        "BE",
+        "FR"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202101",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202101",
+          "first": 1609455600,
+          "last": 1612133700,
+          "samples": 8928
+        },
+        {
+          "ym": "202102",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202102",
+          "first": 1612134000,
+          "last": 1614552900,
+          "samples": 8062
+        },
+        {
+          "ym": "202103",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202103",
+          "first": 1614553200,
+          "last": 1617227700,
+          "samples": 8916
+        },
+        {
+          "ym": "202104",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202104",
+          "first": 1617228000,
+          "last": 1619819700,
+          "samples": 8623
+        },
+        {
+          "ym": "202105",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202105",
+          "first": 1619820000,
+          "last": 1622498100,
+          "samples": 8926
+        },
+        {
+          "ym": "202106",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202106",
+          "first": 1622498400,
+          "last": 1625090100,
+          "samples": 8640
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8927
+        },
+        {
+          "ym": "202108",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202108",
+          "first": 1627768800,
+          "last": 1630446900,
+          "samples": 8928
+        },
+        {
+          "ym": "202109",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202109",
+          "first": 1630447200,
+          "last": 1633038900,
+          "samples": 8640
+        },
+        {
+          "ym": "202110",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202110",
+          "first": 1633039200,
+          "last": 1635720900,
+          "samples": 8940
+        },
+        {
+          "ym": "202111",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202111",
+          "first": 1635721200,
+          "last": 1638312900,
+          "samples": 8635
+        },
+        {
+          "ym": "202112",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202112",
+          "first": 1638313200,
+          "last": 1640991300,
+          "samples": 8928
+        },
+        {
+          "ym": "202201",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202201",
+          "first": 1640991600,
+          "last": 1643669700,
+          "samples": 8928
+        },
+        {
+          "ym": "202202",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202202",
+          "first": 1643670000,
+          "last": 1646088900,
+          "samples": 8064
+        },
+        {
+          "ym": "202203",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202203",
+          "first": 1646089200,
+          "last": 1648763700,
+          "samples": 8916
+        },
+        {
+          "ym": "202204",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202204",
+          "first": 1648764000,
+          "last": 1651355700,
+          "samples": 8641
+        },
+        {
+          "ym": "202205",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202205",
+          "first": 1651356000,
+          "last": 1654034100,
+          "samples": 8928
+        },
+        {
+          "ym": "202206",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202206",
+          "first": 1654034400,
+          "last": 1656626100,
+          "samples": 8639
+        },
+        {
+          "ym": "202207",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202207",
+          "first": 1656626400,
+          "last": 1659304500,
+          "samples": 8928
+        },
+        {
+          "ym": "202208",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202208",
+          "first": 1659304800,
+          "last": 1661982900,
+          "samples": 8928
+        },
+        {
+          "ym": "202209",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202209",
+          "first": 1661983200,
+          "last": 1664574900,
+          "samples": 8640
+        },
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8940
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202211",
+          "first": 1667257200,
+          "last": 1669848900,
+          "samples": 8640
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8929
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8928
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8065
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8929
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1609455600,
+      "last": 1693518900
+    },
+    {
+      "id": "BE-FR-1",
+      "endpoints": [
+        "BE",
+        "FR"
+      ],
+      "instance": 1,
+      "months": [
+        {
+          "ym": "202203",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR-1.202203",
+          "first": 1646089200,
+          "last": 1648763700,
+          "samples": 8916
+        },
+        {
+          "ym": "202204",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR-1.202204",
+          "first": 1648764000,
+          "last": 1651355700,
+          "samples": 8641
+        },
+        {
+          "ym": "202205",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR-1.202205",
+          "first": 1651356000,
+          "last": 1654034100,
+          "samples": 8928
+        },
+        {
+          "ym": "202206",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-FR-1.202206",
+          "first": 1654034400,
+          "last": 1656626100,
+          "samples": 8639
+        }
+      ],
+      "first": 1646089200,
+      "last": 1656626100
+    },
+    {
+      "id": "BE-LG",
+      "endpoints": [
+        "BE",
+        "LG"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LG.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8928
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LG.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8929
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LG.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8065
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LG.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LG.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8641
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LG.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LG.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LG.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LG.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1669849200,
+      "last": 1693518900
+    },
+    {
+      "id": "BE-LS",
+      "endpoints": [
+        "BE",
+        "LS"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202103",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LS.202103",
+          "first": 1614553200,
+          "last": 1617227700,
+          "samples": 8916
+        },
+        {
+          "ym": "202104",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LS.202104",
+          "first": 1617228000,
+          "last": 1619819700,
+          "samples": 8623
+        },
+        {
+          "ym": "202105",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LS.202105",
+          "first": 1619820000,
+          "last": 1622498100,
+          "samples": 8925
+        },
+        {
+          "ym": "202106",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LS.202106",
+          "first": 1622498400,
+          "last": 1625090100,
+          "samples": 8640
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LS.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8927
+        },
+        {
+          "ym": "202108",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LS.202108",
+          "first": 1627768800,
+          "last": 1630446900,
+          "samples": 8928
+        },
+        {
+          "ym": "202109",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LS.202109",
+          "first": 1630447200,
+          "last": 1633038900,
+          "samples": 8640
+        },
+        {
+          "ym": "202110",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LS.202110",
+          "first": 1633039200,
+          "last": 1635720900,
+          "samples": 8940
+        },
+        {
+          "ym": "202111",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LS.202111",
+          "first": 1635721200,
+          "last": 1638312900,
+          "samples": 8635
+        },
+        {
+          "ym": "202112",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LS.202112",
+          "first": 1638313200,
+          "last": 1640991300,
+          "samples": 8928
+        },
+        {
+          "ym": "202201",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LS.202201",
+          "first": 1640991600,
+          "last": 1643669700,
+          "samples": 8928
+        },
+        {
+          "ym": "202202",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LS.202202",
+          "first": 1643670000,
+          "last": 1646088900,
+          "samples": 8064
+        },
+        {
+          "ym": "202203",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LS.202203",
+          "first": 1646089200,
+          "last": 1648763700,
+          "samples": 8916
+        },
+        {
+          "ym": "202204",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LS.202204",
+          "first": 1648764000,
+          "last": 1651355700,
+          "samples": 8641
+        },
+        {
+          "ym": "202205",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LS.202205",
+          "first": 1651356000,
+          "last": 1654034100,
+          "samples": 8928
+        },
+        {
+          "ym": "202206",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BE-LS.202206",
+          "first": 1654034400,
+          "last": 1656626100,
+          "samples": 8639
+        }
+      ],
+      "first": 1614553200,
+      "last": 1656626100
+    },
+    {
+      "id": "BLU-GL-1",
+      "endpoints": [
+        "BLU",
+        "GL"
+      ],
+      "instance": 1,
+      "months": [
+        {
+          "ym": "202203",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BLU-GL-1.202203",
+          "first": 1646089200,
+          "last": 1648763700,
+          "samples": 8916
+        },
+        {
+          "ym": "202204",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BLU-GL-1.202204",
+          "first": 1648764000,
+          "last": 1651355700,
+          "samples": 8640
+        },
+        {
+          "ym": "202205",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BLU-GL-1.202205",
+          "first": 1651356000,
+          "last": 1654034100,
+          "samples": 8928
+        }
+      ],
+      "first": 1646089200,
+      "last": 1654034100
+    },
+    {
+      "id": "BU-SA-1",
+      "endpoints": [
+        "BU",
+        "SA"
+      ],
+      "instance": 1,
+      "months": [
+        {
+          "ym": "202207",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BU-SA-1.202207",
+          "first": 1656626400,
+          "last": 1659304500,
+          "samples": 8928
+        },
+        {
+          "ym": "202208",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BU-SA-1.202208",
+          "first": 1659304800,
+          "last": 1661982900,
+          "samples": 8928
+        },
+        {
+          "ym": "202209",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BU-SA-1.202209",
+          "first": 1661983200,
+          "last": 1664574900,
+          "samples": 8640
+        },
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BU-SA-1.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8940
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BU-SA-1.202211",
+          "first": 1667257200,
+          "last": 1669848900,
+          "samples": 8640
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BU-SA-1.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8928
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BU-SA-1.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8928
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BU-SA-1.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BU-SA-1.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BU-SA-1.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BU-SA-1.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        }
+      ],
+      "first": 1656626400,
+      "last": 1685570100
+    },
+    {
+      "id": "BU-SG",
+      "endpoints": [
+        "BU",
+        "SG"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BU-SG.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BU-SG.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BU-SG.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BU-SG.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BU-SG.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/BU-SG.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1677625200,
+      "last": 1693518900
+    },
+    {
+      "id": "CE-FR",
+      "endpoints": [
+        "CE",
+        "FR"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202101",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-FR.202101",
+          "first": 1609455600,
+          "last": 1612133700,
+          "samples": 8929
+        },
+        {
+          "ym": "202102",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-FR.202102",
+          "first": 1612134000,
+          "last": 1614552900,
+          "samples": 8063
+        }
+      ],
+      "first": 1609455600,
+      "last": 1614552900
+    },
+    {
+      "id": "CE-GE",
+      "endpoints": [
+        "CE",
+        "GE"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202101",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-GE.202101",
+          "first": 1609455600,
+          "last": 1612133700,
+          "samples": 8929
+        }
+      ],
+      "first": 1609455600,
+      "last": 1612133700
+    },
+    {
+      "id": "CE-GE-1",
+      "endpoints": [
+        "CE",
+        "GE"
+      ],
+      "instance": 1,
+      "months": [
+        {
+          "ym": "202110",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-GE-1.202110",
+          "first": 1633039500,
+          "last": 1635720900,
+          "samples": 8939
+        },
+        {
+          "ym": "202111",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-GE-1.202111",
+          "first": 1635721200,
+          "last": 1638312900,
+          "samples": 8636
+        },
+        {
+          "ym": "202112",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-GE-1.202112",
+          "first": 1638313200,
+          "last": 1640991300,
+          "samples": 8928
+        },
+        {
+          "ym": "202201",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-GE-1.202201",
+          "first": 1640991600,
+          "last": 1643669700,
+          "samples": 8928
+        },
+        {
+          "ym": "202202",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-GE-1.202202",
+          "first": 1643670000,
+          "last": 1646088900,
+          "samples": 8064
+        },
+        {
+          "ym": "202203",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-GE-1.202203",
+          "first": 1646089200,
+          "last": 1648763700,
+          "samples": 8916
+        },
+        {
+          "ym": "202204",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-GE-1.202204",
+          "first": 1648764000,
+          "last": 1651355700,
+          "samples": 8640
+        },
+        {
+          "ym": "202205",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-GE-1.202205",
+          "first": 1651356000,
+          "last": 1654034100,
+          "samples": 8928
+        },
+        {
+          "ym": "202206",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-GE-1.202206",
+          "first": 1654034400,
+          "last": 1656626100,
+          "samples": 8639
+        },
+        {
+          "ym": "202207",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-GE-1.202207",
+          "first": 1656626400,
+          "last": 1659304500,
+          "samples": 8928
+        },
+        {
+          "ym": "202208",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-GE-1.202208",
+          "first": 1659304800,
+          "last": 1661982900,
+          "samples": 8928
+        }
+      ],
+      "first": 1633039500,
+      "last": 1661982900
+    },
+    {
+      "id": "CE-LG",
+      "endpoints": [
+        "CE",
+        "LG"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202101",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202101",
+          "first": 1609455600,
+          "last": 1612133700,
+          "samples": 8929
+        },
+        {
+          "ym": "202102",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202102",
+          "first": 1612134000,
+          "last": 1614552900,
+          "samples": 8063
+        },
+        {
+          "ym": "202103",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202103",
+          "first": 1614553200,
+          "last": 1617227700,
+          "samples": 8917
+        },
+        {
+          "ym": "202104",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202104",
+          "first": 1617228000,
+          "last": 1619819700,
+          "samples": 8623
+        },
+        {
+          "ym": "202105",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202105",
+          "first": 1619820000,
+          "last": 1622498100,
+          "samples": 8928
+        },
+        {
+          "ym": "202106",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202106",
+          "first": 1622498400,
+          "last": 1625090100,
+          "samples": 8640
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8928
+        },
+        {
+          "ym": "202108",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202108",
+          "first": 1627768800,
+          "last": 1630446900,
+          "samples": 8928
+        },
+        {
+          "ym": "202109",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202109",
+          "first": 1630447200,
+          "last": 1633039200,
+          "samples": 8641
+        },
+        {
+          "ym": "202110",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202110",
+          "first": 1633039500,
+          "last": 1635720900,
+          "samples": 8939
+        },
+        {
+          "ym": "202111",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202111",
+          "first": 1635721200,
+          "last": 1638312900,
+          "samples": 8636
+        },
+        {
+          "ym": "202112",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202112",
+          "first": 1638313200,
+          "last": 1640991300,
+          "samples": 8928
+        },
+        {
+          "ym": "202201",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202201",
+          "first": 1640991600,
+          "last": 1643669700,
+          "samples": 8928
+        },
+        {
+          "ym": "202202",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202202",
+          "first": 1643670000,
+          "last": 1646088900,
+          "samples": 8064
+        },
+        {
+          "ym": "202203",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202203",
+          "first": 1646089200,
+          "last": 1648763700,
+          "samples": 8916
+        },
+        {
+          "ym": "202204",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202204",
+          "first": 1648764000,
+          "last": 1651355700,
+          "samples": 8640
+        },
+        {
+          "ym": "202205",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202205",
+          "first": 1651356000,
+          "last": 1654034100,
+          "samples": 8928
+        },
+        {
+          "ym": "202206",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202206",
+          "first": 1654034400,
+          "last": 1656626100,
+          "samples": 8639
+        },
+        {
+          "ym": "202207",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202207",
+          "first": 1656626400,
+          "last": 1659304500,
+          "samples": 8928
+        },
+        {
+          "ym": "202208",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202208",
+          "first": 1659304800,
+          "last": 1661982900,
+          "samples": 8928
+        },
+        {
+          "ym": "202209",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202209",
+          "first": 1661983200,
+          "last": 1664574900,
+          "samples": 8640
+        },
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8940
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202211",
+          "first": 1667257200,
+          "last": 1669848900,
+          "samples": 8640
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202212",
+          "first": 1670337000,
+          "last": 1672527300,
+          "samples": 7303
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8928
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8929
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8927
+        }
+      ],
+      "first": 1609455600,
+      "last": 1693518900
+    },
+    {
+      "id": "CE-LG-1",
+      "endpoints": [
+        "CE",
+        "LG"
+      ],
+      "instance": 1,
+      "months": [
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG-1.202212",
+          "first": 1670337000,
+          "last": 1672527300,
+          "samples": 7303
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG-1.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8928
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG-1.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG-1.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG-1.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LG-1.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8929
+        }
+      ],
+      "first": 1670337000,
+      "last": 1685570100
+    },
+    {
+      "id": "CE-LS",
+      "endpoints": [
+        "CE",
+        "LS"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202101",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202101",
+          "first": 1609455600,
+          "last": 1612133700,
+          "samples": 8929
+        },
+        {
+          "ym": "202102",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202102",
+          "first": 1612134000,
+          "last": 1614552900,
+          "samples": 8063
+        },
+        {
+          "ym": "202103",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202103",
+          "first": 1614553200,
+          "last": 1617227700,
+          "samples": 8916
+        },
+        {
+          "ym": "202104",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202104",
+          "first": 1617228000,
+          "last": 1619819700,
+          "samples": 8623
+        },
+        {
+          "ym": "202105",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202105",
+          "first": 1619820000,
+          "last": 1622498100,
+          "samples": 8928
+        },
+        {
+          "ym": "202106",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202106",
+          "first": 1622498400,
+          "last": 1625090100,
+          "samples": 8640
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8928
+        },
+        {
+          "ym": "202108",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202108",
+          "first": 1627768800,
+          "last": 1630446900,
+          "samples": 8928
+        },
+        {
+          "ym": "202109",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202109",
+          "first": 1630447200,
+          "last": 1633039200,
+          "samples": 8641
+        },
+        {
+          "ym": "202110",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202110",
+          "first": 1633039500,
+          "last": 1635720900,
+          "samples": 8939
+        },
+        {
+          "ym": "202111",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202111",
+          "first": 1635721200,
+          "last": 1638312900,
+          "samples": 8636
+        },
+        {
+          "ym": "202112",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202112",
+          "first": 1638313200,
+          "last": 1640991300,
+          "samples": 8928
+        },
+        {
+          "ym": "202201",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202201",
+          "first": 1640991600,
+          "last": 1643669700,
+          "samples": 8928
+        },
+        {
+          "ym": "202202",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202202",
+          "first": 1643670000,
+          "last": 1646088900,
+          "samples": 8064
+        },
+        {
+          "ym": "202203",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202203",
+          "first": 1646089200,
+          "last": 1648763700,
+          "samples": 8916
+        },
+        {
+          "ym": "202204",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202204",
+          "first": 1648764000,
+          "last": 1651355700,
+          "samples": 8640
+        },
+        {
+          "ym": "202205",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202205",
+          "first": 1651356000,
+          "last": 1654034100,
+          "samples": 8928
+        },
+        {
+          "ym": "202206",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202206",
+          "first": 1654034400,
+          "last": 1656626100,
+          "samples": 8639
+        },
+        {
+          "ym": "202207",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202207",
+          "first": 1656626400,
+          "last": 1659304500,
+          "samples": 8928
+        },
+        {
+          "ym": "202208",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202208",
+          "first": 1659304800,
+          "last": 1661982900,
+          "samples": 8928
+        },
+        {
+          "ym": "202209",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202209",
+          "first": 1661983200,
+          "last": 1664574900,
+          "samples": 8640
+        },
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8940
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202211",
+          "first": 1667257200,
+          "last": 1669848900,
+          "samples": 8640
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8929
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8928
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8929
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CE-LS.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1609455600,
+      "last": 1693518900
+    },
+    {
+      "id": "CHU-EL",
+      "endpoints": [
+        "CHU",
+        "EL"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202101",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202101",
+          "first": 1609455600,
+          "last": 1612133700,
+          "samples": 8928
+        },
+        {
+          "ym": "202102",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202102",
+          "first": 1612134000,
+          "last": 1614552900,
+          "samples": 8062
+        },
+        {
+          "ym": "202103",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202103",
+          "first": 1614553200,
+          "last": 1617227700,
+          "samples": 8916
+        },
+        {
+          "ym": "202104",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202104",
+          "first": 1617228000,
+          "last": 1619819700,
+          "samples": 8623
+        },
+        {
+          "ym": "202105",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202105",
+          "first": 1619820000,
+          "last": 1622498100,
+          "samples": 8928
+        },
+        {
+          "ym": "202106",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202106",
+          "first": 1622498400,
+          "last": 1625090100,
+          "samples": 8640
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8924
+        },
+        {
+          "ym": "202108",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202108",
+          "first": 1627768800,
+          "last": 1630446900,
+          "samples": 8928
+        },
+        {
+          "ym": "202109",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202109",
+          "first": 1630447200,
+          "last": 1633038900,
+          "samples": 8640
+        },
+        {
+          "ym": "202110",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202110",
+          "first": 1633039200,
+          "last": 1635720900,
+          "samples": 8940
+        },
+        {
+          "ym": "202111",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202111",
+          "first": 1635721200,
+          "last": 1638312900,
+          "samples": 8635
+        },
+        {
+          "ym": "202112",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202112",
+          "first": 1638313200,
+          "last": 1640991300,
+          "samples": 8928
+        },
+        {
+          "ym": "202201",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202201",
+          "first": 1640991600,
+          "last": 1643669700,
+          "samples": 8928
+        },
+        {
+          "ym": "202202",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202202",
+          "first": 1643670000,
+          "last": 1646088900,
+          "samples": 8064
+        },
+        {
+          "ym": "202203",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202203",
+          "first": 1646089200,
+          "last": 1648763700,
+          "samples": 8916
+        },
+        {
+          "ym": "202204",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202204",
+          "first": 1648764000,
+          "last": 1651355700,
+          "samples": 8640
+        },
+        {
+          "ym": "202206",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202206",
+          "first": 1654034400,
+          "last": 1656626100,
+          "samples": 8639
+        },
+        {
+          "ym": "202207",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202207",
+          "first": 1656626400,
+          "last": 1659304500,
+          "samples": 8928
+        },
+        {
+          "ym": "202208",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202208",
+          "first": 1659304800,
+          "last": 1661982900,
+          "samples": 8928
+        },
+        {
+          "ym": "202209",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202209",
+          "first": 1661983200,
+          "last": 1664574900,
+          "samples": 8640
+        },
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8940
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202211",
+          "first": 1667257200,
+          "last": 1669848900,
+          "samples": 8640
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8928
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8928
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CHU-EL.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1609455600,
+      "last": 1693518900
+    },
+    {
+      "id": "CR-SLF",
+      "endpoints": [
+        "CR",
+        "SLF"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202102",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CR-SLF.202102",
+          "first": 1612134000,
+          "last": 1614552900,
+          "samples": 8062
+        },
+        {
+          "ym": "202103",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CR-SLF.202103",
+          "first": 1614553200,
+          "last": 1617227700,
+          "samples": 8916
+        },
+        {
+          "ym": "202104",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CR-SLF.202104",
+          "first": 1617228000,
+          "last": 1619819700,
+          "samples": 8623
+        },
+        {
+          "ym": "202105",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CR-SLF.202105",
+          "first": 1619820000,
+          "last": 1622498100,
+          "samples": 8928
+        },
+        {
+          "ym": "202106",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CR-SLF.202106",
+          "first": 1622498400,
+          "last": 1625090100,
+          "samples": 8640
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CR-SLF.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8927
+        },
+        {
+          "ym": "202108",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CR-SLF.202108",
+          "first": 1627768800,
+          "last": 1630446900,
+          "samples": 8928
+        },
+        {
+          "ym": "202109",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CR-SLF.202109",
+          "first": 1630447200,
+          "last": 1633038900,
+          "samples": 8640
+        },
+        {
+          "ym": "202110",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CR-SLF.202110",
+          "first": 1633039200,
+          "last": 1635720900,
+          "samples": 8940
+        },
+        {
+          "ym": "202111",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CR-SLF.202111",
+          "first": 1635721200,
+          "last": 1638312900,
+          "samples": 8636
+        },
+        {
+          "ym": "202112",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/CR-SLF.202112",
+          "first": 1638313200,
+          "last": 1640991300,
+          "samples": 8928
+        }
+      ],
+      "first": 1612134000,
+      "last": 1640991300
+    },
+    {
+      "id": "EHL-EL",
+      "endpoints": [
+        "EHL",
+        "EL"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EHL-EL.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8928
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EHL-EL.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8928
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EHL-EL.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EHL-EL.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EHL-EL.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EHL-EL.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EHL-EL.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EHL-EL.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EHL-EL.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1669849200,
+      "last": 1693518900
+    },
+    {
+      "id": "EL-GE",
+      "endpoints": [
+        "EL",
+        "GE"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202101",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EL-GE.202101",
+          "first": 1609455600,
+          "last": 1612133700,
+          "samples": 8928
+        }
+      ],
+      "first": 1609455600,
+      "last": 1612133700
+    },
+    {
+      "id": "EL-SI",
+      "endpoints": [
+        "EL",
+        "SI"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202101",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EL-SI.202101",
+          "first": 1609455600,
+          "last": 1612133700,
+          "samples": 8928
+        }
+      ],
+      "first": 1609455600,
+      "last": 1612133700
+    },
+    {
+      "id": "ENSI-SGD",
+      "endpoints": [
+        "ENSI",
+        "SGD"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202104",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/ENSI-SGD.202104",
+          "first": 1617228000,
+          "last": 1619819700,
+          "samples": 8623
+        },
+        {
+          "ym": "202105",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/ENSI-SGD.202105",
+          "first": 1619820000,
+          "last": 1622498100,
+          "samples": 8928
+        },
+        {
+          "ym": "202106",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/ENSI-SGD.202106",
+          "first": 1622498400,
+          "last": 1625090100,
+          "samples": 8640
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/ENSI-SGD.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8927
+        },
+        {
+          "ym": "202108",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/ENSI-SGD.202108",
+          "first": 1627768800,
+          "last": 1630446900,
+          "samples": 8928
+        },
+        {
+          "ym": "202109",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/ENSI-SGD.202109",
+          "first": 1630447200,
+          "last": 1633038900,
+          "samples": 8640
+        },
+        {
+          "ym": "202110",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/ENSI-SGD.202110",
+          "first": 1633039200,
+          "last": 1635720900,
+          "samples": 8940
+        }
+      ],
+      "first": 1617228000,
+      "last": 1635720900
+    },
+    {
+      "id": "EZ-LG",
+      "endpoints": [
+        "EZ",
+        "LG"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202101",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202101",
+          "first": 1609455600,
+          "last": 1612133700,
+          "samples": 8929
+        },
+        {
+          "ym": "202102",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202102",
+          "first": 1612134000,
+          "last": 1614552900,
+          "samples": 8062
+        },
+        {
+          "ym": "202103",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202103",
+          "first": 1614553200,
+          "last": 1617227700,
+          "samples": 8916
+        },
+        {
+          "ym": "202104",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202104",
+          "first": 1617228000,
+          "last": 1619819700,
+          "samples": 8624
+        },
+        {
+          "ym": "202105",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202105",
+          "first": 1619820000,
+          "last": 1622498100,
+          "samples": 8928
+        },
+        {
+          "ym": "202106",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202106",
+          "first": 1622498400,
+          "last": 1625090100,
+          "samples": 8640
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8928
+        },
+        {
+          "ym": "202108",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202108",
+          "first": 1627768800,
+          "last": 1630446900,
+          "samples": 8928
+        },
+        {
+          "ym": "202109",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202109",
+          "first": 1630447200,
+          "last": 1633038900,
+          "samples": 8640
+        },
+        {
+          "ym": "202110",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202110",
+          "first": 1633039200,
+          "last": 1635720900,
+          "samples": 8940
+        },
+        {
+          "ym": "202111",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202111",
+          "first": 1635721200,
+          "last": 1638312900,
+          "samples": 8636
+        },
+        {
+          "ym": "202112",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202112",
+          "first": 1638313200,
+          "last": 1640991300,
+          "samples": 8928
+        },
+        {
+          "ym": "202201",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202201",
+          "first": 1640991600,
+          "last": 1643669700,
+          "samples": 8928
+        },
+        {
+          "ym": "202202",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202202",
+          "first": 1643670000,
+          "last": 1646088900,
+          "samples": 8064
+        },
+        {
+          "ym": "202203",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202203",
+          "first": 1646089200,
+          "last": 1648763700,
+          "samples": 8916
+        },
+        {
+          "ym": "202204",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202204",
+          "first": 1648764000,
+          "last": 1651355700,
+          "samples": 8640
+        },
+        {
+          "ym": "202205",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202205",
+          "first": 1651356000,
+          "last": 1654034100,
+          "samples": 8928
+        },
+        {
+          "ym": "202206",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202206",
+          "first": 1654034400,
+          "last": 1656626100,
+          "samples": 8639
+        },
+        {
+          "ym": "202207",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202207",
+          "first": 1656626400,
+          "last": 1659304500,
+          "samples": 8928
+        },
+        {
+          "ym": "202208",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202208",
+          "first": 1659304800,
+          "last": 1661982900,
+          "samples": 8928
+        },
+        {
+          "ym": "202209",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202209",
+          "first": 1661983200,
+          "last": 1664574900,
+          "samples": 8640
+        },
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8940
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202211",
+          "first": 1667257200,
+          "last": 1669848900,
+          "samples": 8640
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8927
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-LG.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1609455600,
+      "last": 1693518900
+    },
+    {
+      "id": "EZ-WSL",
+      "endpoints": [
+        "EZ",
+        "WSL"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202101",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202101",
+          "first": 1609455600,
+          "last": 1612133700,
+          "samples": 8929
+        },
+        {
+          "ym": "202102",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202102",
+          "first": 1612134000,
+          "last": 1614552900,
+          "samples": 8062
+        },
+        {
+          "ym": "202103",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202103",
+          "first": 1614553200,
+          "last": 1617227700,
+          "samples": 8916
+        },
+        {
+          "ym": "202104",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202104",
+          "first": 1617228000,
+          "last": 1619819700,
+          "samples": 8624
+        },
+        {
+          "ym": "202105",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202105",
+          "first": 1619820000,
+          "last": 1622498100,
+          "samples": 8928
+        },
+        {
+          "ym": "202106",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202106",
+          "first": 1622498400,
+          "last": 1625090100,
+          "samples": 8640
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8928
+        },
+        {
+          "ym": "202108",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202108",
+          "first": 1627768800,
+          "last": 1630446900,
+          "samples": 8928
+        },
+        {
+          "ym": "202109",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202109",
+          "first": 1630447200,
+          "last": 1633038900,
+          "samples": 8640
+        },
+        {
+          "ym": "202110",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202110",
+          "first": 1633039200,
+          "last": 1635720900,
+          "samples": 8940
+        },
+        {
+          "ym": "202111",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202111",
+          "first": 1635721200,
+          "last": 1638312900,
+          "samples": 8635
+        },
+        {
+          "ym": "202112",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202112",
+          "first": 1638313200,
+          "last": 1640991300,
+          "samples": 8928
+        },
+        {
+          "ym": "202201",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202201",
+          "first": 1640991600,
+          "last": 1643669700,
+          "samples": 8928
+        },
+        {
+          "ym": "202202",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202202",
+          "first": 1643670000,
+          "last": 1646088900,
+          "samples": 8064
+        },
+        {
+          "ym": "202203",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202203",
+          "first": 1646089200,
+          "last": 1648763700,
+          "samples": 8916
+        },
+        {
+          "ym": "202204",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202204",
+          "first": 1648764000,
+          "last": 1651355700,
+          "samples": 8641
+        },
+        {
+          "ym": "202205",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202205",
+          "first": 1651356000,
+          "last": 1654034100,
+          "samples": 8928
+        },
+        {
+          "ym": "202206",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202206",
+          "first": 1654034400,
+          "last": 1656626100,
+          "samples": 8639
+        },
+        {
+          "ym": "202207",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202207",
+          "first": 1656626400,
+          "last": 1659304500,
+          "samples": 8928
+        },
+        {
+          "ym": "202208",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202208",
+          "first": 1659304800,
+          "last": 1661982900,
+          "samples": 8928
+        },
+        {
+          "ym": "202209",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202209",
+          "first": 1661983200,
+          "last": 1664574900,
+          "samples": 8640
+        },
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8940
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202211",
+          "first": 1667257200,
+          "last": 1669848900,
+          "samples": 8640
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8929
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8928
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-WSL.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1609455600,
+      "last": 1693518900
+    },
+    {
+      "id": "EZ-ZH",
+      "endpoints": [
+        "EZ",
+        "ZH"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202101",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202101",
+          "first": 1609455600,
+          "last": 1612133700,
+          "samples": 8929
+        },
+        {
+          "ym": "202102",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202102",
+          "first": 1612134000,
+          "last": 1614552900,
+          "samples": 8062
+        },
+        {
+          "ym": "202103",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202103",
+          "first": 1614553200,
+          "last": 1617227700,
+          "samples": 8916
+        },
+        {
+          "ym": "202104",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202104",
+          "first": 1617228000,
+          "last": 1619819700,
+          "samples": 8624
+        },
+        {
+          "ym": "202105",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202105",
+          "first": 1619820000,
+          "last": 1622498100,
+          "samples": 8928
+        },
+        {
+          "ym": "202106",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202106",
+          "first": 1622498400,
+          "last": 1625090100,
+          "samples": 8640
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8928
+        },
+        {
+          "ym": "202108",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202108",
+          "first": 1627768800,
+          "last": 1630446900,
+          "samples": 8928
+        },
+        {
+          "ym": "202109",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202109",
+          "first": 1630447200,
+          "last": 1633038900,
+          "samples": 8640
+        },
+        {
+          "ym": "202110",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202110",
+          "first": 1633039200,
+          "last": 1635720900,
+          "samples": 8940
+        },
+        {
+          "ym": "202111",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202111",
+          "first": 1635721200,
+          "last": 1638312900,
+          "samples": 8636
+        },
+        {
+          "ym": "202112",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202112",
+          "first": 1638313200,
+          "last": 1640991300,
+          "samples": 8928
+        },
+        {
+          "ym": "202201",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202201",
+          "first": 1640991600,
+          "last": 1643669700,
+          "samples": 8928
+        },
+        {
+          "ym": "202202",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202202",
+          "first": 1643670000,
+          "last": 1646088900,
+          "samples": 8064
+        },
+        {
+          "ym": "202203",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202203",
+          "first": 1646089200,
+          "last": 1648763700,
+          "samples": 8916
+        },
+        {
+          "ym": "202204",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202204",
+          "first": 1648764000,
+          "last": 1651355700,
+          "samples": 8640
+        },
+        {
+          "ym": "202205",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202205",
+          "first": 1651356000,
+          "last": 1654034100,
+          "samples": 8928
+        },
+        {
+          "ym": "202206",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202206",
+          "first": 1654034400,
+          "last": 1656626100,
+          "samples": 8639
+        },
+        {
+          "ym": "202207",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202207",
+          "first": 1656626400,
+          "last": 1659304500,
+          "samples": 8928
+        },
+        {
+          "ym": "202208",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202208",
+          "first": 1659304800,
+          "last": 1661982900,
+          "samples": 8928
+        },
+        {
+          "ym": "202209",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202209",
+          "first": 1661983200,
+          "last": 1664574900,
+          "samples": 8640
+        },
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8940
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202211",
+          "first": 1667257200,
+          "last": 1669848900,
+          "samples": 8640
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8927
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8928
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/EZ-ZH.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1609455600,
+      "last": 1693518900
+    },
+    {
+      "id": "FHSG-SG",
+      "endpoints": [
+        "FHSG",
+        "SG"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FHSG-SG.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FHSG-SG.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FHSG-SG.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FHSG-SG.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8642
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FHSG-SG.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FHSG-SG.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8929
+        }
+      ],
+      "first": 1677625200,
+      "last": 1693518900
+    },
+    {
+      "id": "FR-LS",
+      "endpoints": [
+        "FR",
+        "LS"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202106",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202106",
+          "first": 1622498400,
+          "last": 1625090100,
+          "samples": 8640
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8927
+        },
+        {
+          "ym": "202108",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202108",
+          "first": 1627768800,
+          "last": 1630446900,
+          "samples": 8928
+        },
+        {
+          "ym": "202109",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202109",
+          "first": 1630447200,
+          "last": 1633038900,
+          "samples": 8640
+        },
+        {
+          "ym": "202110",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202110",
+          "first": 1633039200,
+          "last": 1635720900,
+          "samples": 8940
+        },
+        {
+          "ym": "202111",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202111",
+          "first": 1635721200,
+          "last": 1638312900,
+          "samples": 8636
+        },
+        {
+          "ym": "202112",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202112",
+          "first": 1638451500,
+          "last": 1640991300,
+          "samples": 8467
+        },
+        {
+          "ym": "202201",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202201",
+          "first": 1640991600,
+          "last": 1643669700,
+          "samples": 8928
+        },
+        {
+          "ym": "202202",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202202",
+          "first": 1643670000,
+          "last": 1646088900,
+          "samples": 8064
+        },
+        {
+          "ym": "202203",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202203",
+          "first": 1646089200,
+          "last": 1648763700,
+          "samples": 8916
+        },
+        {
+          "ym": "202204",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202204",
+          "first": 1648764000,
+          "last": 1651355700,
+          "samples": 8641
+        },
+        {
+          "ym": "202205",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202205",
+          "first": 1651356000,
+          "last": 1654034100,
+          "samples": 8928
+        },
+        {
+          "ym": "202206",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202206",
+          "first": 1654034400,
+          "last": 1656626100,
+          "samples": 8639
+        },
+        {
+          "ym": "202207",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202207",
+          "first": 1656626400,
+          "last": 1659304500,
+          "samples": 8928
+        },
+        {
+          "ym": "202208",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202208",
+          "first": 1659304800,
+          "last": 1661982900,
+          "samples": 8928
+        },
+        {
+          "ym": "202209",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202209",
+          "first": 1661983200,
+          "last": 1664574900,
+          "samples": 8640
+        },
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8940
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202211",
+          "first": 1667257200,
+          "last": 1669848900,
+          "samples": 8640
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8928
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8929
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/FR-LS.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1622498400,
+      "last": 1693518900
+    },
+    {
+      "id": "GO-KR",
+      "endpoints": [
+        "GO",
+        "KR"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GO-KR.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GO-KR.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GO-KR.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GO-KR.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GO-KR.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GO-KR.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GO-KR.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1675206000,
+      "last": 1693518900
+    },
+    {
+      "id": "GO-SGE",
+      "endpoints": [
+        "GO",
+        "SGE"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GO-SGE.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GO-SGE.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GO-SGE.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GO-SGE.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GO-SGE.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GO-SGE.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GO-SGE.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1675206000,
+      "last": 1693518900
+    },
+    {
+      "id": "GR-NE",
+      "endpoints": [
+        "GR",
+        "NE"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202101",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202101",
+          "first": 1609455600,
+          "last": 1612133700,
+          "samples": 8929
+        },
+        {
+          "ym": "202102",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202102",
+          "first": 1612134000,
+          "last": 1614552900,
+          "samples": 8062
+        },
+        {
+          "ym": "202103",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202103",
+          "first": 1614553200,
+          "last": 1617228000,
+          "samples": 8916
+        },
+        {
+          "ym": "202104",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202104",
+          "first": 1617228300,
+          "last": 1619819700,
+          "samples": 8623
+        },
+        {
+          "ym": "202105",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202105",
+          "first": 1619820000,
+          "last": 1622498100,
+          "samples": 8928
+        },
+        {
+          "ym": "202106",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202106",
+          "first": 1622498400,
+          "last": 1625090100,
+          "samples": 8640
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8927
+        },
+        {
+          "ym": "202108",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202108",
+          "first": 1627768800,
+          "last": 1630446900,
+          "samples": 8928
+        },
+        {
+          "ym": "202109",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202109",
+          "first": 1630447200,
+          "last": 1633038900,
+          "samples": 8640
+        },
+        {
+          "ym": "202110",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202110",
+          "first": 1633039200,
+          "last": 1635720900,
+          "samples": 8940
+        },
+        {
+          "ym": "202111",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202111",
+          "first": 1635721200,
+          "last": 1638312900,
+          "samples": 8635
+        },
+        {
+          "ym": "202112",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202112",
+          "first": 1638313200,
+          "last": 1640991300,
+          "samples": 8928
+        },
+        {
+          "ym": "202205",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202205",
+          "first": 1651356000,
+          "last": 1654034100,
+          "samples": 8928
+        },
+        {
+          "ym": "202206",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202206",
+          "first": 1654034400,
+          "last": 1656626100,
+          "samples": 8639
+        },
+        {
+          "ym": "202207",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202207",
+          "first": 1656626400,
+          "last": 1659304500,
+          "samples": 8928
+        },
+        {
+          "ym": "202208",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202208",
+          "first": 1659304800,
+          "last": 1661982900,
+          "samples": 8928
+        },
+        {
+          "ym": "202209",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202209",
+          "first": 1661983200,
+          "last": 1664574900,
+          "samples": 8640
+        },
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8940
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202211",
+          "first": 1667257200,
+          "last": 1669848900,
+          "samples": 8640
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8928
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8928
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/GR-NE.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1609455600,
+      "last": 1693518900
+    },
+    {
+      "id": "HEPVD-LS",
+      "endpoints": [
+        "HEPVD",
+        "LS"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/HEPVD-LS.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8928
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/HEPVD-LS.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8928
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/HEPVD-LS.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/HEPVD-LS.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/HEPVD-LS.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/HEPVD-LS.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/HEPVD-LS.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/HEPVD-LS.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/HEPVD-LS.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1669849200,
+      "last": 1693518900
+    },
+    {
+      "id": "IBM-IX",
+      "endpoints": [
+        "IBM",
+        "IX"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202103",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202103",
+          "first": 1614553200,
+          "last": 1617227700,
+          "samples": 8916
+        },
+        {
+          "ym": "202104",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202104",
+          "first": 1617228000,
+          "last": 1619819700,
+          "samples": 8623
+        },
+        {
+          "ym": "202105",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202105",
+          "first": 1619820000,
+          "last": 1622498100,
+          "samples": 8928
+        },
+        {
+          "ym": "202106",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202106",
+          "first": 1622498400,
+          "last": 1625090100,
+          "samples": 8640
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8927
+        },
+        {
+          "ym": "202108",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202108",
+          "first": 1627768800,
+          "last": 1630446900,
+          "samples": 8928
+        },
+        {
+          "ym": "202109",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202109",
+          "first": 1630447200,
+          "last": 1633038900,
+          "samples": 8640
+        },
+        {
+          "ym": "202110",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202110",
+          "first": 1633039200,
+          "last": 1635720900,
+          "samples": 8940
+        },
+        {
+          "ym": "202111",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202111",
+          "first": 1635721200,
+          "last": 1638312900,
+          "samples": 8635
+        },
+        {
+          "ym": "202112",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202112",
+          "first": 1638313200,
+          "last": 1640991300,
+          "samples": 8928
+        },
+        {
+          "ym": "202201",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202201",
+          "first": 1640991600,
+          "last": 1643669700,
+          "samples": 8928
+        },
+        {
+          "ym": "202205",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202205",
+          "first": 1651356000,
+          "last": 1654034100,
+          "samples": 8928
+        },
+        {
+          "ym": "202206",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202206",
+          "first": 1654034400,
+          "last": 1656626100,
+          "samples": 8639
+        },
+        {
+          "ym": "202207",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202207",
+          "first": 1656626400,
+          "last": 1659304500,
+          "samples": 8928
+        },
+        {
+          "ym": "202208",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202208",
+          "first": 1659304800,
+          "last": 1661982900,
+          "samples": 8928
+        },
+        {
+          "ym": "202209",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202209",
+          "first": 1661983200,
+          "last": 1664574900,
+          "samples": 8640
+        },
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8940
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202211",
+          "first": 1667257200,
+          "last": 1669848900,
+          "samples": 8640
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8928
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8928
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IBM-IX.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1614553200,
+      "last": 1693518900
+    },
+    {
+      "id": "IX-EZ",
+      "endpoints": [
+        "IX",
+        "EZ"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IX-EZ.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8940
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IX-EZ.202211",
+          "first": 1667257200,
+          "last": 1669848900,
+          "samples": 8640
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IX-EZ.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8928
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IX-EZ.202301",
+          "first": 1672527600,
+          "last": 1675206000,
+          "samples": 8930
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IX-EZ.202302",
+          "first": 1675206300,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IX-EZ.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IX-EZ.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IX-EZ.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IX-EZ.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IX-EZ.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IX-EZ.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1664575200,
+      "last": 1693518900
+    },
+    {
+      "id": "IX-TO",
+      "endpoints": [
+        "IX",
+        "TO"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202103",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IX-TO.202103",
+          "first": 1614553200,
+          "last": 1617227700,
+          "samples": 8916
+        },
+        {
+          "ym": "202104",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IX-TO.202104",
+          "first": 1617228000,
+          "last": 1619819700,
+          "samples": 8623
+        },
+        {
+          "ym": "202105",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IX-TO.202105",
+          "first": 1619820000,
+          "last": 1622498100,
+          "samples": 8928
+        },
+        {
+          "ym": "202106",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IX-TO.202106",
+          "first": 1622498400,
+          "last": 1625090100,
+          "samples": 8640
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IX-TO.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8927
+        },
+        {
+          "ym": "202108",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IX-TO.202108",
+          "first": 1627768800,
+          "last": 1630446900,
+          "samples": 8928
+        },
+        {
+          "ym": "202109",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IX-TO.202109",
+          "first": 1630447200,
+          "last": 1633038900,
+          "samples": 8640
+        },
+        {
+          "ym": "202110",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IX-TO.202110",
+          "first": 1633039200,
+          "last": 1635720900,
+          "samples": 8940
+        },
+        {
+          "ym": "202111",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IX-TO.202111",
+          "first": 1635721200,
+          "last": 1638312900,
+          "samples": 8635
+        },
+        {
+          "ym": "202112",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IX-TO.202112",
+          "first": 1638313200,
+          "last": 1640991300,
+          "samples": 8928
+        },
+        {
+          "ym": "202201",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IX-TO.202201",
+          "first": 1640991600,
+          "last": 1643669700,
+          "samples": 8928
+        }
+      ],
+      "first": 1614553200,
+      "last": 1643669700
+    },
+    {
+      "id": "IXG-ZH",
+      "endpoints": [
+        "IXG",
+        "ZH"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202208",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IXG-ZH.202208",
+          "first": 1659304800,
+          "last": 1661982900,
+          "samples": 8928
+        },
+        {
+          "ym": "202209",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IXG-ZH.202209",
+          "first": 1661983200,
+          "last": 1664574900,
+          "samples": 8566
+        },
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IXG-ZH.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8939
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IXG-ZH.202211",
+          "first": 1667257200,
+          "last": 1669848900,
+          "samples": 8640
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IXG-ZH.202212",
+          "first": 1669849200,
+          "last": 1671703800,
+          "samples": 6079
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IXG-ZH.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8929
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IXG-ZH.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8065
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IXG-ZH.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IXG-ZH.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IXG-ZH.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IXG-ZH.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IXG-ZH.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/IXG-ZH.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1659304800,
+      "last": 1693518900
+    },
+    {
+      "id": "KR-SG",
+      "endpoints": [
+        "KR",
+        "SG"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202101",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202101",
+          "first": 1609455600,
+          "last": 1612133700,
+          "samples": 8929
+        },
+        {
+          "ym": "202102",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202102",
+          "first": 1612134000,
+          "last": 1614552900,
+          "samples": 8062
+        },
+        {
+          "ym": "202103",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202103",
+          "first": 1614553200,
+          "last": 1617227700,
+          "samples": 8916
+        },
+        {
+          "ym": "202104",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202104",
+          "first": 1617228000,
+          "last": 1619819700,
+          "samples": 8623
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8927
+        },
+        {
+          "ym": "202108",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202108",
+          "first": 1627768800,
+          "last": 1630446900,
+          "samples": 8928
+        },
+        {
+          "ym": "202109",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202109",
+          "first": 1630447200,
+          "last": 1633038900,
+          "samples": 8640
+        },
+        {
+          "ym": "202110",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202110",
+          "first": 1633039200,
+          "last": 1635720900,
+          "samples": 8940
+        },
+        {
+          "ym": "202111",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202111",
+          "first": 1635721200,
+          "last": 1638312900,
+          "samples": 8635
+        },
+        {
+          "ym": "202112",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202112",
+          "first": 1638313200,
+          "last": 1640991300,
+          "samples": 8928
+        },
+        {
+          "ym": "202201",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202201",
+          "first": 1640991600,
+          "last": 1643669700,
+          "samples": 8928
+        },
+        {
+          "ym": "202202",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202202",
+          "first": 1643670000,
+          "last": 1646088900,
+          "samples": 8064
+        },
+        {
+          "ym": "202203",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202203",
+          "first": 1646089200,
+          "last": 1648763700,
+          "samples": 8916
+        },
+        {
+          "ym": "202204",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202204",
+          "first": 1648764000,
+          "last": 1651355700,
+          "samples": 8640
+        },
+        {
+          "ym": "202205",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202205",
+          "first": 1651356000,
+          "last": 1654034100,
+          "samples": 8928
+        },
+        {
+          "ym": "202206",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202206",
+          "first": 1654034400,
+          "last": 1656626100,
+          "samples": 8639
+        },
+        {
+          "ym": "202207",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202207",
+          "first": 1656626400,
+          "last": 1659304500,
+          "samples": 8928
+        },
+        {
+          "ym": "202208",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202208",
+          "first": 1659304800,
+          "last": 1661982900,
+          "samples": 8928
+        },
+        {
+          "ym": "202209",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202209",
+          "first": 1661983200,
+          "last": 1664574900,
+          "samples": 8640
+        },
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8940
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202211",
+          "first": 1667257200,
+          "last": 1669848900,
+          "samples": 8640
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8928
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8928
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8924
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/KR-SG.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1609455600,
+      "last": 1693518900
+    },
+    {
+      "id": "LG-SI",
+      "endpoints": [
+        "LG",
+        "SI"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202101",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SI.202101",
+          "first": 1609455600,
+          "last": 1612133700,
+          "samples": 8929
+        }
+      ],
+      "first": 1609455600,
+      "last": 1612133700
+    },
+    {
+      "id": "LG-SLF",
+      "endpoints": [
+        "LG",
+        "SLF"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202102",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202102",
+          "first": 1612134000,
+          "last": 1614552900,
+          "samples": 8063
+        },
+        {
+          "ym": "202103",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202103",
+          "first": 1614553200,
+          "last": 1617227700,
+          "samples": 8916
+        },
+        {
+          "ym": "202104",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202104",
+          "first": 1617228000,
+          "last": 1619819700,
+          "samples": 8624
+        },
+        {
+          "ym": "202105",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202105",
+          "first": 1619820000,
+          "last": 1622498100,
+          "samples": 8928
+        },
+        {
+          "ym": "202106",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202106",
+          "first": 1622498400,
+          "last": 1625090100,
+          "samples": 8640
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8928
+        },
+        {
+          "ym": "202108",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202108",
+          "first": 1627768800,
+          "last": 1630446900,
+          "samples": 8928
+        },
+        {
+          "ym": "202109",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202109",
+          "first": 1630447200,
+          "last": 1633038900,
+          "samples": 8640
+        },
+        {
+          "ym": "202110",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202110",
+          "first": 1633039200,
+          "last": 1635720900,
+          "samples": 8940
+        },
+        {
+          "ym": "202111",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202111",
+          "first": 1635721200,
+          "last": 1638312900,
+          "samples": 8635
+        },
+        {
+          "ym": "202112",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202112",
+          "first": 1638313200,
+          "last": 1640991300,
+          "samples": 8928
+        },
+        {
+          "ym": "202201",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202201",
+          "first": 1640991600,
+          "last": 1643669700,
+          "samples": 8928
+        },
+        {
+          "ym": "202202",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202202",
+          "first": 1643670000,
+          "last": 1646088900,
+          "samples": 8064
+        },
+        {
+          "ym": "202203",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202203",
+          "first": 1646089200,
+          "last": 1648763700,
+          "samples": 8916
+        },
+        {
+          "ym": "202204",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202204",
+          "first": 1648764000,
+          "last": 1651355700,
+          "samples": 8640
+        },
+        {
+          "ym": "202205",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202205",
+          "first": 1651356000,
+          "last": 1654034100,
+          "samples": 8928
+        },
+        {
+          "ym": "202206",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202206",
+          "first": 1654034400,
+          "last": 1656626100,
+          "samples": 8639
+        },
+        {
+          "ym": "202207",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202207",
+          "first": 1656626400,
+          "last": 1659304500,
+          "samples": 8928
+        },
+        {
+          "ym": "202208",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202208",
+          "first": 1659304800,
+          "last": 1661982900,
+          "samples": 8928
+        },
+        {
+          "ym": "202209",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202209",
+          "first": 1661983200,
+          "last": 1664574900,
+          "samples": 8640
+        },
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8940
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202211",
+          "first": 1667257200,
+          "last": 1669307100,
+          "samples": 6834
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8929
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8928
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LG-SLF.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1612134000,
+      "last": 1693518900
+    },
+    {
+      "id": "LS-YV",
+      "endpoints": [
+        "LS",
+        "YV"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202208",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LS-YV.202208",
+          "first": 1659304800,
+          "last": 1661982900,
+          "samples": 8928
+        },
+        {
+          "ym": "202209",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LS-YV.202209",
+          "first": 1661983200,
+          "last": 1664574900,
+          "samples": 8640
+        },
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LS-YV.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8940
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LS-YV.202211",
+          "first": 1667257200,
+          "last": 1669848900,
+          "samples": 8640
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LS-YV.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8928
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LS-YV.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8928
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LS-YV.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LS-YV.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8915
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LS-YV.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LS-YV.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LS-YV.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        }
+      ],
+      "first": 1659304800,
+      "last": 1688162100
+    },
+    {
+      "id": "LS-ZH",
+      "endpoints": [
+        "LS",
+        "ZH"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202101",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LS-ZH.202101",
+          "first": 1609455600,
+          "last": 1612133700,
+          "samples": 8929
+        },
+        {
+          "ym": "202102",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LS-ZH.202102",
+          "first": 1612134000,
+          "last": 1614552900,
+          "samples": 8061
+        },
+        {
+          "ym": "202103",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LS-ZH.202103",
+          "first": 1614553200,
+          "last": 1617227700,
+          "samples": 8917
+        },
+        {
+          "ym": "202104",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/LS-ZH.202104",
+          "first": 1617228000,
+          "last": 1619819700,
+          "samples": 8623
+        }
+      ],
+      "first": 1609455600,
+      "last": 1619819700
+    },
+    {
+      "id": "NE-ZH",
+      "endpoints": [
+        "NE",
+        "ZH"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202106",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202106",
+          "first": 1622498400,
+          "last": 1625090100,
+          "samples": 8640
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8927
+        },
+        {
+          "ym": "202108",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202108",
+          "first": 1627768800,
+          "last": 1630446900,
+          "samples": 8928
+        },
+        {
+          "ym": "202109",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202109",
+          "first": 1630447200,
+          "last": 1633038900,
+          "samples": 8640
+        },
+        {
+          "ym": "202110",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202110",
+          "first": 1633039200,
+          "last": 1635720900,
+          "samples": 8940
+        },
+        {
+          "ym": "202111",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202111",
+          "first": 1635721200,
+          "last": 1638312900,
+          "samples": 8635
+        },
+        {
+          "ym": "202112",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202112",
+          "first": 1638313200,
+          "last": 1640991300,
+          "samples": 8928
+        },
+        {
+          "ym": "202201",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202201",
+          "first": 1640991600,
+          "last": 1643669700,
+          "samples": 8928
+        },
+        {
+          "ym": "202202",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202202",
+          "first": 1643670000,
+          "last": 1646088900,
+          "samples": 8064
+        },
+        {
+          "ym": "202203",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202203",
+          "first": 1646089200,
+          "last": 1648763700,
+          "samples": 8916
+        },
+        {
+          "ym": "202204",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202204",
+          "first": 1648764000,
+          "last": 1651355700,
+          "samples": 8640
+        },
+        {
+          "ym": "202205",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202205",
+          "first": 1651356000,
+          "last": 1654034100,
+          "samples": 8928
+        },
+        {
+          "ym": "202206",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202206",
+          "first": 1654034400,
+          "last": 1656626100,
+          "samples": 8639
+        },
+        {
+          "ym": "202207",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202207",
+          "first": 1656626400,
+          "last": 1659304500,
+          "samples": 8928
+        },
+        {
+          "ym": "202208",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202208",
+          "first": 1659304800,
+          "last": 1661982900,
+          "samples": 8928
+        },
+        {
+          "ym": "202209",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202209",
+          "first": 1661983200,
+          "last": 1664574900,
+          "samples": 8640
+        },
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8940
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202211",
+          "first": 1667257200,
+          "last": 1669848900,
+          "samples": 8640
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8928
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8928
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/NE-ZH.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1622498400,
+      "last": 1693518900
+    },
+    {
+      "id": "PS-ZH",
+      "endpoints": [
+        "PS",
+        "ZH"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202103",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/PS-ZH.202103",
+          "first": 1614553200,
+          "last": 1617227700,
+          "samples": 8917
+        },
+        {
+          "ym": "202104",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/PS-ZH.202104",
+          "first": 1617228000,
+          "last": 1619819700,
+          "samples": 8623
+        },
+        {
+          "ym": "202105",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/PS-ZH.202105",
+          "first": 1619820000,
+          "last": 1622498100,
+          "samples": 8928
+        },
+        {
+          "ym": "202106",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/PS-ZH.202106",
+          "first": 1622498400,
+          "last": 1625090100,
+          "samples": 8640
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/PS-ZH.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8927
+        },
+        {
+          "ym": "202108",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/PS-ZH.202108",
+          "first": 1627768800,
+          "last": 1630446900,
+          "samples": 8928
+        },
+        {
+          "ym": "202109",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/PS-ZH.202109",
+          "first": 1630447200,
+          "last": 1633038900,
+          "samples": 8640
+        },
+        {
+          "ym": "202110",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/PS-ZH.202110",
+          "first": 1633039200,
+          "last": 1635720900,
+          "samples": 8940
+        },
+        {
+          "ym": "202111",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/PS-ZH.202111",
+          "first": 1635721200,
+          "last": 1638312900,
+          "samples": 8635
+        },
+        {
+          "ym": "202112",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/PS-ZH.202112",
+          "first": 1638313200,
+          "last": 1640991300,
+          "samples": 8928
+        },
+        {
+          "ym": "202201",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/PS-ZH.202201",
+          "first": 1640991600,
+          "last": 1643669700,
+          "samples": 8928
+        },
+        {
+          "ym": "202202",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/PS-ZH.202202",
+          "first": 1643670000,
+          "last": 1646088900,
+          "samples": 8064
+        },
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/PS-ZH.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8940
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/PS-ZH.202211",
+          "first": 1667257200,
+          "last": 1669848900,
+          "samples": 8640
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/PS-ZH.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8928
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/PS-ZH.202301",
+          "first": 1672527600,
+          "last": 1675206000,
+          "samples": 8929
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/PS-ZH.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8063
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/PS-ZH.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/PS-ZH.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/PS-ZH.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/PS-ZH.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/PS-ZH.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/PS-ZH.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1614553200,
+      "last": 1693518900
+    },
+    {
+      "id": "SA-SLF",
+      "endpoints": [
+        "SA",
+        "SLF"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202101",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/SA-SLF.202101",
+          "first": 1609455600,
+          "last": 1612133700,
+          "samples": 8929
+        },
+        {
+          "ym": "202102",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/SA-SLF.202102",
+          "first": 1612134000,
+          "last": 1614552900,
+          "samples": 8062
+        },
+        {
+          "ym": "202103",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/SA-SLF.202103",
+          "first": 1614553200,
+          "last": 1617227700,
+          "samples": 8916
+        },
+        {
+          "ym": "202104",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/SA-SLF.202104",
+          "first": 1617228000,
+          "last": 1619819700,
+          "samples": 8623
+        },
+        {
+          "ym": "202105",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/SA-SLF.202105",
+          "first": 1619820000,
+          "last": 1622498100,
+          "samples": 8928
+        },
+        {
+          "ym": "202106",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/SA-SLF.202106",
+          "first": 1622498400,
+          "last": 1625090100,
+          "samples": 8639
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/SA-SLF.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8927
+        },
+        {
+          "ym": "202108",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/SA-SLF.202108",
+          "first": 1627768800,
+          "last": 1630446900,
+          "samples": 8928
+        }
+      ],
+      "first": 1609455600,
+      "last": 1630446900
+    },
+    {
+      "id": "TO-ZH",
+      "endpoints": [
+        "TO",
+        "ZH"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202101",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202101",
+          "first": 1609455600,
+          "last": 1612133700,
+          "samples": 8929
+        },
+        {
+          "ym": "202102",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202102",
+          "first": 1612134000,
+          "last": 1614552900,
+          "samples": 8062
+        },
+        {
+          "ym": "202103",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202103",
+          "first": 1614553200,
+          "last": 1617227700,
+          "samples": 8916
+        },
+        {
+          "ym": "202104",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202104",
+          "first": 1617228000,
+          "last": 1619819700,
+          "samples": 8623
+        },
+        {
+          "ym": "202105",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202105",
+          "first": 1619820000,
+          "last": 1622498100,
+          "samples": 8928
+        },
+        {
+          "ym": "202106",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202106",
+          "first": 1622498400,
+          "last": 1625090100,
+          "samples": 8640
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8927
+        },
+        {
+          "ym": "202108",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202108",
+          "first": 1627768800,
+          "last": 1630446900,
+          "samples": 8928
+        },
+        {
+          "ym": "202109",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202109",
+          "first": 1630447200,
+          "last": 1633038900,
+          "samples": 8640
+        },
+        {
+          "ym": "202110",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202110",
+          "first": 1633039200,
+          "last": 1635720900,
+          "samples": 8940
+        },
+        {
+          "ym": "202111",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202111",
+          "first": 1635721200,
+          "last": 1638312900,
+          "samples": 8635
+        },
+        {
+          "ym": "202112",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202112",
+          "first": 1638313200,
+          "last": 1640991300,
+          "samples": 8928
+        },
+        {
+          "ym": "202201",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202201",
+          "first": 1640991600,
+          "last": 1643669700,
+          "samples": 8928
+        },
+        {
+          "ym": "202202",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202202",
+          "first": 1643670000,
+          "last": 1646088900,
+          "samples": 8064
+        },
+        {
+          "ym": "202203",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202203",
+          "first": 1646089200,
+          "last": 1648763700,
+          "samples": 8916
+        },
+        {
+          "ym": "202204",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202204",
+          "first": 1648764000,
+          "last": 1651355700,
+          "samples": 8640
+        },
+        {
+          "ym": "202205",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202205",
+          "first": 1651356000,
+          "last": 1654034100,
+          "samples": 8928
+        },
+        {
+          "ym": "202206",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202206",
+          "first": 1654034400,
+          "last": 1656626100,
+          "samples": 8639
+        },
+        {
+          "ym": "202207",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202207",
+          "first": 1656626400,
+          "last": 1659304500,
+          "samples": 8928
+        },
+        {
+          "ym": "202208",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202208",
+          "first": 1659304800,
+          "last": 1661982900,
+          "samples": 8928
+        },
+        {
+          "ym": "202209",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202209",
+          "first": 1661983200,
+          "last": 1664574900,
+          "samples": 8640
+        },
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8941
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202211",
+          "first": 1667257200,
+          "last": 1669848900,
+          "samples": 8640
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8928
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/TO-ZH.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8928
+        }
+      ],
+      "first": 1609455600,
+      "last": 1675205700
+    },
+    {
+      "id": "WI-ZH",
+      "endpoints": [
+        "WI",
+        "ZH"
+      ],
+      "instance": null,
+      "months": [
+        {
+          "ym": "202101",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202101",
+          "first": 1609455600,
+          "last": 1612133700,
+          "samples": 8929
+        },
+        {
+          "ym": "202102",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202102",
+          "first": 1612134000,
+          "last": 1614552900,
+          "samples": 8062
+        },
+        {
+          "ym": "202103",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202103",
+          "first": 1614553200,
+          "last": 1617228000,
+          "samples": 8916
+        },
+        {
+          "ym": "202104",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202104",
+          "first": 1617228300,
+          "last": 1619819700,
+          "samples": 8623
+        },
+        {
+          "ym": "202105",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202105",
+          "first": 1620306600,
+          "last": 1622498100,
+          "samples": 7306
+        },
+        {
+          "ym": "202106",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202106",
+          "first": 1622498400,
+          "last": 1625090100,
+          "samples": 8640
+        },
+        {
+          "ym": "202107",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202107",
+          "first": 1625090400,
+          "last": 1627768500,
+          "samples": 8927
+        },
+        {
+          "ym": "202108",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202108",
+          "first": 1627768800,
+          "last": 1630446900,
+          "samples": 8928
+        },
+        {
+          "ym": "202109",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202109",
+          "first": 1630447200,
+          "last": 1633038900,
+          "samples": 8640
+        },
+        {
+          "ym": "202110",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202110",
+          "first": 1633039200,
+          "last": 1635720900,
+          "samples": 8850
+        },
+        {
+          "ym": "202111",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202111",
+          "first": 1635721200,
+          "last": 1638312900,
+          "samples": 8635
+        },
+        {
+          "ym": "202112",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202112",
+          "first": 1638313200,
+          "last": 1640991300,
+          "samples": 8928
+        },
+        {
+          "ym": "202201",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202201",
+          "first": 1640991600,
+          "last": 1643669700,
+          "samples": 8928
+        },
+        {
+          "ym": "202202",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202202",
+          "first": 1643670000,
+          "last": 1646088900,
+          "samples": 8064
+        },
+        {
+          "ym": "202203",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202203",
+          "first": 1646089200,
+          "last": 1648763700,
+          "samples": 8916
+        },
+        {
+          "ym": "202204",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202204",
+          "first": 1648764000,
+          "last": 1651355700,
+          "samples": 8640
+        },
+        {
+          "ym": "202205",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202205",
+          "first": 1651356000,
+          "last": 1654034100,
+          "samples": 8928
+        },
+        {
+          "ym": "202206",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202206",
+          "first": 1654034400,
+          "last": 1656626100,
+          "samples": 8639
+        },
+        {
+          "ym": "202207",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202207",
+          "first": 1656626400,
+          "last": 1659304500,
+          "samples": 8928
+        },
+        {
+          "ym": "202208",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202208",
+          "first": 1659304800,
+          "last": 1661982900,
+          "samples": 8928
+        },
+        {
+          "ym": "202209",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202209",
+          "first": 1661983200,
+          "last": 1664574900,
+          "samples": 8638
+        },
+        {
+          "ym": "202210",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202210",
+          "first": 1664575200,
+          "last": 1667256900,
+          "samples": 8940
+        },
+        {
+          "ym": "202211",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202211",
+          "first": 1667257200,
+          "last": 1669848900,
+          "samples": 8640
+        },
+        {
+          "ym": "202212",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202212",
+          "first": 1669849200,
+          "last": 1672527300,
+          "samples": 8928
+        },
+        {
+          "ym": "202301",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202301",
+          "first": 1672527600,
+          "last": 1675205700,
+          "samples": 8928
+        },
+        {
+          "ym": "202302",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202302",
+          "first": 1675206000,
+          "last": 1677624900,
+          "samples": 8064
+        },
+        {
+          "ym": "202303",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202303",
+          "first": 1677625200,
+          "last": 1680299700,
+          "samples": 8916
+        },
+        {
+          "ym": "202304",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202304",
+          "first": 1680300000,
+          "last": 1682891700,
+          "samples": 8640
+        },
+        {
+          "ym": "202305",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202305",
+          "first": 1682892000,
+          "last": 1685570100,
+          "samples": 8928
+        },
+        {
+          "ym": "202306",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202306",
+          "first": 1685570400,
+          "last": 1688162100,
+          "samples": 8640
+        },
+        {
+          "ym": "202307",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202307",
+          "first": 1688162400,
+          "last": 1690840500,
+          "samples": 8928
+        },
+        {
+          "ym": "202308",
+          "file": "network-energy-efficiency-research/lan-mon2021/bb-usage-logs/WI-ZH.202308",
+          "first": 1690840800,
+          "last": 1693518900,
+          "samples": 8928
+        }
+      ],
+      "first": 1609455600,
+      "last": 1693518900
+    }
+  ]
+}

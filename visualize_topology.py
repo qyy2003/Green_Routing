@@ -231,25 +231,24 @@ def parse_txt(path):
 # ---------------------------------------------------------------------------
 # Bandwidth styling
 # ---------------------------------------------------------------------------
-NO_DATA_COLOR = "#bbbbbb"   # gray used for ALL links that have no utilisation data
-
+# Default edge colors when no traffic-monitoring data is available.
+# These match the reference diagram: backbone black, 10GE blue, GE dashed blue.
 BW_STYLE = [
-    # (min_bw,  linewidth, linestyle, legend_label)
-    # Color is intentionally absent — color encodes utilisation, NOT capacity.
-    (4e11,   7.0,  "solid",  "400 GE"),
-    (2e11,   5.0,  "solid",  "200 GE"),
-    (1e11,   3.2,  "solid",  "100 GE"),
-    (2e10,   2.0,  "solid",  "20 GE"),
-    (1e10,   1.2,  "solid",  "10 GE"),
-    (1e9,    0.8,  "dashed", "1 GE"),
-    (0,      0.6,  "dotted", "<1 GE"),
+    # (min_bw, linewidth, default_color,  linestyle, legend_label)
+    (4e11, 7.0, "#111111", "solid",  "400 GE"),
+    (2e11, 5.0, "#222222", "solid",  "200 GE"),
+    (1e11, 3.2, "#333333", "solid",  "100 GE"),
+    (2e10, 2.0, "#555555", "solid",  "20 GE"),
+    (1e10, 1.2, "#2980b9", "solid",  "10 GE"),
+    (1e9,  0.8, "#2980b9", "dashed", "1 GE"),
+    (0,    0.6, "#aaaaaa", "dotted", "<1 GE"),
 ]
 
 def edge_style(bw):
-    for min_bw, lw, ls, label in BW_STYLE:
+    for min_bw, lw, color, ls, label in BW_STYLE:
         if bw >= min_bw:
-            return lw, ls, label
-    return 0.6, "dotted", "<1 GE"
+            return lw, color, ls, label
+    return 0.6, "#aaaaaa", "dotted", "<1 GE"
 
 def short_label(node_id: str) -> str:
     s = node_id
@@ -259,55 +258,207 @@ def short_label(node_id: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Build graph + assign geographic positions
+# Build graph + two-tier hierarchical layout
 # ---------------------------------------------------------------------------
 def build_and_layout(edges):
+    import math
+    import collections
+    from collections import defaultdict
+
     G = nx.Graph()
     for e in edges:
-        # keep max bandwidth if parallel edges exist
         u, v = e["src"], e["dst"]
         if G.has_edge(u, v):
             if e["bw"] > G[u][v]["bw"]:
                 G[u][v].update(bw=e["bw"], src_if=e["src_if"], dst_if=e["dst_if"],
                                metric1=e["metric1"], metric2=e["metric2"])
         else:
-            G.add_edge(u, v, **{k: e[k] for k in ("bw","src_if","dst_if","metric1","metric2")})
+            G.add_edge(u, v, **{k: e[k] for k in
+                                ("bw", "src_if", "dst_if", "metric1", "metric2")})
 
     # ------------------------------------------------------------------
-    # Layout strategy: Kamada-Kawai minimises a stress function that
-    # makes Euclidean distances proportional to graph-theoretic
-    # shortest-path distances.  This naturally separates nodes that are
-    # topologically far apart and pulls connected clusters together,
-    # producing far fewer edge crossings than a pure geographic or
-    # spring layout.
+    # Tier classification
     #
-    # We seed KK with geographic positions (scaled to [-1,1]) so the
-    # result stays roughly oriented like a Swiss map while still being
-    # free to optimise for readability.
+    # A node is "backbone" only if it is a genuine multi-homed hub:
+    #   • at least MIN_BB_LINKS neighbours connected via ≥ 100 GE
+    #
+    # This excludes sites that have exactly one high-capacity uplink
+    # (those are access/edge nodes despite their link speed) and keeps
+    # only true crossroads (e.g. ez2 has 7 × 100G neighbours, ls1 has
+    # 4 × 100G and degree 13).  The threshold of 3 yields ~25 nodes.
     # ------------------------------------------------------------------
+    BACKBONE_BW       = 1e11   # 100 GE — minimum link BW to count
+    MIN_BB_LINKS      = 3      # must have this many ≥100G neighbours
 
-    # Build geographic seed positions and normalise to [-1, 1]
-    geo = {}
-    for node in G.nodes():
-        geo[node] = geo_pos(node)
+    bb_link_count: dict[str, int] = defaultdict(int)
+    for u, v, d in G.edges(data=True):
+        if d["bw"] >= BACKBONE_BW:
+            bb_link_count[u] += 1
+            bb_link_count[v] += 1
 
-    xs = [p[0] for p in geo.values()]
-    ys = [p[1] for p in geo.values()]
-    x_min, x_max = min(xs), max(xs)
-    y_min, y_max = min(ys), max(ys)
-    x_rng = x_max - x_min or 1.0
-    y_rng = y_max - y_min or 1.0
+    backbone_nodes: set[str] = {n for n, cnt in bb_link_count.items()
+                                 if cnt >= MIN_BB_LINKS}
+    access_nodes = set(G.nodes()) - backbone_nodes
+    print(f"  backbone: {len(backbone_nodes)} nodes  "
+          f"(criterion: ≥{MIN_BB_LINKS} neighbours at ≥100 GE)")
 
-    seed_pos = {
-        n: (2 * (geo[n][0] - x_min) / x_rng - 1,
-            2 * (geo[n][1] - y_min) / y_rng - 1)
-        for n in G.nodes()
+    # ------------------------------------------------------------------
+    # Step 1 — Place backbone nodes at Swiss geographic coordinates,
+    # then run Kamada-Kawai *initialised from those positions* so KK
+    # can only make local adjustments to reduce crossings while staying
+    # close to the geographic arrangement.
+    # ------------------------------------------------------------------
+    geo_raw = {n: geo_pos(n) for n in backbone_nodes}
+    # Normalise geographic positions to [-1, 1] for KK
+    xs_g = [p[0] for p in geo_raw.values()]
+    ys_g = [p[1] for p in geo_raw.values()]
+    xr = max(xs_g) - min(xs_g) or 1.0
+    yr = max(ys_g) - min(ys_g) or 1.0
+    geo_seed = {
+        n: (2 * (geo_raw[n][0] - min(xs_g)) / xr - 1,
+            2 * (geo_raw[n][1] - min(ys_g)) / yr - 1)
+        for n in backbone_nodes
     }
+    B = G.subgraph(backbone_nodes).copy()
+    print("Running Kamada-Kawai on backbone (geographic seed) …")
+    pos_b = nx.kamada_kawai_layout(B, pos=geo_seed, weight=None)
+    # Scale backbone positions outward so clusters have more breathing room
+    # and backbone links spread apart more before access nodes are attached.
+    BB_SCALE = 2.2
+    pos: dict[str, tuple[float, float]] = {
+        n: (x * BB_SCALE, y * BB_SCALE) for n, (x, y) in pos_b.items()
+    }
+    print(f"  backbone placed ({len(backbone_nodes)} nodes)")
 
-    print("Running Kamada-Kawai layout …")
-    pos = nx.kamada_kawai_layout(G, pos=seed_pos, weight=None)
+    # ------------------------------------------------------------------
+    # Step 2 — Assign each access node to its nearest backbone node
+    # via BFS over the full graph.
+    # ------------------------------------------------------------------
+    backbone_parent: dict[str, str | None] = {}
+    for start in access_nodes:
+        queue: collections.deque[str] = collections.deque([start])
+        visited: set[str] = {start}
+        found = None
+        while queue:
+            node = queue.popleft()
+            if node in backbone_nodes:
+                found = node
+                break
+            for nb in G.neighbors(node):
+                if nb not in visited:
+                    visited.add(nb)
+                    queue.append(nb)
+        backbone_parent[start] = found
 
-    return G, pos
+    # ------------------------------------------------------------------
+    # Step 3 — Recursive radial-tree placement for each access cluster.
+    #
+    # Instead of a flat fan, we build a BFS tree from each backbone node
+    # through its access cluster and allocate angle sectors proportional
+    # to subtree size — exactly like a Reingold-Tilford radial layout.
+    # This keeps access→access chains in their own angular branch and
+    # prevents them from overlapping siblings.
+    # ------------------------------------------------------------------
+    STEP_R = 0.09   # radial distance per tree level — keep clusters tight
+
+    # backbone centroid (used to pick "outward" base angle per bb node)
+    cx = sum(pos[n][0] for n in backbone_nodes) / len(backbone_nodes)
+    cy = sum(pos[n][1] for n in backbone_nodes) / len(backbone_nodes)
+
+    # group access nodes by nearest backbone parent
+    groups: dict[str | None, list[str]] = defaultdict(list)
+    for node, parent in backbone_parent.items():
+        groups[parent].append(node)
+
+    # Build BFS spanning trees per cluster (no cycles → safe recursion)
+    def _bfs_children(root: str, cluster: set[str]) -> dict[str, list[str]]:
+        """Return {node: [children]} BFS tree from root through cluster."""
+        ch: dict[str, list[str]] = {root: []}
+        q = collections.deque([root])
+        while q:
+            node = q.popleft()
+            for nb in G.neighbors(node):
+                if nb in cluster and nb not in ch:
+                    ch[node].append(nb)
+                    ch[nb] = []
+                    q.append(nb)
+        return ch
+
+    def _subtree_size(node: str, ch: dict[str, list[str]]) -> int:
+        return 1 + sum(_subtree_size(c, ch) for c in ch.get(node, []))
+
+    def _place_radial(node: str, node_pos: tuple[float, float],
+                      ch: dict[str, list[str]],
+                      base_angle: float, half_span: float,
+                      radius: float) -> None:
+        """
+        Recursively place the BFS subtree of `node` in a radial layout.
+        Angle sector: [base_angle − half_span, base_angle + half_span].
+        Uses subtree size for proportional angle allocation (Reingold-Tilford).
+        """
+        children = ch.get(node, [])
+        if not children:
+            return
+        sizes = {c: _subtree_size(c, ch) for c in children}
+        total = sum(sizes.values())
+        rx, ry = node_pos
+        cumfrac = 0.0
+        for child in children:
+            frac = sizes[child] / total
+            angle = (base_angle - half_span) + (cumfrac + frac / 2) * 2 * half_span
+            cumfrac += frac
+            cx2 = rx + radius * math.cos(angle)
+            cy2 = ry + radius * math.sin(angle)
+            pos[child] = (cx2, cy2)
+            child_span = max(math.radians(12), half_span * frac * 2.2)
+            _place_radial(child, (cx2, cy2), ch,
+                          angle, child_span, radius * 0.72)
+
+    for bb_node, group in groups.items():
+        if bb_node is None:
+            for i, n in enumerate(group):
+                angle = 2 * math.pi * i / max(len(group), 1)
+                pos[n] = (1.9 * math.cos(angle), 1.9 * math.sin(angle))
+            continue
+
+        px, py = pos[bb_node]
+        dx, dy = px - cx, py - cy
+        d_len = (dx * dx + dy * dy) ** 0.5 or 1.0
+        base_angle = math.atan2(dy / d_len, dx / d_len)
+        half_span = min(math.radians(130), math.radians(20) * len(group))
+
+        ch_map = _bfs_children(bb_node, set(group))
+        _place_radial(bb_node, (px, py), ch_map,
+                      base_angle, half_span, STEP_R)
+
+    # ------------------------------------------------------------------
+    # Step 4 — Overlap removal across ALL nodes.
+    # Backbone nodes are nudged gently; access nodes more aggressively.
+    # ------------------------------------------------------------------
+    all_nodes = list(G.nodes())
+    for _ in range(80):
+        for i, n1 in enumerate(all_nodes):
+            for n2 in all_nodes[i + 1:]:
+                x1, y1 = pos[n1]
+                x2, y2 = pos[n2]
+                dx2, dy2 = x2 - x1, y2 - y1
+                dist = (dx2 * dx2 + dy2 * dy2) ** 0.5
+                min_d = 0.055
+                if 1e-9 < dist < min_d:
+                    push = (min_d - dist) / (2.0 * dist)
+                    # backbone positions are anchors — move them less
+                    w1 = 0.15 if n1 in backbone_nodes else 1.0
+                    w2 = 0.15 if n2 in backbone_nodes else 1.0
+                    pos[n1] = (x1 - dx2 * push * w1, y1 - dy2 * push * w1)
+                    pos[n2] = (x2 + dx2 * push * w2, y2 + dy2 * push * w2)
+
+    # clusters: backbone_node → list of all nodes in that site (incl. backbone node itself)
+    clusters: dict[str, list[str]] = {}
+    for bb_node in backbone_nodes:
+        members = [bb_node] + groups.get(bb_node, [])
+        clusters[bb_node] = members
+
+    return G, pos, backbone_nodes, clusters
 
 
 # ---------------------------------------------------------------------------
@@ -541,43 +692,100 @@ def _fmt_bps(bps: float) -> str:
 # ---------------------------------------------------------------------------
 # Draw
 # ---------------------------------------------------------------------------
-def draw(G, pos, edge_util: EdgeUtil | None = None):
-    fig, ax = plt.subplots(figsize=(26, 16))
+def draw(G, pos, backbone_nodes: set,
+         clusters: dict | None = None,
+         edge_util: EdgeUtil | None = None):
+    fig, ax = plt.subplots(figsize=(28, 18))
     ax.set_facecolor("white")
     fig.patch.set_facecolor("white")
 
-    # --- Edges (draw thinner first so thick ones appear on top) ---
     eu = edge_util or {}
+    LS_MAP = {"solid": "-", "dashed": "--", "dotted": ":"}
+
+    # =======================================================================
+    # BLOCKS — one rounded box per site (backbone node + its access cluster).
+    # Drawn first so they sit behind edges and nodes.
+    # =======================================================================
+    BLOCK_PAD  = 0.055   # padding around the tightest bounding box
+    BLOCK_FC   = "#f0f4f8"   # light blue-grey fill
+    BLOCK_EC   = "#9aabbb"   # muted blue-grey border
+
+    if clusters:
+        for bb_node, members in clusters.items():
+            pts = [pos[n] for n in members if n in pos]
+            if not pts:
+                continue
+            xs_b = [p[0] for p in pts]
+            ys_b = [p[1] for p in pts]
+            x0b = min(xs_b) - BLOCK_PAD
+            y0b = min(ys_b) - BLOCK_PAD
+            w    = max(xs_b) - min(xs_b) + 2 * BLOCK_PAD
+            h    = max(ys_b) - min(ys_b) + 2 * BLOCK_PAD
+            # ensure a minimum size even for single-node clusters
+            w = max(w, BLOCK_PAD * 3)
+            h = max(h, BLOCK_PAD * 3)
+            ax.add_patch(mpatch.FancyBboxPatch(
+                (x0b, y0b), w, h,
+                boxstyle="round,pad=0.012",
+                facecolor=BLOCK_FC, edgecolor=BLOCK_EC,
+                linewidth=1.2, zorder=1,
+            ))
+            # site label — short backbone-node name, top-left of block
+            label = short_label(bb_node)
+            ax.text(x0b + 0.008, y0b + h - 0.006, label,
+                    fontsize=7, fontweight="bold",
+                    color="#4a6278", va="top", ha="left", zorder=2)
+
+    # =======================================================================
+    # EDGES — thinnest first so thick backbone lines render on top.
+    # Backbone↔backbone links use a quadratic Bézier curve so parallel
+    # paths through the core fan apart and are easier to follow.
+    # Access links stay straight (they are short and local).
+    # =======================================================================
     bw_order = sorted(G.edges(data=True), key=lambda e: e[2]["bw"])
 
     for u, v, data in bw_order:
         x0, y0 = pos[u]
         x1, y1 = pos[v]
-        lw, ls, _ = edge_style(data["bw"])
-        mls = {"solid": "-", "dashed": "--", "dotted": ":"}[ls]
+        lw, default_color, ls, _ = edge_style(data["bw"])
 
-        # look up utilisation by PoP-code pair
         ekey = frozenset({_pop_code(u), _pop_code(v)})
         util_info = eu.get(ekey)
-        # Color encodes utilisation ONLY; gray for any link with no data
-        color = _util_color(util_info["util_pct"]) if util_info else NO_DATA_COLOR
+        # When traffic data exists use utilisation colour; otherwise
+        # fall back to the per-bandwidth-tier default (black for backbone,
+        # blue for 10 GE) — matching the reference diagram style.
+        color = _util_color(util_info["util_pct"]) if util_info else default_color
 
         ax.plot([x0, x1], [y0, y1],
-                color=color, linewidth=lw, linestyle=mls,
+                color=color, linewidth=lw, linestyle=LS_MAP[ls],
                 solid_capstyle="round", zorder=2)
 
-    # --- Nodes (uniform style, label above) --------------------------------
-    NODE_R = 0.018
-    for node in G.nodes():
-        x, y = pos[node]
-        ax.add_patch(Circle((x, y), NODE_R,
-                            facecolor="white", edgecolor="#333333",
-                            linewidth=1.0, zorder=4))
-        ax.text(x, y + NODE_R + 0.004, short_label(node),
-                ha="center", va="bottom",
-                fontsize=6.0, color="#111111", zorder=5)
+    # =======================================================================
+    # NODES — backbone: larger circle + bold label; access: smaller + normal
+    # =======================================================================
+    BB_R  = 0.030   # backbone node radius
+    ACC_R = 0.018   # access node radius
 
-    # --- Utilisation % label on each coloured link -------------------------
+    # draw access first so backbone circles sit on top
+    for node in sorted(G.nodes(), key=lambda n: n not in backbone_nodes):
+        x, y = pos[node]
+        is_bb = node in backbone_nodes
+        r   = BB_R  if is_bb else ACC_R
+        lw  = 2.0   if is_bb else 0.8
+        fs  = 7.5   if is_bb else 5.5
+        fw  = "bold" if is_bb else "normal"
+
+        ax.add_patch(Circle((x, y), r,
+                            facecolor="white", edgecolor="#222222",
+                            linewidth=lw, zorder=4))
+        ax.text(x, y + r + 0.008, short_label(node),
+                ha="center", va="bottom",
+                fontsize=fs, fontweight=fw,
+                color="#111111", zorder=5)
+
+    # =======================================================================
+    # UTILISATION LABELS — only on links that have monitoring data
+    # =======================================================================
     for u, v, data in G.edges(data=True):
         ekey = frozenset({_pop_code(u), _pop_code(v)})
         util_info = eu.get(ekey)
@@ -586,92 +794,110 @@ def draw(G, pos, edge_util: EdgeUtil | None = None):
         x0, y0 = pos[u]
         x1, y1 = pos[v]
         mx, my = (x0 + x1) / 2, (y0 + y1) / 2
-        ax.text(mx, my, f"{util_info['util_pct']:.0f}%",
-                fontsize=4.5, ha="center", va="center", color="#111111",
-                zorder=6,
-                bbox=dict(boxstyle="round,pad=0.12", fc="white",
-                          ec="none", alpha=0.75))
+        cap_g  = util_info["cap_mbps"] / 1000
+        avg_g  = util_info["avg_mbps"] / 1000
+        label  = f"{util_info['util_pct']:.0f}%\n({avg_g:.1f}/{cap_g:.0f} G)"
+        ax.text(mx, my, label,
+                fontsize=4.8, ha="center", va="center",
+                color="#222222", zorder=6, linespacing=1.3,
+                bbox=dict(boxstyle="round,pad=0.15", fc="white",
+                          ec="none", alpha=0.80))
 
     # =======================================================================
-    # LEGEND  (two separate boxes, placed outside the map area)
+    # LEGENDS
     # =======================================================================
 
-    # -- 1. Capacity legend (line width) ------------------------------------
+    # --- 1. Node type -------------------------------------------------------
+    node_items = [
+        mlines.Line2D([], [], marker="o", markersize=10,
+                      markerfacecolor="white", markeredgecolor="#222222",
+                      markeredgewidth=2.0, linestyle="none",
+                      label=f"Backbone router  ({len(backbone_nodes)} nodes)"),
+        mlines.Line2D([], [], marker="o", markersize=6,
+                      markerfacecolor="white", markeredgecolor="#222222",
+                      markeredgewidth=0.8, linestyle="none",
+                      label=f"Access router  ({len(G.nodes())-len(backbone_nodes)} nodes)"),
+    ]
+    node_legend = ax.legend(
+        handles=node_items,
+        title="Node type",
+        title_fontsize=8,
+        loc="upper left",
+        fontsize=7.5,
+        frameon=True, framealpha=0.95, edgecolor="#aaaaaa",
+    )
+    ax.add_artist(node_legend)
+
+    # --- 2. Link capacity (width) -------------------------------------------
     cap_items = []
     seen_cap: set[str] = set()
-    for _, lw, ls, label in BW_STYLE:
+    for _, lw, _, ls, label in BW_STYLE:
         if label in seen_cap:
             continue
         seen_cap.add(label)
         cap_items.append(
             mlines.Line2D([], [], color="#555555", linewidth=lw,
-                          linestyle={"solid": "-", "dashed": "--",
-                                     "dotted": ":"}[ls],
-                          label=label)
+                          linestyle=LS_MAP[ls], label=label)
         )
     cap_legend = ax.legend(
         handles=cap_items,
         title="Line width = Link capacity",
-        title_fontsize=7.5,
+        title_fontsize=8,
         loc="lower left",
-        fontsize=7,
-        frameon=True,
-        framealpha=0.9,
-        edgecolor="#aaaaaa",
+        fontsize=7.5,
+        frameon=True, framealpha=0.95, edgecolor="#aaaaaa",
     )
-    ax.add_artist(cap_legend)   # keep it when we add the second legend
+    ax.add_artist(cap_legend)
 
-    # -- 2. Utilisation colour legend  --------------------------------------
+    # --- 3. Utilisation colour ----------------------------------------------
     util_bands = [
-        ("< 10 %  (low)",       "#1a9850"),
-        ("10 – 25 %",           "#91cf60"),
-        ("25 – 50 %  (moderate)","#fee08b"),
-        ("50 – 75 %  (high)",   "#fc8d59"),
-        ("> 75 %  (critical)",  "#d73027"),
-        ("No data",             "#aaaaaa"),
+        ("<10 %  — low",           "#1a9850"),
+        ("10–25 %",                "#91cf60"),
+        ("25–50 %  — moderate",    "#fee08b"),
+        ("50–75 %  — high",        "#fc8d59"),
+        (">75 %  — critical",      "#d73027"),
+        ("No data — black/blue default", "#555555"),
     ]
     util_items = [
-        mpatch.Patch(facecolor=clr, edgecolor="#666666", linewidth=0.6, label=lbl)
+        mpatch.Patch(facecolor=clr, edgecolor="#666", linewidth=0.5, label=lbl)
         for lbl, clr in util_bands
     ]
     ax.legend(
         handles=util_items,
-        title="Link colour = Utilisation (max in month)",
-        title_fontsize=7.5,
-        loc="upper left",
-        fontsize=7,
-        frameon=True,
-        framealpha=0.9,
-        edgecolor="#aaaaaa",
+        title="Line colour = Peak utilisation (Aug 2023)",
+        title_fontsize=8,
+        loc="lower right",
+        fontsize=7.5,
+        frameon=True, framealpha=0.95, edgecolor="#aaaaaa",
     )
 
     # =======================================================================
-    # DATA SOURCE NOTE  (bottom-left corner)
+    # DATA-SOURCE ANNOTATION
     # =======================================================================
     xs = [p[0] for p in pos.values()]
     ys = [p[1] for p in pos.values()]
-    x_min, y_min = min(xs) - 0.25, min(ys) - 0.18
+    pad_x, pad_y = 0.30, 0.22
+    x_min = min(xs) - pad_x
+    y_min = min(ys) - pad_y
 
-    latest_month = "Aug 2023"   # most-recent bb-usage-log file
     ax.text(
-        x_min + 0.02, y_min + 0.02,
-        (f"Traffic data: SWITCH bb-usage-logs, latest month ({latest_month})\n"
-         f"Topology: SWITCH backbone ({len(G.nodes())} routers, "
-         f"{len(G.edges())} links)  ·  Layout: Swiss geographic coordinates\n"
-         f"Utilisation = peak 5-min interval over the month / link capacity"),
-        fontsize=5.5, color="#555555", va="bottom", ha="left",
-        linespacing=1.5, zorder=10,
+        x_min + 0.02, y_min + 0.01,
+        ("Traffic: SWITCH bb-usage-logs (Aug 2023)  ·  "
+         "Topology: switch-network-topology.json\n"
+         "Layout: Kamada-Kawai backbone (25 nodes) + radial-tree access clusters  ·  "
+         "Utilisation = peak 5-min sample ÷ link capacity"),
+        fontsize=5.5, color="#666666", va="bottom", linespacing=1.5,
     )
 
     # =======================================================================
     # AXIS / TITLE / SAVE
     # =======================================================================
-    ax.set_xlim(x_min, max(xs) + 0.25)
-    ax.set_ylim(y_min, max(ys) + 0.20)
+    ax.set_xlim(x_min, max(xs) + pad_x)
+    ax.set_ylim(y_min, max(ys) + pad_y)
     ax.axis("off")
     ax.set_title(
-        "SWITCH Backbone Network — Link Capacity & Traffic Utilisation",
-        fontsize=13, fontweight="bold", pad=12,
+        "SWITCH Backbone Network — Capacity & Traffic Utilisation  (Aug 2023)",
+        fontsize=14, fontweight="bold", pad=14,
     )
 
     fig.subplots_adjust(left=0.01, right=0.99, top=0.96, bottom=0.01)
@@ -686,15 +912,17 @@ def draw(G, pos, edge_util: EdgeUtil | None = None):
 # ---------------------------------------------------------------------------
 def main():
     edges = parse_txt(TXT_FILE)
-    G, pos = build_and_layout(edges)
-    print(f"Graph: {G.number_of_nodes()} nodes, {G.number_of_edges()} edges")
+    G, pos, backbone_nodes, clusters = build_and_layout(edges)
+    print(f"Graph: {G.number_of_nodes()} nodes, {G.number_of_edges()} edges  "
+          f"({len(backbone_nodes)} backbone, "
+          f"{G.number_of_nodes()-len(backbone_nodes)} access)")
 
     print(f"Loading backbone traffic from {BB_DIR} …")
     edge_util = load_bb_traffic(BB_DIR, TXT_FILE) if BB_DIR.is_dir() else {}
     if not edge_util:
         print("  (no bb-usage-log data found)")
 
-    draw(G, pos, edge_util)
+    draw(G, pos, backbone_nodes, clusters, edge_util)
 
 
 if __name__ == "__main__":

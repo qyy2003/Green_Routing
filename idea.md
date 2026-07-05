@@ -1,0 +1,1 @@
+A trade off between accuracy/fairness vs data collected/processed/dismissed.
