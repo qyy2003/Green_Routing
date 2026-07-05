@@ -16,9 +16,18 @@ Open <http://localhost:8137/>.
 - **Layers panel (top-left):** toggle **Links** (metric: Utilization % or Traffic Mbps)
   and **Nodes** (metric: CPU %, Power W, or Temperature °C).
 - **Line width = link capacity** (1G → 200G; see the width key in the panel).
-- **Time:** slider, datetime picker, or ▶ play (step size selectable).
-- Scroll = zoom, drag = pan, hover a link/node for exact values.
-- URL params for sharing a view: `?links=1&link=util&nodes=1&node=cpu&t=<unix>`.
+- **Time:** slider, datetime picker, or ▶ play.
+- **Window + aggregation:** pick a window (5 min instant … 1 month) and an
+  aggregate (mean / max / min / median). The map then colours each link/node by
+  that aggregate over the window; ▶ play advances by the window.
+- **Hover inspector (right panel):** hover a link or node to *preview* its
+  **traffic-vs-time plot** over the window, a min/mean/median/max table, and a
+  one-line description (peak value + time, % of capacity). **Click to pin** it
+  (highlighted with a glow) so it stays while you hover others; click again to
+  unpin. The map recolours with a smooth transition rather than snapping.
+- Scroll = zoom, drag = pan.
+- URL params for sharing a view:
+  `?links=1&link=util&nodes=1&node=cpu&w=604800&agg=max&t=<unix>&inspect=BA-EZ`.
 
 ## Data source
 
@@ -63,7 +72,9 @@ coordinates read from the PDF via `pdftotext -bbox`); the base map is
 | endpoint | returns |
 |---|---|
 | `GET /api/meta` | links (with `capacity_bps`, endpoints), node positions, months, time span, units |
-| `GET /api/frame?t=<unix>` | `{ t, slot_ts, links:{id:{in,out}}, nodes:{code:{cpu,pw,temp}} }` |
+| `GET /api/frame?t=<unix>` | instant slot: `{ t, slot_ts, links:{id:{in,out}}, nodes:{code:{cpu,pw,temp}} }` |
+| `GET /api/agg?t=&w=&agg=` | aggregate (mean/max/min/median) of every link/node metric over `[t, t+w)` |
+| `GET /api/series?kind=link\|node&id=&t=&w=&metric=` | downsampled time series + `{min,mean,median,max,peak_t}` stats for one link/node |
 
 ## Coverage & caveats
 

@@ -24,10 +24,14 @@
     #viewport .paper { background:#fff; border-radius:4px; box-shadow:0 8px 40px rgba(0,0,0,.5); padding:8px; }
     #viewport svg { display:block; }
 
-    .traffic-link { stroke-linecap:round; cursor:pointer; }
+    .traffic-link { stroke-linecap:round; cursor:pointer;
+      transition: stroke 280ms ease, stroke-width 200ms ease, stroke-opacity 280ms ease; }
     .traffic-link.nodata { stroke:#aeb6c2 !important; stroke-opacity:.5; }
-    .node-marker { cursor:pointer; stroke:#1a1a1a; stroke-width:1.2; }
+    .traffic-link.pinned { filter: drop-shadow(0 0 3px #fff) drop-shadow(0 0 3px #fff); }
+    .node-marker { cursor:pointer; stroke:#1a1a1a; stroke-width:1.2;
+      transition: fill 280ms ease, fill-opacity 280ms ease; }
     .node-marker.hidden { display:none; }
+    .node-marker.pinned { stroke:#fff; stroke-width:2.6; }
 
     /* panels */
     .panel { position:absolute; background:rgba(20,22,27,.92); border:1px solid var(--border);
@@ -41,6 +45,11 @@
     #layers .note { color:var(--muted); font-size:11px; line-height:1.35; margin-top:8px; border-top:1px solid var(--border); padding-top:8px; }
     #layers .capbars { display:flex; align-items:flex-end; gap:12px; margin:8px 0 4px; }
 
+    #inspector { right:12px; top:170px; width:368px; max-height:calc(100% - 200px); overflow:auto; }
+    #inspector .ttl b { color:var(--accent); }
+    #insp-stats th, #insp-stats td { text-align:right; padding:2px 4px; border-bottom:1px solid var(--border); }
+    #insp-stats th:first-child, #insp-stats td:first-child { text-align:left; color:var(--muted); }
+    #insp-plot { background:rgba(255,255,255,.03); border-radius:6px; }
     #legend { right:12px; top:12px; width:170px; }
     #legend .ttl { font-weight:600; margin-bottom:6px; }
     #legend .bar { height:10px; border-radius:5px; margin:6px 0 4px; }
@@ -117,7 +126,19 @@
       </div>
     </div>
 
-    <div id="hud">scroll = zoom · drag = pan · hover for detail</div>
+    <div id="inspector" class="panel">
+      <div id="insp-empty" style="color:var(--muted);">Hover a link or node to see its traffic over the selected window.</div>
+      <div id="insp-body" style="display:none;">
+        <div class="ttl" id="insp-title" style="font-weight:600;font-size:13px;"></div>
+        <div id="insp-sub" style="color:var(--muted);font-size:11px;margin:2px 0 8px;"></div>
+        <svg id="insp-plot" width="340" height="132"></svg>
+        <div id="insp-legend" style="font-size:11px;margin:4px 0 8px;"></div>
+        <table id="insp-stats" style="width:100%;border-collapse:collapse;font-size:11px;"></table>
+        <div id="insp-desc" style="font-size:11px;color:var(--text);margin-top:8px;line-height:1.5;"></div>
+      </div>
+    </div>
+
+    <div id="hud">scroll = zoom · drag = pan · hover = preview · click = pin plot</div>
     <div id="tooltip"></div>
     <div id="loading">Loading map…</div>
   </div>
@@ -127,12 +148,24 @@
     <span id="time-label">—</span>
     <input type="datetime-local" id="time-input" />
     <input type="range" id="time-slider" min="0" max="100" value="0" />
-    <span class="speed">step
-      <select id="step-size">
-        <option value="300">5 min</option>
-        <option value="3600" selected>1 hour</option>
+    <span class="speed">window
+      <select id="window-size">
+        <option value="300" selected>5 min (instant)</option>
+        <option value="3600">1 hour</option>
         <option value="21600">6 hours</option>
         <option value="86400">1 day</option>
+        <option value="259200">3 days</option>
+        <option value="604800">1 week</option>
+        <option value="1209600">2 weeks</option>
+        <option value="2592000">1 month</option>
+      </select>
+    </span>
+    <span class="speed">agg
+      <select id="agg-fn">
+        <option value="mean" selected>mean</option>
+        <option value="max">max</option>
+        <option value="min">min</option>
+        <option value="median">median</option>
       </select>
     </span>
     <span id="matched"></span>
