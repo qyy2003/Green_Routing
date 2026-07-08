@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Generated artifacts / large data
+artifacts/
+web/data/frames/
+
+# OS / editor cruft
+.DS_Store
+*.swp
