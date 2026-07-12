@@ -64,9 +64,28 @@ class Forecaster:
     tier: int = 0
     is_global: bool = False
 
+    # --- online (test-time) adaptation ------------------------------------- #
+    # A global model that overrides ``online_update`` sets ``supports_online``.
+    # When ``online_enabled`` is on, the harness periodically calls
+    # ``online_update`` so the model may fine-tune on the most recent data — but
+    # only on information *strictly before* the current forecast origin, so the
+    # no-leakage guarantee is unchanged.
+    supports_online: bool = False
+    online_enabled: bool = False
+    refit_every: int | None = None      # steps between refits (None => refit once)
+    online_window: int | None = None    # sliding-window length (None => expanding)
+
     def fit(self, values_filled: np.ndarray, split: splits_mod.Split,
             timestamps: np.ndarray) -> None:
         """Train once. Local models leave this as a no-op."""
+
+    def online_update(self, values_filled: np.ndarray, timestamps: np.ndarray,
+                      upto: int) -> None:
+        """Adapt to recent data. MUST use only indices ``< upto`` (no leakage).
+
+        Default no-op: frozen models and local models (which already re-read the
+        recent history inside ``predict``) ignore this.
+        """
 
     def predict(self, ctx: Context) -> np.ndarray:
         raise NotImplementedError
@@ -133,7 +152,19 @@ def backtest(
     for m in models:
         if verbose:
             print(f"[harness] backtest {m.name} ...")
-        for o in origins:
+        do_online = getattr(m, "online_enabled", False) and getattr(m, "supports_online", False)
+        last_refit: int | None = None
+        for o in origins:                         # origins are ascending in time
+            # Online adaptation: refit/fine-tune on data strictly < o (no leakage).
+            # Refit at the first origin, then every ``refit_every`` steps.
+            if do_online and (last_refit is None or
+                              (m.refit_every and o - last_refit >= m.refit_every)):
+                try:
+                    m.online_update(values_filled, ts, upto=o)
+                except Exception as exc:          # keep the run going on a bad refit
+                    if verbose:
+                        print(f"[harness]   {m.name} online_update @ {o} failed: {exc}")
+                last_refit = o                    # avoid retrying every origin
             path_len = min(max_h, T - o)
             if path_len < 1:
                 continue

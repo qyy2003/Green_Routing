@@ -112,6 +112,7 @@ def _modules():
 # --------------------------------------------------------------------------- #
 class SeqForecaster(Forecaster, tc.TorchTrainer):
     is_global = True
+    supports_online = True      # warm-start fine-tune on recent windows at test time
 
     def __init__(self, lookback=config.DAILY_STEPS, horizons=tuple(config.HORIZONS.values()),
                  epochs=12, max_train_samples=40_000):
@@ -121,16 +122,14 @@ class SeqForecaster(Forecaster, tc.TorchTrainer):
         self.epochs = epochs
         self.max_train_samples = max_train_samples
         self.net = None
+        self._train_start = 0
 
     def _build_net(self, lin, h):
         raise NotImplementedError
 
-    def fit(self, values_filled, split, timestamps):
-        log_vals = tc.log1p(values_filled)
-        T, L = log_vals.shape
-        cap = max(1, self.max_train_samples // L)
-        anchors = tc.make_anchors(split.train, self.lookback, self.max_h,
-                                  min_ctx=self.lookback, cap=cap)
+    def _windows(self, log_vals, anchors):
+        """RevIN-normalised (input, target) windows for the given anchor times."""
+        L = log_vals.shape[1]
         X, Y = [], []
         for j in range(L):
             for t in anchors:
@@ -141,12 +140,38 @@ class SeqForecaster(Forecaster, tc.TorchTrainer):
                 m, s = win.mean(), win.std() + 1e-5
                 X.append((win - m) / s)
                 Y.append((tgt - m) / s)
-        X = np.asarray(X, np.float32)
-        Y = np.asarray(Y, np.float32)
+        return np.asarray(X, np.float32), np.asarray(Y, np.float32)
+
+    def fit(self, values_filled, split, timestamps):
+        log_vals = tc.log1p(values_filled)
+        L = log_vals.shape[1]
+        self._train_start = split.train[0]
+        cap = max(1, self.max_train_samples // L)
+        anchors = tc.make_anchors(split.train, self.lookback, self.max_h,
+                                  min_ctx=self.lookback, cap=cap)
+        X, Y = self._windows(log_vals, anchors)
         if X.shape[0] < 100:
             raise ValueError(f"{self.name}: too few training windows ({X.shape[0]})")
         self.net = self._fit_torch(self._build_net(self.lookback, self.max_h), X, Y,
                                    verbose_name=self.name)
+
+    def online_update(self, values_filled, timestamps, upto: int) -> None:
+        if self.net is None:
+            return
+        log_vals = tc.log1p(values_filled)
+        L = log_vals.shape[1]
+        start = self._train_start if self.online_window is None \
+            else max(self._train_start, upto - self.online_window)
+        cap = max(1, self.max_train_samples // L)
+        # anchors drawn from [start, upto): target path kept strictly < upto (no leakage)
+        anchors = tc.make_anchors((start, upto), self.lookback, self.max_h,
+                                  min_ctx=self.lookback, cap=cap)
+        X, Y = self._windows(log_vals, anchors)
+        if X.shape[0] < 20:
+            return                              # too little recent data: keep current net
+        # warm-start: continue training the existing net briefly at a low LR
+        self.net = self._fit_torch(self.net, X, Y, verbose_name=f"{self.name}:online",
+                                   epochs=self.online_epochs, lr=self.online_lr)
 
     def predict(self, ctx: Context) -> np.ndarray:
         torch = tc._torch()

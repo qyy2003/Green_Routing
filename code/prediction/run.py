@@ -1,7 +1,7 @@
 """Run the method ladder end-to-end and report skill vs. the naive baselines.
 
     cd /home/yuyqin/ETH_Master_Study/Green_Routing/Green_Routing/code
-    /home/yuyqin/anaconda3/bin/python -m prediction.run \
+    /home/yuyqin/anaconda3/envs/green-pred/bin/python -m prediction.run \
         --start 2024-06-01 --end 2024-10-01 \
         --train-end 2024-08-15 --val-start 2024-08-22 \
         --val-end 2024-09-05 --test-start 2024-09-12 \
@@ -28,13 +28,9 @@ from .models_classical import default_classical
 from .models_gbdt import GlobalGBDT
 
 
-def build_models(tiers, hsteps, seasonal_sarima, panel, lookback, epochs):
-    """Assemble the requested tiers. Tiers 4-6 import torch lazily (only if requested)."""
+def _new_global_models(tiers, hsteps, panel, lookback, epochs):
+    """The global (fit-once) tiers only — instantiable twice (frozen + online)."""
     models: list[harness.Forecaster] = []
-    if 1 in tiers:
-        models += baselines.default_baselines()
-    if 2 in tiers:
-        models += default_classical(seasonal_sarima=seasonal_sarima)
     if 3 in tiers:
         models.append(GlobalGBDT(horizons=hsteps))
     if 4 in tiers:
@@ -49,6 +45,36 @@ def build_models(tiers, hsteps, seasonal_sarima, panel, lookback, epochs):
         from .models_gnn import STGNNForecaster
         models.append(STGNNForecaster(panel.devices, lookback=lookback,
                                       horizons=hsteps, epochs=epochs))
+    return models
+
+
+def build_models(tiers, hsteps, seasonal_sarima, panel, lookback, epochs, online_cfg=None):
+    """Assemble the requested tiers. Tiers 4-6 import torch lazily (only if requested).
+
+    If ``online_cfg`` is given, an ``<name>+online`` variant of every global tier is
+    added alongside its frozen twin. The online variant re-fits/fine-tunes on data
+    strictly before each forecast origin (see harness.Forecaster.online_update), so
+    the two land on identical origins — the honest "how much is recent data worth?".
+    """
+    models: list[harness.Forecaster] = []
+    if 1 in tiers:
+        models += baselines.default_baselines()
+    if 2 in tiers:
+        models += default_classical(seasonal_sarima=seasonal_sarima)
+
+    models += _new_global_models(tiers, hsteps, panel, lookback, epochs)
+
+    if online_cfg is not None:
+        for m in _new_global_models(tiers, hsteps, panel, lookback, epochs):
+            m.online_enabled = True
+            m.refit_every = online_cfg["refit_every"]
+            m.online_window = online_cfg["window"]
+            if online_cfg.get("epochs") and hasattr(m, "online_epochs"):
+                m.online_epochs = online_cfg["epochs"]
+            if online_cfg.get("lr") and hasattr(m, "online_lr"):
+                m.online_lr = online_cfg["lr"]
+            m.name = f"{m.name}+online"
+            models.append(m)
     return models
 
 
@@ -115,32 +141,60 @@ def plot_overlays(result, models, panel, split, out: Path, horizon_steps: int):
     print(f"[plot] {p}")
 
 
-def plot_skill(result, out: Path, metric: str, baseline: str):
+def render_skill_bar(agg, order, out: Path, metric: str, baseline: str,
+                     clip=(-1.0, 1.0)):
+    """Skill (1 - metric/baseline) as a grouped bar chart, robust to blow-ups.
+
+    A numerically unstable model (e.g. a diverging SARIMA) can post an astronomical
+    metric, making its skill ~-1e214 and flattening every other bar. We clip the
+    *displayed* skill to ``clip`` and list any off-scale bars in a caption, so the
+    chart stays legible while staying honest about what was clipped.
+    """
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    agg = result.aggregate()
     if (agg.model == baseline).sum() == 0:
         return
     base = agg[agg.model == baseline].set_index("horizon_name")[metric]
     piv = agg.pivot_table(index="model", columns="horizon_name", values=metric)
-    order = [result._h_name[v] for v in sorted(result.horizons.values())
-             if result._h_name[v] in piv.columns]
+    order = [h for h in order if h in piv.columns]
     piv = piv[order]
     sk = 1.0 - piv.div(base[order], axis=1)
     sk = sk.drop(index=[b for b in (baseline,) if b in sk.index])
-    ax = sk.plot(kind="bar", figsize=(10, 5))
+
+    lo, hi = clip
+    off = []                                      # (model, horizon, true skill) off-scale
+    for mdl in sk.index:
+        for col in order:
+            v = sk.loc[mdl, col]
+            if np.isfinite(v) and (v < lo or v > hi):
+                off.append((mdl, col, float(v)))
+    sk_disp = sk.clip(lower=lo, upper=hi)
+
+    ax = sk_disp.plot(kind="bar", figsize=(11, 5.5))
     ax.axhline(0, color="black", lw=0.8)
+    ax.set_ylim(lo * 1.05, hi * 1.08)
     ax.set_ylabel(f"skill vs {baseline}  (1 - {metric}/base)")
     ax.set_title(f"Skill over {baseline} by horizon ({metric})")
     ax.legend(title="horizon", fontsize=8)
-    ax.figure.tight_layout()
+    if off:
+        worst = min(off, key=lambda t: t[2])
+        note = (f"skill clipped to [{lo:g}, {hi:g}] — {len(off)} bar(s) off-scale; "
+                f"worst: {worst[0]}/{worst[1]} skill={worst[2]:.2g}")
+        ax.text(0.01, 0.98, note, transform=ax.transAxes, ha="left",
+                va="top", fontsize=7, color="crimson")   # use the empty top space
+    fig = ax.figure
+    fig.tight_layout()
     p = out / f"skill_vs_{baseline}_{metric}.png"
-    ax.figure.savefig(p, dpi=110)
-    import matplotlib.pyplot as _plt
-    _plt.close(ax.figure)
+    fig.savefig(p, dpi=110)
+    plt.close(fig)
     print(f"[plot] {p}")
+
+
+def plot_skill(result, out: Path, metric: str, baseline: str):
+    order = [result._h_name[v] for v in sorted(result.horizons.values())]
+    render_skill_bar(result.aggregate(), order, out, metric, baseline)
 
 
 def main():
@@ -167,6 +221,17 @@ def main():
                     choices=list(config.HORIZONS))
     ap.add_argument("--stride", type=int, default=None)
     ap.add_argument("--max-origins", type=int, default=120)
+    ap.add_argument("--online", action="store_true",
+                    help="add an <name>+online variant of each global tier that "
+                         "re-fits/fine-tunes on data before each origin (no leakage)")
+    ap.add_argument("--refit-every", type=int, default=config.DAILY_STEPS,
+                    help="steps between online refits (default = 1 day / 288 steps)")
+    ap.add_argument("--online-window", type=int, default=None,
+                    help="sliding online train window in steps (default: expanding)")
+    ap.add_argument("--online-epochs", type=int, default=None,
+                    help="warm-start fine-tune epochs per refit (torch tiers)")
+    ap.add_argument("--online-lr", type=float, default=None,
+                    help="warm-start fine-tune learning rate (torch tiers)")
     ap.add_argument("--metric", default="mae",
                     choices=["mae", "rmse", "smape", "wape"])
     ap.add_argument("--out", required=True)
@@ -186,8 +251,14 @@ def main():
 
     horizons = {h: config.HORIZONS[h] for h in args.horizons}
     hsteps = tuple(sorted(horizons.values()))
+    online_cfg = None
+    if args.online:
+        online_cfg = {"refit_every": args.refit_every, "window": args.online_window,
+                      "epochs": args.online_epochs, "lr": args.online_lr}
+        print(f"[online] refit_every={args.refit_every} window={args.online_window} "
+              f"(expanding if None) epochs={args.online_epochs} lr={args.online_lr}")
     models = build_models(args.tiers, hsteps, args.seasonal_sarima, panel,
-                          args.lookback, args.epochs)
+                          args.lookback, args.epochs, online_cfg=online_cfg)
     print(f"[models] {[m.name for m in models]}")
 
     result = harness.backtest(

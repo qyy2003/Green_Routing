@@ -141,9 +141,14 @@ def build_panel(
             "empty panel; lower --min-coverage, widen the window, or add devices"
         )
     values = np.column_stack(cols) if cols else np.empty((grid_len, 0), np.float32)
+    # Robust epoch-seconds: DatetimeIndex.astype("int64") returns the index's *native*
+    # resolution (datetime64[us] on pandas 2.x here, not ns), so a fixed //10**9 was
+    # off by 1000x. Cast through datetime64[s] to get epoch seconds regardless of unit.
+    grid_utc = grid.tz_convert("UTC") if grid.tz is not None else grid.tz_localize("UTC")
+    timestamps = grid_utc.tz_localize(None).to_numpy().astype("datetime64[s]").astype("int64")
     panel = Panel(
         values=values,
-        timestamps=(grid.astype("int64") // 10**9).to_numpy(),
+        timestamps=timestamps,
         links=links,
         devices=devs,
         value_col=value_col,

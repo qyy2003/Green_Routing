@@ -24,6 +24,7 @@ class GlobalGBDT(Forecaster):
     name = "gbdt"
     tier = 3
     is_global = True
+    supports_online = True      # can refit on an extended window at test time
 
     def __init__(
         self,
@@ -88,15 +89,26 @@ class GlobalGBDT(Forecaster):
 
     # -- fit / predict ------------------------------------------------------ #
     def fit(self, values_filled, split, timestamps) -> None:
+        self._precompute(values_filled, timestamps)
+        self._train_start = split.train[0]
+        self._fit_range(split.train[0], split.train[1])
+
+    def _fit_range(self, tr_start: int, tr_end: int) -> None:
+        """Train one booster per horizon on anchors whose target stays ``< tr_end``.
+
+        Reused for the one-shot fit (``tr_end`` = end of train) and for online
+        refits (``tr_end`` = current origin), so an online model never trains on
+        anything at/after the forecast origin — no leakage.
+        """
         from sklearn.ensemble import HistGradientBoostingRegressor
 
-        self._precompute(values_filled, timestamps)
         T, L = self._log.shape
-        tr_start, tr_end = split.train
         h_max = max(self.horizons)
         lo = max(tr_start, self._min_ctx)
-        hi = tr_end - h_max                         # target t+h must stay inside train
+        hi = tr_end - h_max                         # target t+h must stay < tr_end
         if hi <= lo:
+            if self.models:                         # keep the last good fit on a short window
+                return
             raise ValueError("train slice too short for the requested lags/horizons")
 
         anchors_all = np.arange(lo, hi)
@@ -128,6 +140,14 @@ class GlobalGBDT(Forecaster):
             )
             reg.fit(X[m], y[m])
             self.models[h] = reg
+
+    def online_update(self, values_filled, timestamps, upto: int) -> None:
+        """Refit on all data before the origin (features/rolling stats already
+        precomputed in ``fit`` from the fixed panel; only the anchor range grows)."""
+        start = self._train_start
+        if self.online_window is not None:
+            start = max(start, upto - self.online_window)
+        self._fit_range(start, upto)
 
     def predict(self, ctx: Context) -> np.ndarray:
         out = np.full(ctx.horizon, np.nan, dtype=float)

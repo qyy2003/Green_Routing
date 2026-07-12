@@ -23,7 +23,17 @@ from dataset import config
 
 from .harness import Context, Forecaster
 
-warnings.filterwarnings("ignore")   # statsmodels convergence chatter
+
+class _quiet_fit(warnings.catch_warnings):
+    """Silence statsmodels' per-fit chatter (ConvergenceWarning, RuntimeWarning from
+    the optimizer, etc.) *locally*. A module-level ``filterwarnings`` is unreliable
+    here: importing the sklearn/torch tiers afterwards resets the warnings registry
+    and clobbers it, so we scope the suppression to each fit call instead."""
+
+    def __enter__(self):
+        super().__enter__()
+        warnings.simplefilter("ignore")
+        return self
 
 
 def _log(x):
@@ -73,16 +83,20 @@ class HoltWinters(Forecaster):
             return _seasonal_naive_path(hist, ctx.origin, self.seasonal_periods, H)
         y = _fill_interp(y)
         try:
-            model = ExponentialSmoothing(
-                _log(y), trend=self.trend, seasonal="add",
-                seasonal_periods=self.seasonal_periods,
-                initialization_method="estimated",
-            )
-            fit = model.fit()
-            fc = _inv(np.asarray(fit.forecast(H)))
-            return np.clip(fc, 0, None)
+            with _quiet_fit():
+                model = ExponentialSmoothing(
+                    _log(y), trend=self.trend, seasonal="add",
+                    seasonal_periods=self.seasonal_periods,
+                    initialization_method="estimated",
+                )
+                fit = model.fit()
+                fc = _inv(np.asarray(fit.forecast(H)))
+            sane = _sane_or_none(fc, y)
+            if sane is not None:
+                return sane
         except Exception:
-            return _seasonal_naive_path(hist, ctx.origin, self.seasonal_periods, H)
+            pass
+        return _seasonal_naive_path(hist, ctx.origin, self.seasonal_periods, H)
 
 
 class SARIMA(Forecaster):
@@ -117,15 +131,32 @@ class SARIMA(Forecaster):
             return _seasonal_naive_path(hist, ctx.origin, config.DAILY_STEPS, H)
         y = _fill_interp(y)
         try:
-            model = SARIMAX(
-                _log(y), order=self.order, seasonal_order=self.seasonal_order,
-                enforce_stationarity=False, enforce_invertibility=False,
-            )
-            fit = model.fit(disp=False, maxiter=50)
-            fc = _inv(np.asarray(fit.forecast(H)))
-            return np.clip(fc, 0, None)
+            with _quiet_fit():
+                model = SARIMAX(
+                    _log(y), order=self.order, seasonal_order=self.seasonal_order,
+                    enforce_stationarity=False, enforce_invertibility=False,
+                )
+                fit = model.fit(disp=False, maxiter=50)
+                fc = _inv(np.asarray(fit.forecast(H)))
+            sane = _sane_or_none(fc, y)
+            if sane is not None:
+                return sane
         except Exception:
-            return _seasonal_naive_path(hist, ctx.origin, config.DAILY_STEPS, H)
+            pass
+        return _seasonal_naive_path(hist, ctx.origin, config.DAILY_STEPS, H)
+
+
+def _sane_or_none(fc: np.ndarray, y_raw: np.ndarray) -> np.ndarray | None:
+    """Reject a diverged fit. Log-space (S)ARIMA/HW forecasts can blow up so that
+    ``expm1`` returns astronomical Mbps (a single such link posts a ~1e214 MAE and
+    wrecks every aggregate). Accept the path only if it is finite and stays within a
+    generous multiple of the recent observed peak; otherwise signal a fallback."""
+    finite = y_raw[np.isfinite(y_raw)]
+    peak = float(finite.max()) if finite.size else 0.0
+    cap = 50.0 * peak + 1e3                        # very loose: only catches blow-ups
+    if not np.all(np.isfinite(fc)) or np.any(fc > cap):
+        return None
+    return np.clip(fc, 0, None)
 
 
 def _fill_interp(y: np.ndarray) -> np.ndarray:

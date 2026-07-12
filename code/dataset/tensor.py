@@ -63,9 +63,13 @@ def build_node_tensor(
             col = col.ffill(limit=fill_limit).bfill(limit=fill_limit)
             X[:, j, :] = col.to_numpy(dtype=np.float32)
 
+    # epoch seconds regardless of the index's native resolution (datetime64[us] on
+    # pandas 2.x makes a fixed //10**9 off by 1000x); cast through datetime64[s].
+    grid_utc = grid.tz_convert("UTC") if grid.tz is not None else grid.tz_localize("UTC")
+    timestamps = grid_utc.tz_localize(None).to_numpy().astype("datetime64[s]").astype("int64")
     return {
         "X": X,
-        "timestamps": (grid.astype("int64") // 10**9).to_numpy(),
+        "timestamps": timestamps,
         "node_index": node_index,
         "feature_names": list(features),
         "nan_fraction": nan_fraction,

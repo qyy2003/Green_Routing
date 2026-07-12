@@ -84,6 +84,7 @@ class STGNNForecaster(Forecaster, tc.TorchTrainer):
     name = "stgnn"
     tier = 6
     is_global = True
+    supports_online = True      # warm-start fine-tune on recent windows at test time
 
     def __init__(self, devices: list[str], lookback=config.DAILY_STEPS,
                  horizons=tuple(config.HORIZONS.values()), epochs=15,
@@ -99,6 +100,7 @@ class STGNNForecaster(Forecaster, tc.TorchTrainer):
         self._A = link_adjacency(self.devices)
         self._cache_o = None
         self._cache_out = None
+        self._train_start = 0
 
     @staticmethod
     def _revin_matrix(win):                       # win [N, lin] -> normalised + stats
@@ -109,11 +111,8 @@ class STGNNForecaster(Forecaster, tc.TorchTrainer):
         xn[~np.isfinite(xn)] = 0.0
         return xn.astype(np.float32), m, s
 
-    def fit(self, values_filled, split, timestamps):
-        log_vals = tc.log1p(values_filled)
-        T, N = log_vals.shape
-        anchors = tc.make_anchors(split.train, self.lookback, self.max_h,
-                                  min_ctx=self.lookback, cap=self.max_train_samples)
+    def _windows(self, log_vals, anchors):
+        """Per-anchor whole-panel (input, target) tensors, RevIN-normalised per node."""
         X, Y = [], []
         for t in anchors:
             win = log_vals[t - self.lookback:t, :].T            # [N, lin]
@@ -125,12 +124,35 @@ class STGNNForecaster(Forecaster, tc.TorchTrainer):
             yn[~np.isfinite(yn)] = 0.0
             X.append(xn)
             Y.append(yn.astype(np.float32))
-        X = np.asarray(X, np.float32)
-        Y = np.asarray(Y, np.float32)
+        return np.asarray(X, np.float32), np.asarray(Y, np.float32)
+
+    def fit(self, values_filled, split, timestamps):
+        log_vals = tc.log1p(values_filled)
+        T, N = log_vals.shape
+        self._train_start = split.train[0]
+        anchors = tc.make_anchors(split.train, self.lookback, self.max_h,
+                                  min_ctx=self.lookback, cap=self.max_train_samples)
+        X, Y = self._windows(log_vals, anchors)
         if X.shape[0] < 50:
             raise ValueError(f"stgnn: too few training samples ({X.shape[0]})")
         net = _build_module(N, self.lookback, self.max_h, self._A)
         self.net = self._fit_torch(net, X, Y, verbose_name=self.name)
+
+    def online_update(self, values_filled, timestamps, upto: int) -> None:
+        if self.net is None:
+            return
+        log_vals = tc.log1p(values_filled)
+        start = self._train_start if self.online_window is None \
+            else max(self._train_start, upto - self.online_window)
+        # anchors from [start, upto): target path kept strictly < upto (no leakage)
+        anchors = tc.make_anchors((start, upto), self.lookback, self.max_h,
+                                  min_ctx=self.lookback, cap=self.max_train_samples)
+        X, Y = self._windows(log_vals, anchors)
+        if X.shape[0] < 20:
+            return
+        self._cache_o = None                    # invalidate the per-origin forecast cache
+        self.net = self._fit_torch(self.net, X, Y, verbose_name=f"{self.name}:online",
+                                   epochs=self.online_epochs, lr=self.online_lr)
 
     def _forecast_all(self, ctx: Context) -> np.ndarray:
         torch = tc._torch()

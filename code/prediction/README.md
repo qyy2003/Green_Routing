@@ -56,11 +56,40 @@ Result: `aggregate()` (pooled over links, per horizon), `per_link()`, and
 To add a model, subclass `Forecaster`, implement `predict(ctx)` (and `fit` if global),
 and add it in `run.build_models`. It is automatically held to the same origins/metrics.
 
+## Online adaptation (test-time fine-tuning)
+
+Global models fit **once** on the train block and then carry frozen weights through the
+whole test period — so at a September origin their parameters have never seen August,
+even though the actual August traffic sits right there in the past. Local models
+(persistence, SARIMA) don't have this handicap: they re-read the recent history at every
+origin. **`--online`** removes the handicap for the global tiers too.
+
+With `--online`, each global tier gets a second **`<name>+online`** variant that
+periodically **re-fits / warm-start fine-tunes on the most recent data** as the test
+block advances — GBDT re-fits on the extended window, torch tiers continue training the
+existing net a few epochs at a low LR. Both variants run on the **identical** rolling
+origins, so the table shows exactly *how much accuracy recent data buys*.
+
+Leakage guarantee (unchanged): at origin `o`, `online_update` may train only on anchors
+whose entire target path stays `< o` (`anchor + max_horizon ≤ o − 1`) — never on data at
+or after the forecast origin. The harness enforces the cadence; the model enforces the
+cutoff.
+
+```bash
+… --tiers 3 4 --online --refit-every 288 --online-window 4032 --online-epochs 3
+```
+
+Flags: `--online` (add the variants), `--refit-every` (steps between refits, default =
+1 day / 288), `--online-window` (sliding train window in steps; omit for an *expanding*
+window from train-start), `--online-epochs` / `--online-lr` (torch warm-start knobs).
+Cost scales with the number of refits (`test_length / refit_every`), so a coarser
+`--refit-every` trades adaptation speed for runtime.
+
 ## Run it
 
 ```bash
 cd /home/yuyqin/ETH_Master_Study/Green_Routing/Green_Routing/code
-/home/yuyqin/anaconda3/bin/python -m prediction.run \
+/home/yuyqin/anaconda3/envs/green-pred/bin/python -m prediction.run \
     --start 2024-06-01 --end 2024-10-01 \
     --train-end 2024-08-15 --val-start 2024-08-22 \
     --val-end 2024-09-05 --test-start 2024-09-12 \
@@ -71,7 +100,8 @@ cd /home/yuyqin/ETH_Master_Study/Green_Routing/Green_Routing/code
 
 Key flags: `--tiers 1 2 3`, `--horizons {5min,1h,day,week}`, `--devices ag1 be1 …`
 (restrict the cohort), `--min-coverage`, `--max-links`, `--stride`, `--max-origins`,
-`--metric {mae,rmse,smape,wape}`, `--seasonal-sarima` (enable a true `s=288` SARIMA).
+`--metric {mae,rmse,smape,wape}`, `--seasonal-sarima` (enable a true `s=288` SARIMA),
+`--online` (add test-time-fine-tuned `+online` variants — see *Online adaptation*).
 
 Writes to `--out`: `aggregate.csv`, `per_link.csv`, `skill_<metric>.csv`, `config.json`,
 `skill_vs_persistence_<metric>.png`, `overlay_forecasts.png` (busy / bursty / quiet link

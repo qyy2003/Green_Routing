@@ -67,11 +67,20 @@ class TorchTrainer:
     batch_size: int = 256
     lr: float = 1e-3
     weight_decay: float = 1e-5
+    # online fine-tune: fewer epochs + lower LR (warm-start, avoid forgetting)
+    online_epochs: int = 3
+    online_lr: float = 3e-4
 
-    def _fit_torch(self, net, X, Y, verbose_name=""):
+    def _fit_torch(self, net, X, Y, verbose_name="", epochs=None, lr=None):
+        """Train (or, warm-started from an already-trained ``net``, fine-tune) the
+        network. ``epochs``/``lr`` override the defaults — online fine-tuning passes
+        a smaller LR and fewer epochs so the model nudges toward the recent regime
+        without forgetting the train-set fit."""
         torch = _torch()
         import torch.nn as nn
 
+        epochs = self.epochs if epochs is None else epochs
+        lr = self.lr if lr is None else lr
         device = "cpu"
         net = net.to(device)
         Xt = torch.tensor(np.asarray(X, np.float32), device=device)
@@ -80,12 +89,12 @@ class TorchTrainer:
         n_val = max(1, int(0.1 * n))
         perm = torch.randperm(n)
         tr, va = perm[n_val:], perm[:n_val]
-        opt = torch.optim.Adam(net.parameters(), lr=self.lr,
+        opt = torch.optim.Adam(net.parameters(), lr=lr,
                                weight_decay=self.weight_decay)
         loss_fn = nn.SmoothL1Loss()          # Huber: robust to traffic bursts
         best = float("inf")
         best_state = None
-        for ep in range(self.epochs):
+        for ep in range(epochs):
             net.train()
             idx = tr[torch.randperm(tr.shape[0])]
             for i in range(0, idx.shape[0], self.batch_size):
