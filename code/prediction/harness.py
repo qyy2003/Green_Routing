@@ -17,7 +17,9 @@ train slice; local models no-op). ``predict(ctx)`` returns a length-``ctx.horizo
 """
 from __future__ import annotations
 
+import copy
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -75,6 +77,30 @@ class Forecaster:
     refit_every: int | None = None      # steps between refits (None => refit once)
     online_window: int | None = None    # sliding-window length (None => expanding)
 
+    # Set to an already-fitted twin (same class + config) to make the harness copy
+    # its fitted state instead of training a second time — used by the +online
+    # variants, whose initial fit is by construction identical to the frozen one.
+    warm_start_from: "Forecaster | None" = None
+
+    # Optional checkpoint protocol (duck-typed; local models simply omit it):
+    #   save(dir_path) -> Path | None   persist fitted state under dir_path
+    #   load(path, values_filled, split, timestamps) -> bool   restore it
+    # Implemented by torch_common.TorchTrainer (tiers 4-6) and GlobalGBDT.
+
+    def warm_start(self, source: "Forecaster") -> None:
+        """Adopt the fitted state of ``source`` instead of fitting from scratch.
+
+        Deep-copies the twin's entire instance state (nets, boosters, scaler
+        stats). Attributes set only on ``self`` — the +online configuration and
+        the ``+online`` name — survive, since they are absent from the twin's
+        ``__dict__``. The copy keeps the twins independent: online fine-tuning
+        never bleeds back into the frozen model.
+        """
+        if type(source) is not type(self):
+            raise TypeError(f"warm_start: {type(source).__name__} is not "
+                            f"a {type(self).__name__}")
+        self.__dict__.update(copy.deepcopy(source.__dict__))
+
     def fit(self, values_filled: np.ndarray, split: splits_mod.Split,
             timestamps: np.ndarray) -> None:
         """Train once. Local models leave this as a no-op."""
@@ -122,11 +148,21 @@ def backtest(
     max_origins: int | None = 120,
     fill_limit: int = config.DAILY_STEPS // 24,   # ~1 h
     verbose: bool = True,
+    out_dir: Path | str | None = None,
+    resume: bool = False,
 ) -> "BacktestResult":
     """Run every model over the test block and collect per-point predictions.
 
     horizons: name->steps (default config.HORIZONS). stride: origin spacing in steps
     (default = 6 h). max_origins caps the number of origins (bounds per-link model cost).
+
+    out_dir: when given, every fitted model that supports it is checkpointed to
+    ``out_dir/checkpoints/`` right after training, and each model's raw records are
+    flushed to ``out_dir/records/<name>.csv`` as soon as its backtest finishes — so a
+    Ctrl-C loses at most the model currently running and still returns the completed
+    models' results. resume: reuse those files from an earlier run — models with cached
+    records are skipped outright, and pending models reload their checkpoint (skipping
+    training) when one exists.
     """
     horizons = horizons or dict(config.HORIZONS)
     hsteps = tuple(sorted(set(horizons.values())))
@@ -143,58 +179,132 @@ def backtest(
         print(f"[harness] {len(origins)} origins, {Ln} links, "
               f"horizons={hsteps}, stride={stride}")
 
-    for m in models:
-        if verbose:
-            print(f"[harness] fit {m.name} (global={m.is_global}) ...")
-        m.fit(values_filled, split, ts)
+    ckpt_dir = rec_dir = None
+    if out_dir is not None:
+        ckpt_dir = Path(out_dir) / "checkpoints"
+        rec_dir = Path(out_dir) / "records"
+        ckpt_dir.mkdir(parents=True, exist_ok=True)
+        rec_dir.mkdir(parents=True, exist_ok=True)
 
-    records: list[dict] = []
+    def _checkpoint(m):
+        hits = sorted(ckpt_dir.glob(f"{m.name}.*")) if ckpt_dir is not None else []
+        return hits[0] if hits else None
+
+    done: set[str] = set()
+    if resume and rec_dir is not None:
+        done = {m.name for m in models if (rec_dir / f"{m.name}.csv").exists()}
+        if done and verbose:
+            print(f"[harness] resume: cached records for {sorted(done)}")
+
+    # models with cached records still need their fit if a pending twin warm-starts
+    # from them (and no checkpoint of their own can stand in)
+    needed_srcs = {id(m.warm_start_from) for m in models
+                   if m.name not in done and m.warm_start_from is not None}
+
+    interrupted = False
+    try:
+        for m in models:
+            # A checkpoint reload is cheap, so on resume prefer it even for models
+            # whose records are cached — they stay usable (overlay plots, twins).
+            ck = _checkpoint(m) if resume else None
+            loader = getattr(m, "load", None)
+            if ck is not None and callable(loader):
+                try:
+                    if loader(ck, values_filled, split, ts):
+                        if verbose:
+                            print(f"[harness] load {m.name} <- {ck}")
+                        continue
+                except Exception as exc:
+                    if verbose:
+                        print(f"[harness] load {m.name} failed ({exc}); fitting")
+            if m.name in done and id(m) not in needed_srcs:
+                continue                # cached records and nobody needs its fit
+            if m.warm_start_from is not None:
+                if verbose:
+                    print(f"[harness] warm-start {m.name} from fitted "
+                          f"{m.warm_start_from.name} (no second training)")
+                m.warm_start(m.warm_start_from)
+            else:
+                if verbose:
+                    print(f"[harness] fit {m.name} (global={m.is_global}) ...")
+                m.fit(values_filled, split, ts)
+            saver = getattr(m, "save", None)
+            if ckpt_dir is not None and callable(saver):
+                p = saver(ckpt_dir)
+                if p is not None and verbose:
+                    print(f"[harness] checkpoint -> {p}")
+    except KeyboardInterrupt:
+        interrupted = True
+        print("[harness] interrupted during fit — finished checkpoints are on disk; "
+              "rerun with --resume to continue")
+
+    rec_cols = ["model", "tier", "link", "link_idx", "horizon", "origin",
+                "y_true", "y_pred"]
+    frames: list[pd.DataFrame] = []
     for m in models:
+        rec_path = rec_dir / f"{m.name}.csv" if rec_dir is not None else None
+        if m.name in done:
+            frames.append(pd.read_csv(rec_path))
+            continue
+        if interrupted:
+            continue
         if verbose:
             print(f"[harness] backtest {m.name} ...")
         do_online = getattr(m, "online_enabled", False) and getattr(m, "supports_online", False)
         last_refit: int | None = None
-        for o in origins:                         # origins are ascending in time
-            # Online adaptation: refit/fine-tune on data strictly < o (no leakage).
-            # Refit at the first origin, then every ``refit_every`` steps.
-            if do_online and (last_refit is None or
-                              (m.refit_every and o - last_refit >= m.refit_every)):
-                try:
-                    m.online_update(values_filled, ts, upto=o)
-                except Exception as exc:          # keep the run going on a bad refit
-                    if verbose:
-                        print(f"[harness]   {m.name} online_update @ {o} failed: {exc}")
-                last_refit = o                    # avoid retrying every origin
-            path_len = min(max_h, T - o)
-            if path_len < 1:
-                continue
-            hs_here = tuple(h for h in hsteps if h <= path_len)
-            for j in range(Ln):
-                ctx = Context(
-                    link=j, origin=o, horizon=path_len, horizons=hs_here,
-                    timestamps=ts, values_filled=values_filled,
-                    train_end=split.train[1],
-                )
-                try:
-                    path = np.asarray(m.predict(ctx), dtype=float).ravel()
-                except Exception:
+        mrecs: list[dict] = []
+        try:
+            for o in origins:                     # origins are ascending in time
+                # Online adaptation: refit/fine-tune on data strictly < o (no leakage).
+                # Refit at the first origin, then every ``refit_every`` steps.
+                if do_online and (last_refit is None or
+                                  (m.refit_every and o - last_refit >= m.refit_every)):
+                    try:
+                        m.online_update(values_filled, ts, upto=o)
+                    except Exception as exc:      # keep the run going on a bad refit
+                        if verbose:
+                            print(f"[harness]   {m.name} online_update @ {o} failed: {exc}")
+                    last_refit = o                # avoid retrying every origin
+                path_len = min(max_h, T - o)
+                if path_len < 1:
                     continue
-                for h in hs_here:
-                    if h - 1 >= path.size:
-                        continue
-                    yhat = path[h - 1]
-                    ytrue = values_raw[o + h - 1, j]
-                    if not (np.isfinite(yhat) and np.isfinite(ytrue)):
-                        continue
-                    records.append(
-                        {"model": m.name, "tier": m.tier, "link": panel.links[j],
-                         "link_idx": j, "horizon": h, "origin": o,
-                         "y_true": ytrue, "y_pred": yhat}
+                hs_here = tuple(h for h in hsteps if h <= path_len)
+                for j in range(Ln):
+                    ctx = Context(
+                        link=j, origin=o, horizon=path_len, horizons=hs_here,
+                        timestamps=ts, values_filled=values_filled,
+                        train_end=split.train[1],
                     )
+                    try:
+                        path = np.asarray(m.predict(ctx), dtype=float).ravel()
+                    except Exception:
+                        continue
+                    for h in hs_here:
+                        if h - 1 >= path.size:
+                            continue
+                        yhat = path[h - 1]
+                        ytrue = values_raw[o + h - 1, j]
+                        if not (np.isfinite(yhat) and np.isfinite(ytrue)):
+                            continue
+                        mrecs.append(
+                            {"model": m.name, "tier": m.tier, "link": panel.links[j],
+                             "link_idx": j, "horizon": h, "origin": o,
+                             "y_true": ytrue, "y_pred": yhat}
+                        )
+        except KeyboardInterrupt:
+            interrupted = True
+            print(f"[harness] interrupted — dropping partial {m.name}; finished "
+                  f"models are kept (rerun with --resume to continue)")
+            continue
+        df = pd.DataFrame(mrecs, columns=rec_cols)
+        if rec_path is not None:
+            df.to_csv(rec_path, index=False)      # flush: this model now survives Ctrl-C
+        frames.append(df)
 
     return BacktestResult(
-        pd.DataFrame.from_records(records),
-        panel=panel, split=split, horizons=horizons,
+        pd.concat(frames, ignore_index=True) if frames
+        else pd.DataFrame(columns=rec_cols),
+        panel=panel, split=split, horizons=horizons, interrupted=interrupted,
     )
 
 
@@ -202,11 +312,13 @@ def backtest(
 # Result aggregation + skill
 # --------------------------------------------------------------------------- #
 class BacktestResult:
-    def __init__(self, records: pd.DataFrame, panel, split, horizons):
+    def __init__(self, records: pd.DataFrame, panel, split, horizons,
+                 interrupted: bool = False):
         self.records = records
         self.panel = panel
         self.split = split
         self.horizons = horizons
+        self.interrupted = interrupted    # Ctrl-C mid-run: records are partial
         self._h_name = {v: k for k, v in horizons.items()}
 
     def _train_scale(self, link_idx: int) -> float:

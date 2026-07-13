@@ -3,13 +3,13 @@
 A link's load is physically coupled to adjacent links: they share flows and common
 routing, and a reroute/failure event shifts load between them together. A per-link model
 can't see that; a graph model can. This is the Andreoletti-et-al.-2019 DCRNN-on-backbone
-idea, here as a compact **Graph-WaveNet-lite**:
+idea, here as **Graph WaveNet at its paper design** (Wu et al. 2019):
 
-  * a shared **dilated-TCN** temporal encoder per link (node),
-  * graph mixing over a **fixed** link adjacency (links sharing a router, or on
-    physically-adjacent routers per ``dataset.topology``) **plus a learned adaptive
+  * **gated** (tanh*sigmoid) dilated-conv temporal encoder, residual + skip streams,
+  * **order-2 diffusion** over a **fixed** link adjacency (links sharing a router, or
+    on physically-adjacent routers per ``dataset.topology``) **plus a learned adaptive
     adjacency** (Graph WaveNet's contribution — usually beats fixed-topology-only),
-  * a direct multi-horizon head per node.
+  * a direct multi-horizon 256->512->h head per node.
 
 The whole panel is forecast jointly at each origin (cached), then the harness reads the
 requested link's path — so it is scored on the exact same rolling origins as every other
@@ -43,39 +43,79 @@ def link_adjacency(devices: list[str]) -> np.ndarray:
     return (A * dinv[:, None] * dinv[None, :]).astype(np.float32)
 
 
-def _build_module(n_nodes, lin, h, A_norm, ch=32, levels=3, d_embed=10, gc_layers=2):
+def _build_module(n_nodes, lin, h, A_norm, ch=32, skip_ch=256, end_ch=512,
+                  k=2, d_embed=10, order=2, dropout=0.3):
+    """Graph WaveNet at the paper's design (Wu et al. 2019, official repo):
+    gated tanh*sigmoid dilated convs (residual/dilation 32ch), per-layer skip
+    connections into a 256-ch skip stream, order-2 diffusion over the fixed +
+    learned-adaptive adjacency, dropout 0.3, and a 256->512->h output MLP.
+
+    GWN is a short-window model (the paper runs seq_len=12): only the last
+    output position feeds the head, so input beyond the receptive field is dead
+    compute — we size depth to the lookback (<= the paper's 8 layers) and
+    truncate the input to the receptive field.
+    """
     torch = tc._torch()
     import torch.nn as nn
 
-    class GraphWaveNetLite(nn.Module):
+    n_layers = min(8, max(1, int(np.log2(max(2, lin)))))   # valid convs must fit lin
+    rf = 1 + (k - 1) * sum(2 ** i for i in range(n_layers))
+
+    class GraphWaveNet(nn.Module):
         def __init__(self):
             super().__init__()
             self.register_buffer("A", torch.tensor(A_norm))
-            self.E1 = nn.Parameter(torch.randn(n_nodes, d_embed) * 0.05)
-            self.E2 = nn.Parameter(torch.randn(n_nodes, d_embed) * 0.05)
-            # temporal encoder (shared across nodes): dilated causal convs
-            tlayers, c_in = [], 1
-            for i in range(levels):
-                dl = 2 ** i
-                tlayers += [nn.Conv1d(c_in, ch, 3, padding=2 * dl, dilation=dl), nn.ReLU()]
-                c_in = ch
-            self.tcn = nn.Sequential(*tlayers)
-            self.lin = lin
-            self.gc = nn.ModuleList([nn.Linear(ch, ch) for _ in range(gc_layers)])
-            self.head = nn.Linear(ch, h)
+            self.E1 = nn.Parameter(torch.randn(n_nodes, d_embed))
+            self.E2 = nn.Parameter(torch.randn(d_embed, n_nodes))
+            self.start = nn.Conv2d(1, ch, (1, 1))
+            self.filt = nn.ModuleList()
+            self.gate = nn.ModuleList()
+            self.skip = nn.ModuleList()
+            self.gconv = nn.ModuleList()
+            for i in range(n_layers):
+                d = 2 ** i
+                self.filt.append(nn.Conv2d(ch, ch, (1, k), dilation=(1, d)))
+                self.gate.append(nn.Conv2d(ch, ch, (1, k), dilation=(1, d)))
+                self.skip.append(nn.Conv2d(ch, skip_ch, (1, 1)))
+                # diffusion GCN: 1x1 conv mixes [z, Az, A^2 z, ~Az, ~A^2 z]
+                self.gconv.append(nn.Conv2d(ch * (2 * order + 1), ch, (1, 1)))
+            self.end1 = nn.Conv2d(skip_ch, end_ch, (1, 1))
+            self.end2 = nn.Conv2d(end_ch, h, (1, 1))
+            self.drop = nn.Dropout(dropout)
+
+        def _layer(self, i, z, adp):
+            """One residual block -> (next z, skip contribution). Isolated so it can
+            be gradient-checkpointed: each layer's [B, 160, N, rf] gconv-concat
+            activation is recomputed in the backward pass instead of all n_layers
+            being held at once (the term that OOMs a 6 GB card at large N)."""
+            res = z
+            z = torch.tanh(self.filt[i](z)) * torch.sigmoid(self.gate[i](z))
+            s = self.skip[i](z[:, :, :, -1:])                  # last position only
+            outs = [z]
+            for A in (self.A, adp):                            # fixed + adaptive
+                zk = z
+                for _ in range(order):
+                    zk = torch.einsum("nm,bcmt->bcnt", A, zk)
+                    outs.append(zk)
+            z = self.drop(self.gconv[i](torch.cat(outs, dim=1)))
+            z = z + res[:, :, :, -z.shape[-1]:]                # residual (align T)
+            return z, s
 
         def forward(self, x):                     # x [B, N, lin]
-            b, n, lw = x.shape
-            z = self.tcn(x.reshape(b * n, 1, lw))[:, :, :self.lin]
-            z = z[:, :, -1].reshape(b, n, -1)     # [B, N, ch]
-            adp = torch.softmax(torch.relu(self.E1 @ self.E2.t()), dim=1)   # [N, N]
-            A = self.A + adp
-            for lin_layer in self.gc:
-                agg = torch.einsum("nm,bmc->bnc", A, z)      # graph mixing
-                z = torch.relu(z + lin_layer(agg))           # residual
-            return self.head(z)                   # [B, N, h]
+            from torch.utils.checkpoint import checkpoint
+            z = self.start(x[:, None, :, -rf:])   # [B, ch, N, T<=rf]
+            adp = torch.softmax(torch.relu(self.E1 @ self.E2), dim=1)
+            skip = None
+            for i in range(len(self.filt)):
+                if self.training and z.requires_grad:
+                    z, s = checkpoint(self._layer, i, z, adp, use_reentrant=False)
+                else:
+                    z, s = self._layer(i, z, adp)
+                skip = s if skip is None else skip + s
+            out = self.end2(torch.relu(self.end1(torch.relu(skip))))   # [B, h, N, 1]
+            return out[:, :, :, 0].transpose(1, 2)                     # [B, N, h]
 
-    return GraphWaveNetLite()
+    return GraphWaveNet()
 
 
 class STGNNForecaster(Forecaster, tc.TorchTrainer):
@@ -88,19 +128,32 @@ class STGNNForecaster(Forecaster, tc.TorchTrainer):
 
     def __init__(self, devices: list[str], lookback=config.DAILY_STEPS,
                  horizons=tuple(config.HORIZONS.values()), epochs=15,
-                 max_train_samples=1500):
+                 max_train_samples=3000):
         self.devices = list(devices)
         self.lookback = lookback
         self.horizons = tuple(sorted(set(horizons)))
         self.max_h = max(self.horizons)
         self.epochs = epochs
-        self.batch_size = 64
+        self.weight_decay = 1e-4
         self.max_train_samples = max_train_samples
+        # Batch adaptively. With gradient checkpointing the retained activations
+        # are the n_layers inter-layer states [B, ch=32, N, rf] plus one recomputed
+        # gconv-concat [B, 160, N, rf]; the former dominates. Keep it ~1.5 GB so a
+        # large node set N still fits a 6 GB card (rf<=256 is the receptive field).
+        n = len(self.devices)
+        n_layers = min(8, max(1, int(np.log2(max(2, lookback)))))
+        rf = min(lookback, 1 + sum(2 ** i for i in range(n_layers)))
+        budget_elems = 1_500_000_000 // 4          # ~1.5 GB of float32 activations
+        per_sample = n_layers * 32 * n * rf        # ch=32 inter-layer states
+        self.batch_size = int(max(4, min(64, budget_elems // max(1, per_sample))))
         self.net = None
         self._A = link_adjacency(self.devices)
         self._cache_o = None
         self._cache_out = None
         self._train_start = 0
+
+    def _build_net(self, lin, h):
+        return _build_module(len(self.devices), lin, h, self._A)
 
     @staticmethod
     def _revin_matrix(win):                       # win [N, lin] -> normalised + stats
@@ -128,15 +181,14 @@ class STGNNForecaster(Forecaster, tc.TorchTrainer):
 
     def fit(self, values_filled, split, timestamps):
         log_vals = tc.log1p(values_filled)
-        T, N = log_vals.shape
         self._train_start = split.train[0]
         anchors = tc.make_anchors(split.train, self.lookback, self.max_h,
                                   min_ctx=self.lookback, cap=self.max_train_samples)
         X, Y = self._windows(log_vals, anchors)
         if X.shape[0] < 50:
             raise ValueError(f"stgnn: too few training samples ({X.shape[0]})")
-        net = _build_module(N, self.lookback, self.max_h, self._A)
-        self.net = self._fit_torch(net, X, Y, verbose_name=self.name)
+        self.net = self._fit_torch(self._build_net(self.lookback, self.max_h), X, Y,
+                                   verbose_name=self.name)
 
     def online_update(self, values_filled, timestamps, upto: int) -> None:
         if self.net is None:

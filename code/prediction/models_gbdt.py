@@ -3,8 +3,12 @@
 Forecasting reframed as **tabular regression**. For each ``(link, anchor-time t)`` row we
 build lag + rolling + calendar features and regress the log-traffic ``h`` steps ahead.
 One **global** model is trained over *all* links' rows at once (more data, cross-link
-transfer, generalises to new links) with a per-link categorical id — never one model per
-link. Multi-step is handled **directly**: a separate regressor per horizon.
+transfer, generalises to new links) with a per-link **level encoding** (the link's
+train-window mean and std of log-traffic) as its identity feature — never one model per
+link, and no high-cardinality categorical (sklearn caps those at 255, and the cohort has
+hundreds of links). Mean-encoding also hands the booster the link's scale directly, which
+is the signal it needs to separate a 25 Gbps backbone port from a 1 Mbps access link.
+Multi-step is handled **directly**: a separate regressor per horizon.
 
 LightGBM/XGBoost aren't installed in this environment, so we use scikit-learn's
 ``HistGradientBoostingRegressor`` — a histogram-based gradient booster that is the direct
@@ -12,6 +16,9 @@ methodological equivalent (same "binned features + leaf-wise-ish boosted trees" 
 natively supports categorical features.
 """
 from __future__ import annotations
+
+import pickle
+from pathlib import Path
 
 import numpy as np
 
@@ -41,6 +48,8 @@ class GlobalGBDT(Forecaster):
         self.random_state = random_state
         self.models: dict[int, object] = {}
         self._min_ctx = max(max(self.lags), max(self.roll_windows))
+        self._link_level = None      # per-link train-window mean(log traffic)  [L]
+        self._link_lstd = None       # per-link train-window std(log traffic)   [L]
 
     # -- feature engineering ------------------------------------------------ #
     def _precompute(self, values_filled: np.ndarray, timestamps: np.ndarray) -> None:
@@ -74,23 +83,38 @@ class GlobalGBDT(Forecaster):
         names = [f"lag{k}" for k in self.lags]
         for w in self.roll_windows:
             names += [f"rmean{w}", f"rstd{w}"]
-        names += ["tod_sin", "tod_cos", "dow_sin", "dow_cos", "weekend", "link_id"]
+        names += ["tod_sin", "tod_cos", "dow_sin", "dow_cos", "weekend",
+                  "link_level", "link_lstd"]
         return names
 
+    def _set_link_stats(self, tr_start: int, tr_end: int) -> None:
+        """Per-link mean/std of log-traffic over the *train* window (leak-free link
+        identity: computed once from train, applied to train and test rows alike)."""
+        seg = self._log[tr_start:tr_end]
+        with np.errstate(invalid="ignore"):
+            self._link_level = np.nan_to_num(np.nanmean(seg, axis=0)).astype(np.float32)
+            self._link_lstd = np.nan_to_num(np.nanstd(seg, axis=0)).astype(np.float32)
+
     def _rows(self, anchors: np.ndarray, link: int) -> np.ndarray:
-        """Feature matrix for the given anchor indices of one link (last col = link id)."""
+        """Feature matrix for the given anchor indices of one link (last two cols =
+        the link's train-window level encoding, constant per link)."""
         cols = [self._log[anchors - k, link] for k in self.lags]
         for w in self.roll_windows:
             cols.append(self._roll_mean[w][anchors, link])
             cols.append(self._roll_std[w][anchors, link])
         cal = self._cal[anchors]
-        X = np.column_stack(cols + [cal, np.full(anchors.size, link, np.float32)])
+        lvl = float(self._link_level[link]) if self._link_level is not None else 0.0
+        lstd = float(self._link_lstd[link]) if self._link_lstd is not None else 0.0
+        X = np.column_stack(cols + [cal,
+                                    np.full(anchors.size, lvl, np.float32),
+                                    np.full(anchors.size, lstd, np.float32)])
         return X.astype(np.float32)
 
     # -- fit / predict ------------------------------------------------------ #
     def fit(self, values_filled, split, timestamps) -> None:
         self._precompute(values_filled, timestamps)
         self._train_start = split.train[0]
+        self._set_link_stats(split.train[0], split.train[1])
         self._fit_range(split.train[0], split.train[1])
 
     def _fit_range(self, tr_start: int, tr_end: int) -> None:
@@ -128,18 +152,37 @@ class GlobalGBDT(Forecaster):
         X = np.vstack(X_parts)
         finite_rows = np.isfinite(X).all(axis=1)
 
-        cat_mask = [False] * (X.shape[1] - 1) + [True]     # last col = link id
-        for h in self.horizons:
+        for h in self.horizons:                            # all features numeric now
             y = np.concatenate(y_parts[h])
             m = finite_rows & np.isfinite(y)
             reg = HistGradientBoostingRegressor(
                 max_iter=300, learning_rate=0.05, max_depth=None,
                 max_leaf_nodes=63, l2_regularization=1.0,
-                categorical_features=cat_mask, random_state=self.random_state,
+                random_state=self.random_state,
                 early_stopping=True, validation_fraction=0.1,
             )
             reg.fit(X[m], y[m])
             self.models[h] = reg
+
+    # -- checkpointing (see harness.Forecaster's save/load protocol) --------- #
+    def save(self, dir_path) -> Path | None:
+        """Pickle the per-horizon boosters as ``<name>.pkl``."""
+        if not self.models:
+            return None
+        p = Path(dir_path) / f"{self.name}.pkl"
+        with open(p, "wb") as fh:
+            pickle.dump(self.models, fh)
+        return p
+
+    def load(self, path, values_filled, split, timestamps) -> bool:
+        """Restore the boosters; features are recomputed from the panel (cheap)."""
+        with open(path, "rb") as fh:
+            models = pickle.load(fh)
+        self._precompute(values_filled, timestamps)
+        self._train_start = split.train[0]
+        self._set_link_stats(split.train[0], split.train[1])
+        self.models = models
+        return True
 
     def online_update(self, values_filled, timestamps, upto: int) -> None:
         """Refit on all data before the origin (features/rolling stats already

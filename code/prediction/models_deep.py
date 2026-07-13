@@ -27,6 +27,7 @@ from . import torch_common as tc
 def _modules():
     torch = tc._torch()
     import torch.nn as nn
+    from torch.nn.utils.parametrizations import weight_norm
 
     class MovingAvg(nn.Module):
         def __init__(self, kernel):
@@ -39,7 +40,9 @@ def _modules():
             return torch.nn.functional.avg_pool1d(xp, self.kernel, 1)[:, 0, :x.shape[1]]
 
     class DLinear(nn.Module):
-        """Trend/seasonal decomposition + a linear map per component (Zeng et al. 2023)."""
+        """Trend/seasonal decomposition + a linear map per component (Zeng et al.
+        2023). Already its designed size — DLinear is linear; its only capacity
+        knob is the lookback."""
         def __init__(self, lin, h, kernel=25):
             super().__init__()
             self.decomp = MovingAvg(kernel)
@@ -52,57 +55,92 @@ def _modules():
             return self.lin_t(trend) + self.lin_s(seasonal)
 
     class GRUNet(nn.Module):
-        def __init__(self, lin, h, hidden=64, layers=1):
+        """2-layer, 128-hidden GRU with inter-layer dropout — the standard strong
+        RNN-forecaster configuration (there is no single canonical paper)."""
+        def __init__(self, lin, h, hidden=128, layers=2, dropout=0.1):
             super().__init__()
-            self.gru = nn.GRU(1, hidden, layers, batch_first=True)
+            self.gru = nn.GRU(1, hidden, layers, batch_first=True,
+                              dropout=dropout if layers > 1 else 0.0)
             self.head = nn.Linear(hidden, h)
 
         def forward(self, x):
             out, _ = self.gru(x[:, :, None])     # [B, L, hidden]
             return self.head(out[:, -1])
 
-    class TCNNet(nn.Module):
-        """Stacked dilated causal 1-D convolutions (exponential receptive field)."""
-        def __init__(self, lin, h, ch=32, levels=4, k=3):
+    class Chomp(nn.Module):
+        """Trim the future-side padding so the dilated conv stays causal."""
+        def __init__(self, n):
             super().__init__()
-            layers = []
-            c_in = 1
+            self.n = n
+
+        def forward(self, x):
+            return x[:, :, :-self.n] if self.n else x
+
+    class TCNBlock(nn.Module):
+        """Bai et al. 2018 residual block: 2 x (weight-norm dilated causal conv
+        -> chomp -> ReLU -> dropout), plus a 1x1 downsample on the residual."""
+        def __init__(self, c_in, ch, k, d, dropout):
+            super().__init__()
+            pad = (k - 1) * d
+            self.net = nn.Sequential(
+                weight_norm(nn.Conv1d(c_in, ch, k, padding=pad, dilation=d)),
+                Chomp(pad), nn.ReLU(), nn.Dropout(dropout),
+                weight_norm(nn.Conv1d(ch, ch, k, padding=pad, dilation=d)),
+                Chomp(pad), nn.ReLU(), nn.Dropout(dropout),
+            )
+            self.down = nn.Conv1d(c_in, ch, 1) if c_in != ch else None
+            self.relu = nn.ReLU()
+
+        def forward(self, x):
+            res = x if self.down is None else self.down(x)
+            return self.relu(self.net(x) + res)
+
+    class TCNNet(nn.Module):
+        """Bai et al. 2018 TCN at its designed shape: residual blocks, 64 channels,
+        dropout 0.2, and depth auto-sized so the receptive field covers the
+        lookback (the paper's sizing rule), capped at 9 levels (RF 2045)."""
+        def __init__(self, lin, h, ch=64, k=3, dropout=0.2):
+            super().__init__()
+            levels = 1
+            while 1 + 2 * (k - 1) * (2 ** levels - 1) < lin and levels < 9:
+                levels += 1
+            blocks, c_in = [], 1
             for i in range(levels):
-                d = 2 ** i
-                layers += [nn.Conv1d(c_in, ch, k, padding=(k - 1) * d, dilation=d),
-                           nn.ReLU()]
+                blocks.append(TCNBlock(c_in, ch, k, 2 ** i, dropout))
                 c_in = ch
-            self.net = nn.Sequential(*layers)
-            self.lin = lin
+            self.net = nn.Sequential(*blocks)
             self.head = nn.Linear(ch, h)
 
         def forward(self, x):
-            z = self.net(x[:, None, :])          # causal padding -> trim to length
-            z = z[:, :, :self.lin]
+            z = self.net(x[:, None, :])
             return self.head(z[:, :, -1])
 
     class PatchTST(nn.Module):
-        """Patch the series into tokens, encode with a small transformer (Nie et al. 2023)."""
-        def __init__(self, lin, h, patch=24, d=48, heads=4, layers=2):
+        """Nie et al. 2023 at the paper's supervised config: overlapping patches
+        (16/8), d_model 128, 16 heads, 3 encoder layers, d_ff 256, dropout 0.2
+        (LayerNorm in place of the paper's BatchNorm; RevIN is applied per window
+        by the forecaster)."""
+        def __init__(self, lin, h, patch=16, stride=8, d=128, heads=16,
+                     layers=3, d_ff=256, dropout=0.2, fc_dropout=0.2):
             super().__init__()
-            self.patch = patch
-            self.n_patch = (lin + patch - 1) // patch
-            self.pad = self.n_patch * patch - lin
+            self.patch, self.stride = patch, stride
+            self.pad = (-(lin - patch)) % stride      # front-pad so patches tile lin
+            self.n_patch = (lin + self.pad - patch) // stride + 1
             self.embed = nn.Linear(patch, d)
             self.pos = nn.Parameter(torch.zeros(1, self.n_patch, d))
-            enc = nn.TransformerEncoderLayer(d, heads, dim_feedforward=4 * d,
-                                             batch_first=True, dropout=0.0)
+            enc = nn.TransformerEncoderLayer(d, heads, dim_feedforward=d_ff,
+                                             batch_first=True, dropout=dropout)
             self.tr = nn.TransformerEncoder(enc, layers)
+            self.drop = nn.Dropout(fc_dropout)
             self.head = nn.Linear(self.n_patch * d, h)
 
         def forward(self, x):
             if self.pad:
                 x = torch.nn.functional.pad(x, (self.pad, 0), mode="replicate")
-            b = x.shape[0]
-            tokens = x.reshape(b, self.n_patch, self.patch)
+            tokens = x.unfold(-1, self.patch, self.stride)   # [B, n_patch, patch]
             z = self.embed(tokens) + self.pos
-            z = self.tr(z).reshape(b, -1)
-            return self.head(z)
+            z = self.tr(z).reshape(x.shape[0], -1)
+            return self.head(self.drop(z))
 
     return dict(DLinear=DLinear, GRUNet=GRUNet, TCNNet=TCNNet, PatchTST=PatchTST)
 
@@ -114,23 +152,35 @@ class SeqForecaster(Forecaster, tc.TorchTrainer):
     is_global = True
     supports_online = True      # warm-start fine-tune on recent windows at test time
 
+    # exponent on per-link mean traffic used as a training-loss weight; 0 = uniform
+    # (pure RevIN equalisation), 1 = weight ~ Mbps (aligns the fit with pooled MAE).
+    scale_weight: float = 0.0
+
     def __init__(self, lookback=config.DAILY_STEPS, horizons=tuple(config.HORIZONS.values()),
-                 epochs=12, max_train_samples=40_000):
+                 epochs=12, max_train_samples=100_000, scale_weight=None):
         self.lookback = lookback
         self.horizons = tuple(sorted(set(horizons)))
         self.max_h = max(self.horizons)
         self.epochs = epochs
         self.max_train_samples = max_train_samples
+        if scale_weight is not None:
+            self.scale_weight = scale_weight
+        # Activation memory scales with the input length (worst for the GRU's
+        # cuDNN workspace); shrink batches as the lookback grows so a week-long
+        # window still fits a 6 GB GPU.
+        self.batch_size = max(32, min(256, (256 * 672) // max(1, lookback)))
         self.net = None
         self._train_start = 0
+        self._link_w = None        # per-link loss weight (raw Mbps ** scale_weight)
 
     def _build_net(self, lin, h):
         raise NotImplementedError
 
     def _windows(self, log_vals, anchors):
-        """RevIN-normalised (input, target) windows for the given anchor times."""
+        """RevIN-normalised (input, target) windows plus the source link index per
+        sample (so callers can attach per-link loss weights)."""
         L = log_vals.shape[1]
-        X, Y = [], []
+        X, Y, src = [], [], []
         for j in range(L):
             for t in anchors:
                 win = log_vals[t - self.lookback:t, j]
@@ -140,20 +190,33 @@ class SeqForecaster(Forecaster, tc.TorchTrainer):
                 m, s = win.mean(), win.std() + 1e-5
                 X.append((win - m) / s)
                 Y.append((tgt - m) / s)
-        return np.asarray(X, np.float32), np.asarray(Y, np.float32)
+                src.append(j)
+        return (np.asarray(X, np.float32), np.asarray(Y, np.float32),
+                np.asarray(src, np.int64))
+
+    def _weights_for(self, src):
+        """Per-sample loss weights from the source-link scale, or None if uniform."""
+        if self.scale_weight == 0.0 or self._link_w is None or src.size == 0:
+            return None
+        return self._link_w[src]
 
     def fit(self, values_filled, split, timestamps):
         log_vals = tc.log1p(values_filled)
         L = log_vals.shape[1]
         self._train_start = split.train[0]
+        if self.scale_weight != 0.0:
+            # link scale = mean raw throughput over the train slice (no test leak)
+            tr_mean = np.nanmean(values_filled[split.train[0]:split.train[1]], axis=0)
+            self._link_w = np.nan_to_num(np.clip(tr_mean, 0, None),
+                                         nan=0.0).astype(np.float32) ** self.scale_weight
         cap = max(1, self.max_train_samples // L)
         anchors = tc.make_anchors(split.train, self.lookback, self.max_h,
                                   min_ctx=self.lookback, cap=cap)
-        X, Y = self._windows(log_vals, anchors)
+        X, Y, src = self._windows(log_vals, anchors)
         if X.shape[0] < 100:
             raise ValueError(f"{self.name}: too few training windows ({X.shape[0]})")
         self.net = self._fit_torch(self._build_net(self.lookback, self.max_h), X, Y,
-                                   verbose_name=self.name)
+                                   verbose_name=self.name, W=self._weights_for(src))
 
     def online_update(self, values_filled, timestamps, upto: int) -> None:
         if self.net is None:
@@ -166,12 +229,13 @@ class SeqForecaster(Forecaster, tc.TorchTrainer):
         # anchors drawn from [start, upto): target path kept strictly < upto (no leakage)
         anchors = tc.make_anchors((start, upto), self.lookback, self.max_h,
                                   min_ctx=self.lookback, cap=cap)
-        X, Y = self._windows(log_vals, anchors)
+        X, Y, src = self._windows(log_vals, anchors)
         if X.shape[0] < 20:
             return                              # too little recent data: keep current net
         # warm-start: continue training the existing net briefly at a low LR
         self.net = self._fit_torch(self.net, X, Y, verbose_name=f"{self.name}:online",
-                                   epochs=self.online_epochs, lr=self.online_lr)
+                                   epochs=self.online_epochs, lr=self.online_lr,
+                                   W=self._weights_for(src))
 
     def predict(self, ctx: Context) -> np.ndarray:
         torch = tc._torch()
@@ -221,14 +285,16 @@ class DLinearForecaster(SeqForecaster):
 class PatchTSTForecaster(SeqForecaster):
     name = "patchtst"
     tier = 5
+    lr = 1e-4                   # the paper's supervised LR (1e-3 diverges at d=128)
 
     def __init__(self, lookback=config.DAILY_STEPS,
-                 horizons=tuple(config.HORIZONS.values()), patch=24, **kw):
+                 horizons=tuple(config.HORIZONS.values()), patch=16, stride=8, **kw):
         super().__init__(lookback=lookback, horizons=horizons, **kw)
         self.patch = patch
+        self.stride = stride
 
     def _build_net(self, lin, h):
-        return _modules()["PatchTST"](lin, h, patch=self.patch)
+        return _modules()["PatchTST"](lin, h, patch=self.patch, stride=self.stride)
 
 
 def default_deep(horizons, lookback=config.DAILY_STEPS):

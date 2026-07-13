@@ -9,13 +9,17 @@
         --max-links 30 --out ../artifacts/pred_demo
 
 Writes to --out: aggregate.csv, per_link.csv, skill_<metric>.csv, and PNG plots
-(predicted-vs-actual overlays + a skill bar). Everything is scored on the identical
+(predicted-vs-actual overlays + a skill bar), plus checkpoints/ (fitted model weights,
+saved right after each training) and records/ (per-model raw predictions, flushed as
+each model finishes). Ctrl-C keeps everything already flushed; rerun with --resume to
+skip the finished models and reload saved weights. Everything is scored on the identical
 rolling origins, so "model X beats persistence by Y%" is an honest number.
 """
 from __future__ import annotations
 
 import argparse
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -28,33 +32,44 @@ from .models_classical import default_classical
 from .models_gbdt import GlobalGBDT
 
 
-def _new_global_models(tiers, hsteps, panel, lookback, epochs):
+def _new_global_models(tiers, hsteps, panel, lookback, epochs, max_train_samples=None,
+                       scale_weight=0.0):
     """The global (fit-once) tiers only — instantiable twice (frozen + online)."""
     models: list[harness.Forecaster] = []
     if 3 in tiers:
         models.append(GlobalGBDT(horizons=hsteps))
+    kw = {} if max_train_samples is None else {"max_train_samples": max_train_samples}
+    if scale_weight:
+        kw["scale_weight"] = scale_weight
     if 4 in tiers:
         from .models_deep import GRUForecaster, TCNForecaster
-        models += [GRUForecaster(lookback=lookback, horizons=hsteps, epochs=epochs),
-                   TCNForecaster(lookback=lookback, horizons=hsteps, epochs=epochs)]
+        models += [GRUForecaster(lookback=lookback, horizons=hsteps, epochs=epochs, **kw),
+                   TCNForecaster(lookback=lookback, horizons=hsteps, epochs=epochs, **kw)]
     if 5 in tiers:
         from .models_deep import DLinearForecaster, PatchTSTForecaster
-        models += [DLinearForecaster(lookback=lookback, horizons=hsteps, epochs=epochs),
-                   PatchTSTForecaster(lookback=lookback, horizons=hsteps, epochs=epochs)]
+        models += [DLinearForecaster(lookback=lookback, horizons=hsteps, epochs=epochs, **kw),
+                   PatchTSTForecaster(lookback=lookback, horizons=hsteps, epochs=epochs, **kw)]
     if 6 in tiers:
         from .models_gnn import STGNNForecaster
+        # STGNN samples are whole-panel (all L links per anchor), so its budget is
+        # per-anchor: match the per-link coverage of the deep tiers, capped for RAM.
+        skw = {} if max_train_samples is None else \
+            {"max_train_samples": min(3000, max(1000, max_train_samples // max(1, panel.L)))}
         models.append(STGNNForecaster(panel.devices, lookback=lookback,
-                                      horizons=hsteps, epochs=epochs))
+                                      horizons=hsteps, epochs=epochs, **skw))
     return models
 
 
-def build_models(tiers, hsteps, seasonal_sarima, panel, lookback, epochs, online_cfg=None):
+def build_models(tiers, hsteps, seasonal_sarima, panel, lookback, epochs, online_cfg=None,
+                 max_train_samples=None, scale_weight=0.0):
     """Assemble the requested tiers. Tiers 4-6 import torch lazily (only if requested).
 
     If ``online_cfg`` is given, an ``<name>+online`` variant of every global tier is
     added alongside its frozen twin. The online variant re-fits/fine-tunes on data
     strictly before each forecast origin (see harness.Forecaster.online_update), so
     the two land on identical origins — the honest "how much is recent data worth?".
+    Its initial fit is identical to the frozen twin's, so it warm-starts from the
+    twin's fitted state instead of training a second time.
     """
     models: list[harness.Forecaster] = []
     if 1 in tiers:
@@ -62,10 +77,15 @@ def build_models(tiers, hsteps, seasonal_sarima, panel, lookback, epochs, online
     if 2 in tiers:
         models += default_classical(seasonal_sarima=seasonal_sarima)
 
-    models += _new_global_models(tiers, hsteps, panel, lookback, epochs)
+    frozen_globals = _new_global_models(tiers, hsteps, panel, lookback, epochs,
+                                        max_train_samples, scale_weight)
+    models += frozen_globals
 
     if online_cfg is not None:
-        for m in _new_global_models(tiers, hsteps, panel, lookback, epochs):
+        for base, m in zip(frozen_globals,
+                           _new_global_models(tiers, hsteps, panel, lookback, epochs,
+                                              max_train_samples, scale_weight)):
+            m.warm_start_from = base
             m.online_enabled = True
             m.refit_every = online_cfg["refit_every"]
             m.online_window = online_cfg["window"]
@@ -76,6 +96,38 @@ def build_models(tiers, hsteps, seasonal_sarima, panel, lookback, epochs, online
             m.name = f"{m.name}+online"
             models.append(m)
     return models
+
+
+def prune_checkpoints(out: Path) -> None:
+    """After a *complete* run (results on disk), drop the ``+online`` checkpoints.
+
+    They hold the warm-start state — a byte-identical copy of the frozen twin's
+    trained weights, never the fine-tuned state (a resumed backtest replays the
+    online adaptation from the trained fit anyway) — so once the results are
+    recorded they are pure duplicates. What happened is appended to
+    ``<out>/cleanup.log``.
+    """
+    ckpt_dir = out / "checkpoints"
+    if not ckpt_dir.is_dir():
+        return
+    removed, kept = [], []
+    for p in sorted(ckpt_dir.iterdir()):
+        (removed if "+online" in p.name else kept).append(p)
+    for p in removed:
+        p.unlink()
+    stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    log = out / "cleanup.log"
+    with open(log, "a") as fh:
+        fh.write(f"[{stamp}] run complete, results recorded — pruning intermediate "
+                 f"checkpoints\n")
+        for p in removed:
+            fh.write(f"  deleted {p.relative_to(out)}  "
+                     f"(+online warm-start duplicate of its frozen twin)\n")
+        for p in kept:
+            fh.write(f"  kept    {p.relative_to(out)}  (trained model weights)\n")
+    if removed:
+        print(f"[cleanup] removed {len(removed)} +online checkpoint(s), kept "
+              f"{len(kept)} trained one(s) — see {log}")
 
 
 def make_split(panel, args) -> splits_mod.Split:
@@ -208,7 +260,10 @@ def main():
     ap.add_argument("--test-start")
     ap.add_argument("--value-col", default="total_mbps")
     ap.add_argument("--min-coverage", type=float, default=0.9)
-    ap.add_argument("--max-links", type=int, default=30)
+    ap.add_argument("--max-links", type=int, default=None,
+                    help="cap the panel at the first N dense links (quick "
+                         "experiments only); default: keep every usable link "
+                         "with coverage >= --min-coverage")
     ap.add_argument("--devices", nargs="*", default=None,
                     help="short device names to restrict the cohort (e.g. ag1 be1)")
     ap.add_argument("--tiers", nargs="+", type=int, default=[1, 3],
@@ -217,6 +272,23 @@ def main():
     ap.add_argument("--lookback", type=int, default=config.DAILY_STEPS,
                     help="input window for deep/GNN tiers (steps)")
     ap.add_argument("--epochs", type=int, default=12, help="deep/GNN training epochs")
+    ap.add_argument("--max-train-samples", type=int, default=None,
+                    help="training-window budget for the deep tiers (default: "
+                         "100k windows; STGNN gets a per-anchor share)")
+    ap.add_argument("--min-mean-mbps", type=float, default=0.0,
+                    help="drop links whose mean throughput over the window is below "
+                         "this (0 = keep all). Removes idle ports that otherwise "
+                         "subsidise scale-free metrics.")
+    ap.add_argument("--connected-links", type=int, default=None,
+                    help="keep only ~N links whose host routers form a CONNECTED "
+                         "sub-network (BFS over the topology from the busiest router) "
+                         "— a real slice of the graph for a quick STGNN-meaningful run. "
+                         "Applied after --min-mean-mbps.")
+    ap.add_argument("--scale-weight", type=float, default=0.0,
+                    help="exponent on per-link mean traffic used as a deep-tier "
+                         "training-loss weight (0 = uniform/RevIN; 1 = weight ~ Mbps, "
+                         "aligns the fit with pooled MAE). Applies to GRU/TCN/DLinear/"
+                         "PatchTST.")
     ap.add_argument("--horizons", nargs="+", default=["5min", "1h", "day"],
                     choices=list(config.HORIZONS))
     ap.add_argument("--stride", type=int, default=None)
@@ -234,6 +306,10 @@ def main():
                     help="warm-start fine-tune learning rate (torch tiers)")
     ap.add_argument("--metric", default="mae",
                     choices=["mae", "rmse", "smape", "wape"])
+    ap.add_argument("--resume", action="store_true",
+                    help="reuse <out>/records/*.csv and <out>/checkpoints/* from an "
+                         "earlier (e.g. interrupted) run: finished models are not "
+                         "re-run, fitted torch/GBDT models reload their weights")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
 
@@ -245,6 +321,15 @@ def main():
         min_coverage=args.min_coverage, max_links=args.max_links,
         devices=args.devices,
     )
+    if args.min_mean_mbps > 0:
+        keep = panel.mean_mbps() >= args.min_mean_mbps
+        print(f"[cohort] {int(keep.sum())}/{panel.L} links have mean >= "
+              f"{args.min_mean_mbps:g} Mbps (dropped {int((~keep).sum())} idle/low)")
+        panel = panel.subset(keep)
+        if panel.L == 0:
+            raise SystemExit("no links pass --min-mean-mbps; lower the threshold")
+    if args.connected_links:
+        panel = data_mod.select_connected(panel, args.connected_links)
     split = make_split(panel, args)
     print(f"[split] train={split.train} val={split.val} test={split.test} "
           f"purge={split.purge_steps} of n={panel.T}")
@@ -258,7 +343,12 @@ def main():
         print(f"[online] refit_every={args.refit_every} window={args.online_window} "
               f"(expanding if None) epochs={args.online_epochs} lr={args.online_lr}")
     models = build_models(args.tiers, hsteps, args.seasonal_sarima, panel,
-                          args.lookback, args.epochs, online_cfg=online_cfg)
+                          args.lookback, args.epochs, online_cfg=online_cfg,
+                          max_train_samples=args.max_train_samples,
+                          scale_weight=args.scale_weight)
+    if args.scale_weight:
+        print(f"[loss] scale-weighted training on (exponent {args.scale_weight:g}) "
+              f"for GRU/TCN/DLinear/PatchTST")
     if any(t in args.tiers for t in (4, 5, 6)):
         from . import torch_common as tc
         print(f"[device] torch tiers on: {tc.get_device()}")
@@ -267,7 +357,12 @@ def main():
     result = harness.backtest(
         panel, models, split, horizons=horizons,
         stride=args.stride, max_origins=args.max_origins,
+        out_dir=out, resume=args.resume,
     )
+    if result.records.empty:
+        print(f"\nno completed model results — partial state (checkpoints/records) "
+              f"is in {out}; rerun with --resume to continue")
+        return
 
     agg = result.aggregate()
     per_link = result.per_link()
@@ -290,7 +385,11 @@ def main():
     plot_skill(result, out, args.metric, "persistence")
     plot_overlays(result, models, panel, split, out,
                   horizon_steps=min(config.DAILY_STEPS, max(hsteps)))
-    print(f"\ndone -> {out}")
+    if result.interrupted:
+        print(f"\npartial results (interrupted) -> {out} — checkpoints kept for --resume")
+    else:
+        prune_checkpoints(out)
+        print(f"\ndone -> {out}")
 
 
 if __name__ == "__main__":

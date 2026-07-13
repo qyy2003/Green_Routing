@@ -66,6 +66,24 @@ class Panel:
         """Non-NaN fraction per link."""
         return 1.0 - np.isnan(self.values).mean(axis=0)
 
+    def mean_mbps(self) -> np.ndarray:
+        """Mean throughput per link over the whole window (NaNs ignored)."""
+        return np.nanmean(self.values, axis=0)
+
+    def subset(self, idx) -> "Panel":
+        """Return a new Panel keeping only the link columns in ``idx`` (a boolean
+        mask or an index array). Timestamps/grid are unchanged."""
+        idx = np.asarray(idx)
+        return Panel(
+            values=self.values[:, idx],
+            timestamps=self.timestamps,
+            links=[self.links[j] for j in np.nonzero(idx)[0]] if idx.dtype == bool
+            else [self.links[j] for j in idx],
+            devices=[self.devices[j] for j in np.nonzero(idx)[0]] if idx.dtype == bool
+            else [self.devices[j] for j in idx],
+            value_col=self.value_col,
+        )
+
 
 def _cache_key(start, end, value_col, min_coverage, max_links, devices) -> str:
     payload = json.dumps(
@@ -87,7 +105,7 @@ def build_panel(
     end,
     value_col: str = "total_mbps",
     min_coverage: float = 0.9,
-    max_links: int | None = 40,
+    max_links: int | None = None,
     devices: list[str] | None = None,
     cache: bool = True,
     verbose: bool = True,
@@ -95,7 +113,10 @@ def build_panel(
     """Assemble (and cache) a dense panel of dense interface series over [start, end].
 
     devices: optional allow-list of short device names (e.g. ["ag1", "be1"]). If None,
-             scan all devices in sorted order until ``max_links`` dense links are found.
+             scan all devices.
+    max_links: optional cap for quick experiments. None (default) keeps **every**
+               usable link — all series with coverage >= min_coverage — rather than
+               truncating at the first N in alphabetical device order.
     """
     key = _cache_key(start, end, value_col, min_coverage, max_links, devices)
     cache_path = ARTIFACTS / f"panel_{key}.npz"
@@ -162,6 +183,68 @@ def build_panel(
         if verbose:
             print(f"[data] cached -> {cache_path}")
     return panel
+
+
+def select_connected(panel: "Panel", n: int, verbose: bool = True) -> "Panel":
+    """Subset the panel to ~``n`` links whose host routers form a **connected**
+    sub-network, so the STGNN graph is a real slice of the topology (not N links
+    scattered across disconnected routers).
+
+    Grows a router set by breadth-first search over the physical adjacency
+    (``dataset.topology``), seeded at the highest-traffic router, taking each
+    router's links (busiest first) until ``n`` links are collected. Falls back to
+    the busiest links if the topology has no usable edges for the panel's devices.
+    """
+    from collections import deque
+
+    from dataset import topology
+
+    mean = panel.mean_mbps()
+    links = topology.parse_links()
+    adj: dict[str, set[str]] = {}
+    for lk in links:
+        adj.setdefault(lk.a, set()).add(lk.b)
+        adj.setdefault(lk.b, set()).add(lk.a)
+
+    dev_links: dict[str, list[int]] = {}
+    for i, dev in enumerate(panel.devices):
+        dev_links.setdefault(dev, []).append(i)
+    # busiest link first within each router
+    for dev in dev_links:
+        dev_links[dev].sort(key=lambda i: -mean[i])
+    dev_traffic = {d: float(np.nansum(mean[idx])) for d, idx in dev_links.items()}
+
+    present = [d for d in dev_links if d in adj]
+    if not present:                       # topology unknown for these devices
+        order = np.argsort(-np.nan_to_num(mean))[:n]
+        if verbose:
+            print(f"[connected] no topology edges for panel devices; "
+                  f"falling back to the {len(order)} busiest links")
+        return panel.subset(np.array(sorted(order.tolist())))
+
+    # Spread across the graph: cap links taken per router so 20 links span several
+    # connected routers (a real sub-network) rather than saturating one big router.
+    per_router = max(1, -(-n // 6))       # ceil(n/6) -> aim for ~6 routers
+    seed = max(present, key=lambda d: dev_traffic[d])
+    seen, queue, chosen, visited = {seed}, deque([seed]), [], []
+    while queue and len(chosen) < n:
+        dev = queue.popleft()
+        visited.append(dev)
+        chosen += dev_links.get(dev, [])[:per_router]
+        for nb in sorted(adj.get(dev, ()), key=lambda d: -dev_traffic.get(d, 0.0)):
+            if nb not in seen and nb in dev_links:
+                seen.add(nb)
+                queue.append(nb)
+    # top up from already-visited (still-connected) routers if short of n
+    if len(chosen) < n:
+        pool = [i for d in visited for i in dev_links.get(d, [])[per_router:]]
+        chosen += sorted(pool, key=lambda i: -mean[i])[:n - len(chosen)]
+    chosen = chosen[:n]
+    if verbose:
+        n_dev = len({panel.devices[i] for i in chosen})
+        print(f"[connected] {len(chosen)} links on {n_dev} connected routers "
+              f"(seed {seed})")
+    return panel.subset(np.array(sorted(chosen)))
 
 
 def save_panel(panel: Panel, path: str | Path) -> None:

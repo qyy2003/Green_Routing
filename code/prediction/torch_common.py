@@ -17,6 +17,7 @@ the train block (no leakage across the purge gap). Runs on GPU when one is avail
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import numpy as np
 
@@ -31,6 +32,9 @@ def _torch():
         torch.manual_seed(0)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(0)
+            torch.backends.cuda.matmul.allow_tf32 = True   # free speedup on Ampere+
+            torch.backends.cudnn.allow_tf32 = True
+            torch.backends.cudnn.benchmark = True          # fixed input shapes
         _SEEDED = True
     return torch
 
@@ -87,62 +91,148 @@ class TorchTrainer:
     """
 
     lookback: int = 288
-    max_train_samples: int = 60_000
+    max_train_samples: int = 100_000
     epochs: int = 12
     batch_size: int = 256
     lr: float = 1e-3
     weight_decay: float = 1e-5
+    patience: int = 10          # early stop after this many non-improving epochs
+    clip_grad: float = 5.0
+    cosine_lr: bool = True      # cosine-anneal LR over the full run (helps stability)
+    max_sample_weight: float = 10.0   # cap scale weights: no link dominates a batch
     # online fine-tune: fewer epochs + lower LR (warm-start, avoid forgetting)
     online_epochs: int = 3
     online_lr: float = 3e-4
 
-    def _fit_torch(self, net, X, Y, verbose_name="", epochs=None, lr=None):
+    # -- checkpointing (see harness.Forecaster's save/load protocol) --------- #
+    def save(self, dir_path) -> Path | None:
+        """Persist the fitted net's weights (CPU tensors) as ``<name>.pt``."""
+        net = getattr(self, "net", None)
+        if net is None:
+            return None
+        torch = _torch()
+        p = Path(dir_path) / f"{self.name}.pt"
+        torch.save({k: v.detach().cpu() for k, v in net.state_dict().items()}, p)
+        return p
+
+    def load(self, path, values_filled, split, timestamps) -> bool:
+        """Rebuild the net (host class's ``_build_net``) and restore :meth:`save`d
+        weights — a shape mismatch (e.g. a changed --lookback) raises, and the
+        harness falls back to fitting."""
+        torch = _torch()
+        state = torch.load(path, map_location="cpu")
+        net = self._build_net(self.lookback, self.max_h)
+        net.load_state_dict(state)
+        self.net = net.to(get_device())
+        self.net.eval()
+        self._train_start = split.train[0]
+        return True
+
+    def _fit_torch(self, net, X, Y, verbose_name="", epochs=None, lr=None, W=None):
         """Train (or, warm-started from an already-trained ``net``, fine-tune) the
         network. ``epochs``/``lr`` override the defaults — online fine-tuning passes
         a smaller LR and fewer epochs so the model nudges toward the recent regime
-        without forgetting the train-set fit."""
+        without forgetting the train-set fit.
+
+        ``W`` (optional, shape ``[n]``): per-sample loss weights (normalised to mean
+        1 internally). Used for scale-weighted training so high-traffic links pull
+        the fit more — the pooled-MAE objective — instead of RevIN's equal say.
+        Both the train step and the val criterion use the same weights, so early
+        stopping tracks the weighted objective too."""
         torch = _torch()
         import torch.nn as nn
+
+        import time
 
         epochs = self.epochs if epochs is None else epochs
         lr = self.lr if lr is None else lr
         device = get_device()
         net = net.to(device)
-        Xt = torch.tensor(np.asarray(X, np.float32), device=device)
-        Yt = torch.tensor(np.asarray(Y, np.float32), device=device)
+        # Keep the dataset on the CPU and stream mini-batches to the GPU: samples ×
+        # a week-long target path is gigabytes, so residency on a laptop GPU would
+        # OOM — while the per-batch copy (a few MB) is negligible next to compute.
+        Xt = torch.tensor(np.asarray(X, np.float32))
+        Yt = torch.tensor(np.asarray(Y, np.float32))
+        if W is None:
+            Wt = torch.ones(Xt.shape[0])
+        else:
+            Wt = torch.tensor(np.asarray(W, np.float32)).clamp_min(0)
+            Wt = Wt * (Wt.numel() / Wt.sum().clamp_min(1e-8))   # normalise mean -> 1
+            # cap so a single high-traffic link can't dominate a batch and blow up
+            # the gradient (scale-weighting otherwise diverges the deeper nets), then
+            # re-normalise mean -> 1 to keep the effective LR unchanged.
+            Wt = Wt.clamp(max=self.max_sample_weight)
+            Wt = Wt * (Wt.numel() / Wt.sum().clamp_min(1e-8))
         n = Xt.shape[0]
         n_val = max(1, int(0.1 * n))
-        perm = torch.randperm(n, device=device)
+        perm = torch.randperm(n)
         tr, va = perm[n_val:], perm[:n_val]
         opt = torch.optim.Adam(net.parameters(), lr=lr,
                                weight_decay=self.weight_decay)
-        loss_fn = nn.SmoothL1Loss()          # Huber: robust to traffic bursts
+        sched = None
+        if self.cosine_lr and epochs > 3:
+            sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=epochs)
+        loss_fn = nn.SmoothL1Loss(reduction="none")   # Huber: robust to traffic bursts
+
+        def _wloss(pred, tgt, w):
+            per = loss_fn(pred, tgt)                   # [b, ...]
+            per = per.flatten(1).mean(dim=1) if per.dim() > 1 else per
+            return (per * w).sum() / w.sum().clamp_min(1e-8)
+
         best = float("inf")
         best_state = None
+        bad = 0
+        chatty = bool(verbose_name) and epochs > 3   # quiet during online refits
         for ep in range(epochs):
+            t0 = time.time()
             net.train()
-            idx = tr[torch.randperm(tr.shape[0], device=device)]
+            idx = tr[torch.randperm(tr.shape[0])]
             for i in range(0, idx.shape[0], self.batch_size):
                 b = idx[i:i + self.batch_size]
+                xb = Xt[b].to(device, non_blocking=True)
+                yb = Yt[b].to(device, non_blocking=True)
+                wb = Wt[b].to(device, non_blocking=True)
                 opt.zero_grad()
-                out = net(Xt[b])
-                loss = loss_fn(out, Yt[b])
+                loss = _wloss(net(xb), yb, wb)
+                if not torch.isfinite(loss):
+                    continue            # skip a bad batch rather than corrupt weights
                 loss.backward()
-                opt.step()
+                gnorm = nn.utils.clip_grad_norm_(net.parameters(), self.clip_grad)
+                if torch.isfinite(gnorm):
+                    opt.step()
+            if sched is not None:
+                sched.step()
             net.eval()
             with torch.no_grad():
                 # Batch the val forward too: a single full-set pass can OOM the GPU
                 # at long horizons (the head emits a max_h-wide path per sample).
-                vsum, vcount = 0.0, 0
+                vsum, wsum = 0.0, 0.0
                 for i in range(0, va.shape[0], self.batch_size):
                     b = va[i:i + self.batch_size]
-                    vsum += loss_fn(net(Xt[b]), Yt[b]).item() * b.shape[0]
-                    vcount += b.shape[0]
-                vloss = vsum / max(1, vcount)
-            if vloss < best:
-                best = vloss
+                    xb = Xt[b].to(device, non_blocking=True)
+                    yb = Yt[b].to(device, non_blocking=True)
+                    wb = Wt[b].to(device, non_blocking=True)
+                    vsum += _wloss(net(xb), yb, wb).item() * float(wb.sum())
+                    wsum += float(wb.sum())
+                vloss = vsum / max(1e-8, wsum)
+            if chatty:
+                print(f"[{verbose_name}] epoch {ep + 1}/{epochs} val={vloss:.4f} "
+                      f"({time.time() - t0:.1f}s)", flush=True)
+            if vloss < best - 1e-5:
+                best, bad = vloss, 0
                 best_state = {k: v.detach().clone() for k, v in net.state_dict().items()}
+            else:
+                bad += 1
+                if self.patience and bad >= self.patience:
+                    if chatty:
+                        print(f"[{verbose_name}] early stop at epoch {ep + 1} "
+                              f"(best val={best:.4f})")
+                    break
         if best_state is not None:
             net.load_state_dict(best_state)
         net.eval()
+        if device == "cuda" and chatty:
+            print(f"[{verbose_name}] peak GPU mem "
+                  f"{torch.cuda.max_memory_allocated() / 2**30:.2f} GiB")
+            torch.cuda.reset_peak_memory_stats()
         return net

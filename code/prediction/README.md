@@ -10,6 +10,14 @@ Data comes from the [`dataset/`](../dataset/) package (the SWITCH Cricket CSVs a
 `~/switch`, see `dataset/config.py:SWITCH_ROOT`); this package never re-implements
 loading/coalescing.
 
+**Link census** (scan 2026-07-13, details + CSVs in `artifacts/link_census/`): the raw
+tree has 1 923 interface series on 208 devices; over the working window
+2025-12-01 → 2026-07-11, **886 links on 141 devices are usable** (coverage ≥ 0.9 on the
+5-min grid; 830 are ≥ 0.99). The panel therefore keeps **all usable links by default** —
+`--max-links` is only a quick-experiment cap (it truncates in alphabetical device
+order, so a capped cohort is small *and* biased). For comparison, the router-level
+topology has 395 router-pair links over 85 nodes.
+
 ## Environment
 
 Use the dedicated **`green-pred`** conda env (Python 3.11 + pandas/numpy/sklearn/
@@ -29,6 +37,21 @@ statsmodels/matplotlib/scipy/torch-CUDA):
 > automatically. Override with `PRED_DEVICE=cpu` (or `cuda`). Tiers 1–3 are CPU-only by
 > nature (naive/statsmodels/sklearn).
 
+### Model sizes (paper-scale, GPU)
+
+The torch tiers default to their published configurations: GRU 2×128; TCN with
+Bai-et-al. residual blocks (64 ch, depth auto-sized so the receptive field covers the
+lookback); PatchTST at the paper's supervised config (patch 16 / stride 8, d_model 128,
+16 heads, 3 layers, d_ff 256, dropout 0.2, lr 1e-4); Graph WaveNet at its paper design
+(gated dilated convs 32 ch, skip 256 / end 512, order-2 diffusion over fixed + adaptive
+adjacency, dropout 0.3 — input truncated to the receptive field, as GWN is a
+short-window model). DLinear is unchanged: it is linear by design (the control).
+Training-window budget defaults to 100k (`--max-train-samples`); batches shrink
+automatically as `--lookback` grows (and, for the STGNN, as the node count grows) so a
+week-long window over hundreds of links fits a 6 GB GPU — the STGNN also
+gradient-checkpoints its layers to bound activation memory. LR is cosine-annealed over
+the run, which stabilises the GRU (its constant-LR curve had late-training blow-ups).
+
 ## Modules
 
 | Module | Role |
@@ -39,9 +62,9 @@ statsmodels/matplotlib/scipy/torch-CUDA):
 | `baselines.py` | **Tier 1** — persistence, seasonal-naive (day/week), historical average. |
 | `models_classical.py` | **Tier 2** — Holt-Winters, SARIMA (per-link, log space, recent-window refit). |
 | `models_gbdt.py` | **Tier 3** — global histogram gradient boosting; lag + rolling + calendar features, per-link id, direct multi-horizon. |
-| `torch_common.py` | Shared trainer for torch tiers: global model, log1p, RevIN per window, Huber loss, early-stop. |
-| `models_deep.py` | **Tier 4** GRU, TCN; **Tier 5** DLinear (linear control) + PatchTST-lite (patch transformer). |
-| `models_gnn.py` | **Tier 6** STGNN (Graph-WaveNet-lite) over a link-level graph (shared/adjacent routers from `dataset.topology`) + learned adaptive adjacency. |
+| `torch_common.py` | Shared trainer for torch tiers: global model, log1p, RevIN per window, Huber loss, patience-10 early stop, grad clip, CPU→GPU batch streaming (OOM-safe at week horizons). |
+| `models_deep.py` | **Tier 4** GRU (2×128), residual TCN (Bai et al., 64ch, RF-covering depth); **Tier 5** DLinear (linear control) + PatchTST at the paper's supervised config (patch 16/stride 8, d128, 16 heads, 3 layers). |
+| `models_gnn.py` | **Tier 6** Graph WaveNet at its paper design (gated dilated convs, skip 256/end 512, order-2 diffusion, adaptive adjacency) over a link-level graph (shared/adjacent routers from `dataset.topology`). |
 | `run.py` | CLI: build panel → run tiers → tabulate skill → plot. `--tiers 1 2 3 4 5 6`, `--lookback`, `--epochs`. |
 
 ## The testing loop (harness)
@@ -76,6 +99,11 @@ block advances — GBDT re-fits on the extended window, torch tiers continue tra
 existing net a few epochs at a low LR. Both variants run on the **identical** rolling
 origins, so the table shows exactly *how much accuracy recent data buys*.
 
+The `+online` variant's *initial* fit is by construction identical to its frozen twin's,
+so it **warm-starts from the twin's fitted state** (a deep copy — fine-tuning never
+bleeds back into the frozen model) instead of training a second time. `--online`
+therefore adds only the refit cost, not a duplicate training run.
+
 Leakage guarantee (unchanged): at origin `o`, `online_update` may train only on anchors
 whose entire target path stays `< o` (`anchor + max_horizon ≤ o − 1`) — never on data at
 or after the forecast origin. The harness enforces the cadence; the model enforces the
@@ -105,13 +133,46 @@ env -u PYTHONPATH /home/qyy/anaconda3/envs/green-pred/bin/python -m prediction.r
 ```
 
 Key flags: `--tiers 1 2 3`, `--horizons {5min,1h,day,week}`, `--devices ag1 be1 …`
-(restrict the cohort), `--min-coverage`, `--max-links`, `--stride`, `--max-origins`,
+(restrict the cohort), `--min-coverage` (default 0.9), `--max-links` (**default: none —
+the panel keeps every usable link**, i.e. all series with coverage ≥ `--min-coverage`
+over the window; set a number only for quick experiments — it truncates at the first N
+links in alphabetical device order), `--stride`, `--max-origins`,
+`--max-train-samples` (deep-tier data budget), `--lookback`, `--epochs`,
+`--min-mean-mbps` (**cohort traffic floor** — drop links whose mean throughput over the
+window is below this; `--min-mean-mbps 1` removes idle ports that otherwise subsidise
+scale-free metrics, leaving 547 of 886 links), `--connected-links N` (keep ~N links whose
+host routers form a **connected** sub-network — BFS over the topology from the busiest
+router, spread across ~6 routers — for a quick run where the STGNN graph is a real slice
+of the network; applied after `--min-mean-mbps`), `--scale-weight` (exponent on per-link
+mean traffic as a deep-tier loss weight: 0 = uniform/RevIN, 1 = weight ~ Mbps to align
+the fit with pooled MAE; applies to GRU/TCN/DLinear/PatchTST),
 `--metric {mae,rmse,smape,wape}`, `--seasonal-sarima` (enable a true `s=288` SARIMA),
-`--online` (add test-time-fine-tuned `+online` variants — see *Online adaptation*).
+`--online` (add test-time-fine-tuned `+online` variants — see *Online adaptation*),
+`--resume` (continue an interrupted run — see *Checkpoints*).
 
 Writes to `--out`: `aggregate.csv`, `per_link.csv`, `skill_<metric>.csv`, `config.json`,
 `skill_vs_persistence_<metric>.png`, `overlay_forecasts.png` (busy / bursty / quiet link
 paths — the roadmap's "did it just learn to output the last value one step late?" check).
+
+### Checkpoints, incremental results, and `--resume`
+
+Long runs are safe to interrupt:
+
+* **`<out>/checkpoints/`** — every fitted global model is saved right after training
+  (torch tiers as CPU `state_dict` `.pt`, GBDT as pickled boosters `.pkl`), so trained
+  weights survive a Ctrl-C even mid-backtest. Once a run **completes** and the results
+  are recorded, the `+online` checkpoints are pruned automatically — they are
+  warm-start duplicates of the frozen twin's trained weights (never the fine-tuned
+  state), so only one trained checkpoint per model is kept; every delete/keep is
+  appended to `<out>/cleanup.log`. Interrupted runs prune nothing.
+* **`<out>/records/<model>.csv`** — each model's raw predictions are flushed as soon as
+  its backtest finishes. A Ctrl-C drops only the model currently running and still
+  reports/plots the finished ones.
+* **`--resume`** — rerun the same command with this flag to continue: models with cached
+  records are not re-run, and pending models reload their checkpoint instead of
+  retraining (a changed `--lookback`/cohort invalidates the checkpoint shape, which
+  falls back to a fresh fit). Use a fresh `--out` (or drop the flag) when the config
+  changes in ways that alter what the cached records mean.
 
 ## What the demo run shows (2024-06 → 2024-10, 30 links)
 
@@ -153,10 +214,15 @@ These are small CPU nets at short horizons (where the roadmap expects deep model
 Tier-5 iTransformer/Informer, Tier-6 DCRNN/MTGNN, foundation models (TimesFM/Chronos
 zero-shot), diffusion (CRPS). Each must clear the same bar: beat the cheapest tier that
 already wins at that horizon, on these identical origins.
-```
 
+## Full-cohort real-data run (all usable links)
 
-```
+No `--max-links`: the panel keeps every usable link — 886 links / 141 devices over this
+window (see *Link census* above). The first cold build reads all ~19 GB once
+(~10–15 min), then the panel is cached to `artifacts/panel_<hash>.npz`.
+
+```bash
+mkdir -p ../artifacts/pred_full
 env -u PYTHONPATH PRED_DEVICE=cuda PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
   /home/qyy/anaconda3/envs/green-pred/bin/python -m prediction.run \
     --start 2025-12-01 --end 2026-07-11 \
@@ -164,7 +230,11 @@ env -u PYTHONPATH PRED_DEVICE=cuda PYTORCH_CUDA_ALLOC_CONF=expandable_segments:T
     --val-end 2026-05-29 --test-start 2026-06-05 \
     --tiers 1 3 4 5 6 \
     --horizons 15min 1h day week \
-    --max-links 20 --max-origins 48 \
+    --max-origins 48 \
     --lookback 336 --epochs 12 \
-    --out ../artifacts/pred_real 2>&1 | tee ../artifacts/pred_real/run.log
+    --out ../artifacts/pred_full 2>&1 | tee ../artifacts/pred_full/run.log
 ```
+
+(The earlier `pred_real`/`pred_paper` results above were produced with
+`--max-links 20`, i.e. ~2 % of the usable cohort — alphabetically biased. Full-cohort
+numbers supersede them once this run lands.)
