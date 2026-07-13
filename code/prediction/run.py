@@ -259,6 +259,9 @@ def main():
               f"(expanding if None) epochs={args.online_epochs} lr={args.online_lr}")
     models = build_models(args.tiers, hsteps, args.seasonal_sarima, panel,
                           args.lookback, args.epochs, online_cfg=online_cfg)
+    if any(t in args.tiers for t in (4, 5, 6)):
+        from . import torch_common as tc
+        print(f"[device] torch tiers on: {tc.get_device()}")
     print(f"[models] {[m.name for m in models]}")
 
     result = harness.backtest(

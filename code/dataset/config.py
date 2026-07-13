@@ -10,13 +10,17 @@ from pathlib import Path
 # --- Roots -------------------------------------------------------------------
 # The parsed Cricket time-series (output of network-energy-efficiency-research/
 # parsing-rrd/parse_rrd.py). ~45 GB, 5-min-averaged CSVs, UTC epoch timestamps.
-SWITCH_ROOT = Path("/media/yuyqin/share/switch")
+SWITCH_ROOT = Path.home() / "switch"
 
 # The research repo that generated the data (topology, metadata, etc.).
 RESEARCH_ROOT = Path(
     "/home/yuyqin/ETH_Master_Study/Green_Routing/network-energy-efficiency-research"
 )
-TOPOLOGY_TXT = RESEARCH_ROOT / "switch-network-topology" / "switch-network-topology.txt"
+_RESEARCH_TOPOLOGY = RESEARCH_ROOT / "switch-network-topology" / "switch-network-topology.txt"
+# Fallback: a device-level topology rebuilt from web/data JSON by
+# ``dataset.build_topology_txt`` (for machines without the research checkout).
+_LOCAL_TOPOLOGY = Path(__file__).resolve().parent / "switch-network-topology.txt"
+TOPOLOGY_TXT = _RESEARCH_TOPOLOGY if _RESEARCH_TOPOLOGY.exists() else _LOCAL_TOPOLOGY
 METADATA_JSON = RESEARCH_ROOT / "parsing-rrd" / "metadata.json"
 
 # --- Subtrees ----------------------------------------------------------------

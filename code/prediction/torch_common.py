@@ -11,13 +11,17 @@ All deep models here follow the roadmap's best practice for per-link ISP traffic
   * **direct multi-horizon**: a single head emits the whole ``max_horizon`` path at once.
 
 Training samples are drawn only from the train slice, with the target path kept inside
-the train block (no leakage across the purge gap). CPU-only here, so nets are kept small.
+the train block (no leakage across the purge gap). Runs on GPU when one is available
+(override with ``PRED_DEVICE=cpu``); the nets are still small, so a CPU box works too.
 """
 from __future__ import annotations
+
+import os
 
 import numpy as np
 
 _SEEDED = False
+_DEVICE = None
 
 
 def _torch():
@@ -25,8 +29,29 @@ def _torch():
     global _SEEDED
     if not _SEEDED:
         torch.manual_seed(0)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(0)
         _SEEDED = True
     return torch
+
+
+def get_device():
+    """Resolve (and cache) the torch device for the deep/GNN tiers.
+
+    Defaults to CUDA when available, else CPU. Set ``PRED_DEVICE=cpu`` (or ``cuda``)
+    to force a choice — an unavailable CUDA request silently falls back to CPU.
+    """
+    global _DEVICE
+    if _DEVICE is None:
+        torch = _torch()
+        want = os.environ.get("PRED_DEVICE", "").strip().lower()
+        if want == "cpu":
+            _DEVICE = "cpu"
+        elif want == "cuda":
+            _DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+        else:
+            _DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+    return _DEVICE
 
 
 def log1p(x):
@@ -81,13 +106,13 @@ class TorchTrainer:
 
         epochs = self.epochs if epochs is None else epochs
         lr = self.lr if lr is None else lr
-        device = "cpu"
+        device = get_device()
         net = net.to(device)
         Xt = torch.tensor(np.asarray(X, np.float32), device=device)
         Yt = torch.tensor(np.asarray(Y, np.float32), device=device)
         n = Xt.shape[0]
         n_val = max(1, int(0.1 * n))
-        perm = torch.randperm(n)
+        perm = torch.randperm(n, device=device)
         tr, va = perm[n_val:], perm[:n_val]
         opt = torch.optim.Adam(net.parameters(), lr=lr,
                                weight_decay=self.weight_decay)
@@ -96,7 +121,7 @@ class TorchTrainer:
         best_state = None
         for ep in range(epochs):
             net.train()
-            idx = tr[torch.randperm(tr.shape[0])]
+            idx = tr[torch.randperm(tr.shape[0], device=device)]
             for i in range(0, idx.shape[0], self.batch_size):
                 b = idx[i:i + self.batch_size]
                 opt.zero_grad()
@@ -106,7 +131,14 @@ class TorchTrainer:
                 opt.step()
             net.eval()
             with torch.no_grad():
-                vloss = loss_fn(net(Xt[va]), Yt[va]).item()
+                # Batch the val forward too: a single full-set pass can OOM the GPU
+                # at long horizons (the head emits a max_h-wide path per sample).
+                vsum, vcount = 0.0, 0
+                for i in range(0, va.shape[0], self.batch_size):
+                    b = va[i:i + self.batch_size]
+                    vsum += loss_fn(net(Xt[b]), Yt[b]).item() * b.shape[0]
+                    vcount += b.shape[0]
+                vloss = vsum / max(1, vcount)
             if vloss < best:
                 best = vloss
                 best_state = {k: v.detach().clone() for k, v in net.state_dict().items()}

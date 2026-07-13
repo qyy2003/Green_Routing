@@ -184,8 +184,9 @@ class SeqForecaster(Forecaster, tc.TorchTrainer):
             return out
         m, s = win.mean(), win.std() + 1e-5
         xn = ((win - m) / s).astype(np.float32)
+        device = next(self.net.parameters()).device
         with torch.no_grad():
-            yn = self.net(torch.tensor(xn[None])).numpy().ravel()
+            yn = self.net(torch.tensor(xn[None], device=device)).cpu().numpy().ravel()
         path = np.expm1(yn * s + m)
         n = min(ctx.horizon, path.size)
         out[:n] = np.clip(path[:n], 0, None)

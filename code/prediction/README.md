@@ -7,21 +7,27 @@ escalate one tier at a time — **keeping a more complex model only when it clea
 simpler one on the *same* chronological split and metric.**
 
 Data comes from the [`dataset/`](../dataset/) package (the SWITCH Cricket CSVs at
-`/media/yuyqin/share/switch`); this package never re-implements loading/coalescing.
+`~/switch`, see `dataset/config.py:SWITCH_ROOT`); this package never re-implements
+loading/coalescing.
 
 ## Environment
 
 Use the dedicated **`green-pred`** conda env (Python 3.11 + pandas/numpy/sklearn/
-statsmodels/matplotlib/scipy/torch-CPU):
+statsmodels/matplotlib/scipy/torch-CUDA):
 
 ```bash
-/home/yuyqin/anaconda3/envs/green-pred/bin/python    # or: conda run -n green-pred python
+/home/qyy/anaconda3/envs/green-pred/bin/python    # or: conda run -n green-pred python
 ```
 
+> **Clear `PYTHONPATH`** when invoking: this box sources ROS Noetic in `~/.bashrc`,
+> which injects `/opt/ros/.../dist-packages` into every env's `sys.path` and can shadow
+> the env's own numpy. Prefix commands with `env -u PYTHONPATH`.
+
 > LightGBM/XGBoost are **not** installed — Tier 3 uses scikit-learn's
-> `HistGradientBoostingRegressor` (the histogram-booster equivalent). Torch is CPU-only
-> (no GPU on this box), so the deep/GNN tiers use small nets and short horizons; expect
-> minutes of training, not seconds.
+> `HistGradientBoostingRegressor` (the histogram-booster equivalent). Torch is the
+> **CUDA** build (RTX 3060 Laptop, CUDA 12.1); the deep/GNN tiers (4–6) run on the GPU
+> automatically. Override with `PRED_DEVICE=cpu` (or `cuda`). Tiers 1–3 are CPU-only by
+> nature (naive/statsmodels/sklearn).
 
 ## Modules
 
@@ -88,8 +94,8 @@ Cost scales with the number of refits (`test_length / refit_every`), so a coarse
 ## Run it
 
 ```bash
-cd /home/yuyqin/ETH_Master_Study/Green_Routing/Green_Routing/code
-/home/yuyqin/anaconda3/envs/green-pred/bin/python -m prediction.run \
+cd /home/qyy/Green_Routing/Green_Routing/code
+env -u PYTHONPATH /home/qyy/anaconda3/envs/green-pred/bin/python -m prediction.run \
     --start 2024-06-01 --end 2024-10-01 \
     --train-end 2024-08-15 --val-start 2024-08-22 \
     --val-end 2024-09-05 --test-start 2024-09-12 \
@@ -147,4 +153,18 @@ These are small CPU nets at short horizons (where the roadmap expects deep model
 Tier-5 iTransformer/Informer, Tier-6 DCRNN/MTGNN, foundation models (TimesFM/Chronos
 zero-shot), diffusion (CRPS). Each must clear the same bar: beat the cheapest tier that
 already wins at that horizon, on these identical origins.
+```
+
+
+```
+env -u PYTHONPATH PRED_DEVICE=cuda PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
+  /home/qyy/anaconda3/envs/green-pred/bin/python -m prediction.run \
+    --start 2025-12-01 --end 2026-07-11 \
+    --train-end 2026-05-01 --val-start 2026-05-08 \
+    --val-end 2026-05-29 --test-start 2026-06-05 \
+    --tiers 1 3 4 5 6 \
+    --horizons 15min 1h day week \
+    --max-links 20 --max-origins 48 \
+    --lookback 336 --epochs 12 \
+    --out ../artifacts/pred_real 2>&1 | tee ../artifacts/pred_real/run.log
 ```

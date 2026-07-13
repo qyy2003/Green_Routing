@@ -160,8 +160,9 @@ class STGNNForecaster(Forecaster, tc.TorchTrainer):
         log_vals = tc.log1p(ctx.values_filled)
         win = log_vals[o - self.lookback:o, :].T
         xn, m, s = self._revin_matrix(win)
+        device = next(self.net.parameters()).device
         with torch.no_grad():
-            yn = self.net(torch.tensor(xn[None])).numpy()[0]    # [N, max_h]
+            yn = self.net(torch.tensor(xn[None], device=device)).cpu().numpy()[0]  # [N, max_h]
         return np.clip(np.expm1(yn * s + m), 0, None)           # [N, max_h]
 
     def predict(self, ctx: Context) -> np.ndarray:
