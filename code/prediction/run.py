@@ -32,6 +32,13 @@ from .models_classical import default_classical
 from .models_gbdt import GlobalGBDT
 
 
+def _scale_weight_arg(v: str):
+    """--scale-weight accepts a float exponent or the string 'log'."""
+    if v.strip().lower() == "log":
+        return "log"
+    return float(v)
+
+
 def _new_global_models(tiers, hsteps, panel, lookback, epochs, max_train_samples=None,
                        scale_weight=0.0):
     """The global (fit-once) tiers only — instantiable twice (frozen + online)."""
@@ -55,6 +62,8 @@ def _new_global_models(tiers, hsteps, panel, lookback, epochs, max_train_samples
         # per-anchor: match the per-link coverage of the deep tiers, capped for RAM.
         skw = {} if max_train_samples is None else \
             {"max_train_samples": min(3000, max(1000, max_train_samples // max(1, panel.L)))}
+        if scale_weight:
+            skw["scale_weight"] = scale_weight
         models.append(STGNNForecaster(panel.devices, lookback=lookback,
                                       horizons=hsteps, epochs=epochs, **skw))
     return models
@@ -284,11 +293,13 @@ def main():
                          "sub-network (BFS over the topology from the busiest router) "
                          "— a real slice of the graph for a quick STGNN-meaningful run. "
                          "Applied after --min-mean-mbps.")
-    ap.add_argument("--scale-weight", type=float, default=0.0,
-                    help="exponent on per-link mean traffic used as a deep-tier "
-                         "training-loss weight (0 = uniform/RevIN; 1 = weight ~ Mbps, "
-                         "aligns the fit with pooled MAE). Applies to GRU/TCN/DLinear/"
-                         "PatchTST.")
+    ap.add_argument("--scale-weight", type=_scale_weight_arg, default=0.0,
+                    help="deep-tier training-loss weight from per-link mean traffic: "
+                         "a float exponent (0 = uniform/RevIN; 1 = weight ~ Mbps, "
+                         "aligns with pooled MAE) or 'log' (= weight ~ log10(Mbps), "
+                         "the training-side mirror of the log-volume-weighted ratio "
+                         "metric). Applies to GRU/TCN/DLinear/PatchTST and, as "
+                         "per-node weights, to the STGNN.")
     ap.add_argument("--horizons", nargs="+", default=["5min", "1h", "day"],
                     choices=list(config.HORIZONS))
     ap.add_argument("--stride", type=int, default=None)
@@ -347,8 +358,10 @@ def main():
                           max_train_samples=args.max_train_samples,
                           scale_weight=args.scale_weight)
     if args.scale_weight:
-        print(f"[loss] scale-weighted training on (exponent {args.scale_weight:g}) "
-              f"for GRU/TCN/DLinear/PatchTST")
+        how = "w ~ log10(Mbps)" if args.scale_weight == "log" \
+            else f"w ~ Mbps**{args.scale_weight:g}"
+        print(f"[loss] scale-weighted training on ({how}) "
+              f"for GRU/TCN/DLinear/PatchTST + STGNN (per-node)")
     if any(t in args.tiers for t in (4, 5, 6)):
         from . import torch_common as tc
         print(f"[device] torch tiers on: {tc.get_device()}")
@@ -367,10 +380,12 @@ def main():
     agg = result.aggregate()
     per_link = result.per_link()
     skill = result.skill_table(metric=args.metric)
+    ratio = result.ratio_table(metric=args.metric)
 
     agg.to_csv(out / "aggregate.csv", index=False)
     per_link.to_csv(out / "per_link.csv", index=False)
     skill.to_csv(out / f"skill_{args.metric}.csv")
+    ratio.to_csv(out / f"ratio_vs_persistence_{args.metric}.csv", index=False)
     with open(out / "config.json", "w") as fh:
         json.dump(vars(args) | {"n_links": panel.L, "n_steps": panel.T,
                                 "links": panel.links}, fh, indent=2)
@@ -381,6 +396,16 @@ def main():
           columns=["model", "tier", "horizon_name", "mae", "rmse", "smape", "wape", "n"]))
     print(f"\n===== skill table ({args.metric}) =====")
     print(skill.to_string())
+    if not ratio.empty:
+        print(f"\n===== normalise-then-weight: per-link {args.metric} ratio vs "
+              f"persistence (<1 beats it) =====")
+        rw = ratio.pivot_table(index=["model", "tier"], columns="horizon_name",
+                               values=["logv_ratio", "median_ratio", "geomean_ratio"])
+        horder = [h for h in ["5min", "15min", "30min", "1h", "day", "week"]
+                  if h in ratio["horizon_name"].unique()]
+        rw = rw.reindex(columns=pd.MultiIndex.from_product(
+            [["logv_ratio", "median_ratio", "geomean_ratio"], horder]))
+        print(rw.round(3).to_string())
 
     plot_skill(result, out, args.metric, "persistence")
     plot_overlays(result, models, panel, split, out,

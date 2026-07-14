@@ -355,6 +355,52 @@ class BacktestResult:
             rows.append(r)
         return pd.DataFrame(rows).sort_values(["horizon", "mae"]).reset_index(drop=True)
 
+    def ratio_table(self, metric: str = "mae",
+                    baseline: str = "persistence") -> pd.DataFrame:
+        """Normalise-then-weight evaluation: per-link ``metric`` ratio vs ``baseline``.
+
+        Pooled raw-Mbps metrics are a traffic-weighted vote (per-link MAE scales
+        with link traffic across ~4 decades, so the giants own the aggregate; on
+        the 547-link cohort the top 50 links hold ~70% of pooled MAE). Here every
+        link is first normalised by the baseline's error on that same link, then
+        aggregated three ways:
+
+          median_ratio    one link one vote, robust to outlier links;
+          geomean_ratio   one link one vote, uses every link (log-average);
+          logv_ratio      weight = log10(test-mean Mbps) — gentle size preference
+                          (top-50 share drops to ~20% on the 547 cohort).
+
+        Ratios < 1 beat the baseline. Links where the baseline's error is ~0
+        (perfectly constant) are excluded; ``n_links`` reports the count used.
+        """
+        pl = self.per_link()
+        vol = self.records.groupby("link")["y_true"].apply(lambda s: s.abs().mean())
+        w_all = np.log10(np.maximum(vol, 1.0)) + 0.01
+        base = pl[pl.model == baseline].set_index(["horizon", "link"])[metric]
+        rows = []
+        for (model, tier, h), g in pl.groupby(["model", "tier", "horizon"]):
+            if h not in base.index.get_level_values(0):
+                continue
+            b = base.loc[h]
+            g = g.set_index("link")[metric]
+            common = [l for l in g.index
+                      if l in b.index and np.isfinite(b[l]) and b[l] > 1e-9
+                      and np.isfinite(g[l])]
+            if not common:
+                continue
+            r = (g.loc[common] / b.loc[common]).astype(float)
+            w = w_all.reindex(common).fillna(0.01)
+            rows.append({
+                "model": model, "tier": tier, "horizon": h,
+                "horizon_name": self._h_name.get(h, str(h)),
+                "median_ratio": float(r.median()),
+                "geomean_ratio": float(np.exp(np.log(r.clip(lower=1e-9)).mean())),
+                "logv_ratio": float((r * w).sum() / w.sum()),
+                "n_links": len(common),
+            })
+        return (pd.DataFrame(rows)
+                .sort_values(["horizon", "logv_ratio"]).reset_index(drop=True))
+
     def skill_table(self, metric: str = "mae",
                     baselines=("persistence", "seasonal_naive_day")) -> pd.DataFrame:
         """Wide table: `metric` per model x horizon plus skill vs each baseline.

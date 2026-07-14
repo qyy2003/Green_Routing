@@ -76,6 +76,24 @@ def make_anchors(train_slice, lookback, max_h, min_ctx, cap, n_links_stride=1):
     return anchors
 
 
+def link_scale_weights(tr_mean_mbps, scale_weight):
+    """Per-link training-loss weights from train-window mean traffic.
+
+    ``scale_weight``: an exponent (``w ~ Mbps**exp`` — chases the raw pooled-MAE
+    vote) or the string ``"log"`` (``w ~ log10(max(Mbps, 1))`` — the training-side
+    mirror of the log-volume-weighted ratio metric: gentle size preference,
+    Gini ~0.33 on the 547-link cohort vs 0.65 at exp=0.5 and 0.85 at exp=1).
+    """
+    v = np.nan_to_num(np.clip(np.asarray(tr_mean_mbps, np.float64), 0, None))
+    if isinstance(scale_weight, str):
+        if scale_weight != "log":
+            raise ValueError(f"unknown scale_weight {scale_weight!r} (use 'log' or a float)")
+        w = np.log10(np.maximum(v, 1.0)) + 0.01   # floor links keep a small say
+    else:
+        w = v ** float(scale_weight)
+    return w.astype(np.float32)
+
+
 def revin_norm(win_log, eps=1e-5):
     """Per-window instance norm. win_log: [..., L_win]. Returns (xn, mean, std)."""
     m = win_log.mean(axis=-1, keepdims=True)
@@ -173,10 +191,19 @@ class TorchTrainer:
         if self.cosine_lr and epochs > 3:
             sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=epochs)
         loss_fn = nn.SmoothL1Loss(reduction="none")   # Huber: robust to traffic bursts
+        # Optional per-node weights (STGNN whole-panel samples: pred is [b, N, h]).
+        # Sequence tiers weight per *sample* via W instead; both mirror the
+        # normalise-then-weight evaluation metric (log-volume weighted ratio).
+        nw = getattr(self, "_node_w", None)
+        nw_t = None if nw is None else \
+            torch.tensor(np.asarray(nw, np.float32), device=device)
 
         def _wloss(pred, tgt, w):
             per = loss_fn(pred, tgt)                   # [b, ...]
-            per = per.flatten(1).mean(dim=1) if per.dim() > 1 else per
+            if per.dim() == 3 and nw_t is not None:    # [b, N, h]: weighted node mean
+                per = (per.mean(dim=2) * nw_t).sum(dim=1) / nw_t.sum().clamp_min(1e-8)
+            else:
+                per = per.flatten(1).mean(dim=1) if per.dim() > 1 else per
             return (per * w).sum() / w.sum().clamp_min(1e-8)
 
         best = float("inf")
@@ -187,6 +214,7 @@ class TorchTrainer:
             t0 = time.time()
             net.train()
             idx = tr[torch.randperm(tr.shape[0])]
+            tsum, twsum = 0.0, 0.0
             for i in range(0, idx.shape[0], self.batch_size):
                 b = idx[i:i + self.batch_size]
                 xb = Xt[b].to(device, non_blocking=True)
@@ -196,10 +224,13 @@ class TorchTrainer:
                 loss = _wloss(net(xb), yb, wb)
                 if not torch.isfinite(loss):
                     continue            # skip a bad batch rather than corrupt weights
+                tsum += loss.item() * float(wb.sum())
+                twsum += float(wb.sum())
                 loss.backward()
                 gnorm = nn.utils.clip_grad_norm_(net.parameters(), self.clip_grad)
                 if torch.isfinite(gnorm):
                     opt.step()
+            tloss = tsum / max(1e-8, twsum)
             if sched is not None:
                 sched.step()
             net.eval()
@@ -216,8 +247,8 @@ class TorchTrainer:
                     wsum += float(wb.sum())
                 vloss = vsum / max(1e-8, wsum)
             if chatty:
-                print(f"[{verbose_name}] epoch {ep + 1}/{epochs} val={vloss:.4f} "
-                      f"({time.time() - t0:.1f}s)", flush=True)
+                print(f"[{verbose_name}] epoch {ep + 1}/{epochs} train={tloss:.4f} "
+                      f"val={vloss:.4f} ({time.time() - t0:.1f}s)", flush=True)
             if vloss < best - 1e-5:
                 best, bad = vloss, 0
                 best_state = {k: v.detach().clone() for k, v in net.state_dict().items()}

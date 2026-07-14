@@ -19,6 +19,7 @@ from dataset import config
 
 from .harness import Context, Forecaster
 from . import torch_common as tc
+from .torch_common import link_scale_weights
 
 
 # --------------------------------------------------------------------------- #
@@ -152,9 +153,11 @@ class SeqForecaster(Forecaster, tc.TorchTrainer):
     is_global = True
     supports_online = True      # warm-start fine-tune on recent windows at test time
 
-    # exponent on per-link mean traffic used as a training-loss weight; 0 = uniform
-    # (pure RevIN equalisation), 1 = weight ~ Mbps (aligns the fit with pooled MAE).
-    scale_weight: float = 0.0
+    # per-link training-loss weight from mean traffic: 0 = uniform (pure RevIN
+    # equalisation), an exponent (e.g. 0.5/1) = weight ~ Mbps**exp (chases pooled
+    # MAE), or "log" = weight ~ log10(Mbps) — the training-side mirror of the
+    # log-volume-weighted ratio metric (normalise-then-weight).
+    scale_weight: float | str = 0.0
 
     def __init__(self, lookback=config.DAILY_STEPS, horizons=tuple(config.HORIZONS.values()),
                  epochs=12, max_train_samples=100_000, scale_weight=None):
@@ -187,9 +190,13 @@ class SeqForecaster(Forecaster, tc.TorchTrainer):
                 tgt = log_vals[t:t + self.max_h, j]
                 if not (np.isfinite(win).all() and np.isfinite(tgt).all()):
                     continue
-                m, s = win.mean(), win.std() + 1e-5
+                # Variance floor: intermittent links (off for the whole window,
+                # live in the target) otherwise divide by ~0 and produce 1e5+
+                # normalised targets that monopolise the loss. 0.05 log1p-units
+                # leaves normal windows (std 0.2-2) untouched.
+                m, s = win.mean(), max(win.std(), 0.05)
                 X.append((win - m) / s)
-                Y.append((tgt - m) / s)
+                Y.append(np.clip((tgt - m) / s, -20.0, 20.0))
                 src.append(j)
         return (np.asarray(X, np.float32), np.asarray(Y, np.float32),
                 np.asarray(src, np.int64))
@@ -204,11 +211,11 @@ class SeqForecaster(Forecaster, tc.TorchTrainer):
         log_vals = tc.log1p(values_filled)
         L = log_vals.shape[1]
         self._train_start = split.train[0]
-        if self.scale_weight != 0.0:
+        if self.scale_weight:
             # link scale = mean raw throughput over the train slice (no test leak)
             tr_mean = np.nanmean(values_filled[split.train[0]:split.train[1]], axis=0)
-            self._link_w = np.nan_to_num(np.clip(tr_mean, 0, None),
-                                         nan=0.0).astype(np.float32) ** self.scale_weight
+            tr_mean = np.nan_to_num(np.clip(tr_mean, 0, None), nan=0.0)
+            self._link_w = link_scale_weights(tr_mean, self.scale_weight)
         cap = max(1, self.max_train_samples // L)
         anchors = tc.make_anchors(split.train, self.lookback, self.max_h,
                                   min_ctx=self.lookback, cap=cap)
@@ -246,7 +253,7 @@ class SeqForecaster(Forecaster, tc.TorchTrainer):
         win = tc.log1p(ctx.values_filled[o - self.lookback:o, ctx.link])
         if not np.isfinite(win).all():
             return out
-        m, s = win.mean(), win.std() + 1e-5
+        m, s = win.mean(), max(win.std(), 0.05)   # same variance floor as training
         xn = ((win - m) / s).astype(np.float32)
         device = next(self.net.parameters()).device
         with torch.no_grad():

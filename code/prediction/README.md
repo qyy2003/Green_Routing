@@ -143,16 +143,26 @@ window is below this; `--min-mean-mbps 1` removes idle ports that otherwise subs
 scale-free metrics, leaving 547 of 886 links), `--connected-links N` (keep ~N links whose
 host routers form a **connected** sub-network — BFS over the topology from the busiest
 router, spread across ~6 routers — for a quick run where the STGNN graph is a real slice
-of the network; applied after `--min-mean-mbps`), `--scale-weight` (exponent on per-link
-mean traffic as a deep-tier loss weight: 0 = uniform/RevIN, 1 = weight ~ Mbps to align
-the fit with pooled MAE; applies to GRU/TCN/DLinear/PatchTST),
+of the network; applied after `--min-mean-mbps`), `--scale-weight` (deep-tier loss
+weight from per-link train-mean traffic: a float exponent — 0 = uniform/RevIN,
+1 = weight ~ Mbps to align the fit with pooled MAE — or `log` = weight ~ log10(Mbps),
+the training-side mirror of the log-volume-weighted ratio metric; applies to
+GRU/TCN/DLinear/PatchTST and, per-node, to the STGNN),
 `--metric {mae,rmse,smape,wape}`, `--seasonal-sarima` (enable a true `s=288` SARIMA),
 `--online` (add test-time-fine-tuned `+online` variants — see *Online adaptation*),
 `--resume` (continue an interrupted run — see *Checkpoints*).
 
-Writes to `--out`: `aggregate.csv`, `per_link.csv`, `skill_<metric>.csv`, `config.json`,
+Writes to `--out`: `aggregate.csv`, `per_link.csv`, `skill_<metric>.csv`,
+`ratio_vs_persistence_<metric>.csv` (normalise-then-weight table: per-link error
+ratio vs persistence aggregated as median / geometric mean / log10(volume)-weighted
+mean — the scale-domination-free leaderboard; <1 beats persistence), `config.json`,
 `skill_vs_persistence_<metric>.png`, `overlay_forecasts.png` (busy / bursty / quiet link
 paths — the roadmap's "did it just learn to output the last value one step late?" check).
+
+Deep-tier epoch lines log both losses (`[gru] epoch 3/100 train=0.171 val=0.116 …`);
+with the RevIN variance floor (std floored at 0.05 in log1p space, targets clipped to
+±20) healthy epoch-1 val is ~0.3–0.7 — a val stuck at 10+ means degenerate windows are
+back.
 
 ### Checkpoints, incremental results, and `--resume`
 

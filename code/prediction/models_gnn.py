@@ -128,8 +128,10 @@ class STGNNForecaster(Forecaster, tc.TorchTrainer):
 
     def __init__(self, devices: list[str], lookback=config.DAILY_STEPS,
                  horizons=tuple(config.HORIZONS.values()), epochs=15,
-                 max_train_samples=3000):
+                 max_train_samples=3000, scale_weight=0.0):
         self.devices = list(devices)
+        self.scale_weight = scale_weight   # per-NODE loss weight (see torch_common)
+        self._node_w = None
         self.lookback = lookback
         self.horizons = tuple(sorted(set(horizons)))
         self.max_h = max(self.horizons)
@@ -158,7 +160,8 @@ class STGNNForecaster(Forecaster, tc.TorchTrainer):
     @staticmethod
     def _revin_matrix(win):                       # win [N, lin] -> normalised + stats
         m = np.nanmean(win, axis=1, keepdims=True)
-        s = np.nanstd(win, axis=1, keepdims=True) + 1e-5
+        # same variance floor as the sequence tiers (see models_deep._windows)
+        s = np.maximum(np.nanstd(win, axis=1, keepdims=True), 0.05)
         m = np.where(np.isfinite(m), m, 0.0)
         xn = (win - m) / s
         xn[~np.isfinite(xn)] = 0.0
@@ -173,7 +176,7 @@ class STGNNForecaster(Forecaster, tc.TorchTrainer):
             if np.isnan(win).all() or np.isnan(tgt).all():
                 continue
             xn, m, s = self._revin_matrix(win)
-            yn = (tgt - m) / s
+            yn = np.clip((tgt - m) / s, -20.0, 20.0)   # bounded targets (see models_deep)
             yn[~np.isfinite(yn)] = 0.0
             X.append(xn)
             Y.append(yn.astype(np.float32))
@@ -182,6 +185,11 @@ class STGNNForecaster(Forecaster, tc.TorchTrainer):
     def fit(self, values_filled, split, timestamps):
         log_vals = tc.log1p(values_filled)
         self._train_start = split.train[0]
+        if self.scale_weight:
+            # per-node loss weights (train-window means; picked up by the shared
+            # trainer's _wloss for [b, N, h] predictions)
+            tr_mean = np.nanmean(values_filled[split.train[0]:split.train[1]], axis=0)
+            self._node_w = tc.link_scale_weights(tr_mean, self.scale_weight)
         anchors = tc.make_anchors(split.train, self.lookback, self.max_h,
                                   min_ctx=self.lookback, cap=self.max_train_samples)
         X, Y = self._windows(log_vals, anchors)
