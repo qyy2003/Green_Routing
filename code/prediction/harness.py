@@ -187,7 +187,11 @@ def backtest(
         rec_dir.mkdir(parents=True, exist_ok=True)
 
     def _checkpoint(m):
-        hits = sorted(ckpt_dir.glob(f"{m.name}.*")) if ckpt_dir is not None else []
+        """Final-weights checkpoint for m — NOT the transient mid-training
+        ``<name>.train.pt`` state, which is a full optimiser bundle that the
+        model's own fit resumes from (torch_common._fit_torch)."""
+        hits = [p for p in sorted(ckpt_dir.glob(f"{m.name}.*"))
+                if not p.name.endswith(".train.pt")] if ckpt_dir is not None else []
         return hits[0] if hits else None
 
     done: set[str] = set()
@@ -204,6 +208,11 @@ def backtest(
     interrupted = False
     try:
         for m in models:
+            # Arm per-epoch training-state checkpointing (torch tiers write
+            # <name>.train.pt after every epoch and resume from it, so a crash
+            # mid-training costs at most one epoch instead of the whole fit).
+            if ckpt_dir is not None:
+                m.train_ckpt_dir = ckpt_dir
             # A checkpoint reload is cheap, so on resume prefer it even for models
             # whose records are cached — they stay usable (overlay plots, twins).
             ck = _checkpoint(m) if resume else None
@@ -410,6 +419,53 @@ class BacktestResult:
                                          "logv_ratio", "n_links"])
         return (pd.DataFrame(rows)
                 .sort_values(["horizon", "logv_ratio"]).reset_index(drop=True))
+
+    def peak_table(self, q: float = 0.90) -> pd.DataFrame:
+        """Peak behaviour per (model, horizon): how forecasts treat each link's
+        top-decile actuals — the traffic that matters for capacity decisions.
+
+        For every (link, horizon) the threshold is the q-quantile of y_true (the
+        targets are identical across models, so thresholds are too). Reported per
+        (model, horizon), pooled over links:
+
+          peak_bias_pct        signed error on peak points, % of peak volume
+                               (negative = under-prediction / peak shaving)
+          peak_underpred_rate  fraction of peak points predicted below actual
+          peak_mae             MAE on peak points (Mbps)
+          off_bias_pct         signed error off-peak — the price paid for any
+                               peak correction shows up here as over-prediction
+
+        Note an irreducible part: conditioning on a high actual guarantees any
+        no-lookahead forecaster under-shoots somewhat (persistence sits at
+        -16..-34% on pred_547d); judge models against the naive rows, not zero.
+        """
+        r = self.records
+        if r.empty:
+            return pd.DataFrame(columns=["model", "tier", "horizon", "horizon_name",
+                                         "peak_bias_pct", "peak_underpred_rate",
+                                         "peak_mae", "off_bias_pct", "n_peak"])
+        thr = (r.groupby(["link", "horizon"])["y_true"].quantile(q)).rename("thr")
+        d = r.join(thr, on=["link", "horizon"])
+        d["is_peak"] = d.y_true >= d.thr
+        rows = []
+        for (model, tier, h), g in d.groupby(["model", "tier", "horizon"]):
+            pk, off = g[g.is_peak], g[~g.is_peak]
+            if not len(pk):
+                continue
+            err = pk.y_pred - pk.y_true
+            rows.append({
+                "model": model, "tier": tier, "horizon": h,
+                "horizon_name": self._h_name.get(h, str(h)),
+                "peak_bias_pct": float(100 * err.sum() / pk.y_true.sum()),
+                "peak_underpred_rate": float((err < 0).mean()),
+                "peak_mae": float(err.abs().mean()),
+                "off_bias_pct": float(100 * (off.y_pred - off.y_true).sum() /
+                                      max(off.y_true.sum(), 1e-9)),
+                "n_peak": int(len(pk)),
+            })
+        return (pd.DataFrame(rows)
+                .sort_values(["horizon", "peak_bias_pct"], ascending=[True, False])
+                .reset_index(drop=True))
 
     def skill_table(self, metric: str = "mae",
                     baselines=("persistence", "seasonal_naive_day")) -> pd.DataFrame:

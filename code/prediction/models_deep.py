@@ -139,13 +139,18 @@ def _modules():
     class PatchTST(nn.Module):
         """Nie et al. 2023, patches 16/8, d_model 128, 16 heads, 3 encoder layers,
         d_ff 256, dropout 0.2 (LayerNorm in place of the paper's BatchNorm; RevIN
-        applied per window by the forecaster). Departure from the paper: the
-        flatten head (n_patch*d -> h, ~65 M params at week horizons) memorised the
-        train regime by epoch 2 on the 547-link cohort — replaced by an
-        attention-pooled head (d -> h, ~0.3 M params)."""
+        applied per window by the forecaster). Head history on the 547 cohort:
+        the paper's flatten head (n_patch*d -> h, ~65 M params at week horizons)
+        memorised the train regime by epoch 2; the attention-pooled replacement
+        (d -> h) fixed that but squeezed 251 patch tokens through ONE 128-d
+        vector before emitting a 2016-step path — an information bottleneck that
+        made it the worst learned tier (lost to GRU on 94% of links, flattest
+        peaks). Now: a LOW-RANK flatten head — flatten -> bottleneck -> h — which
+        keeps a direct per-patch path to every output step at ~13 M params,
+        guarded by fc_dropout and the class's weight decay."""
         def __init__(self, lin, h, n_links=0, emb_dim=16, patch=16, stride=8,
                      d=128, heads=16, layers=3, d_ff=256, dropout=0.2,
-                     fc_dropout=0.2):
+                     fc_dropout=0.2, bottleneck=384):
             super().__init__()
             self.patch, self.stride = patch, stride
             self.pad = (-(lin - patch)) % stride      # front-pad so patches tile lin
@@ -155,18 +160,18 @@ def _modules():
             enc = nn.TransformerEncoderLayer(d, heads, dim_feedforward=d_ff,
                                              batch_first=True, dropout=dropout)
             self.tr = nn.TransformerEncoder(enc, layers)
-            self.pool = nn.Linear(d, 1)               # learned attention pooling
             self.drop = nn.Dropout(fc_dropout)
+            self.neck = nn.Linear(self.n_patch * d, bottleneck)
+            self.act = nn.GELU()
             self.lemb = LinkEmb(n_links, emb_dim)
-            self.head = nn.Linear(d + self.lemb.dim, h)
+            self.head = nn.Linear(bottleneck + self.lemb.dim, h)
 
         def forward(self, x, lid=None):
             if self.pad:
                 x = torch.nn.functional.pad(x, (self.pad, 0), mode="replicate")
             tokens = x.unfold(-1, self.patch, self.stride)   # [B, n_patch, patch]
             z = self.tr(self.embed(tokens) + self.pos)       # [B, n_patch, d]
-            a = torch.softmax(self.pool(z), dim=1)           # [B, n_patch, 1]
-            z = (z * a).sum(dim=1)                           # [B, d]
+            z = self.act(self.neck(self.drop(z.flatten(1)))) # [B, bottleneck]
             return self.head(self.drop(self.lemb.cat(z, lid)))
 
     return dict(DLinear=DLinear, GRUNet=GRUNet, TCNNet=TCNNet, PatchTST=PatchTST)

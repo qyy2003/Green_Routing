@@ -70,7 +70,7 @@ def _new_global_models(tiers, hsteps, panel, lookback, epochs, max_train_samples
 
 
 def build_models(tiers, hsteps, seasonal_sarima, panel, lookback, epochs, online_cfg=None,
-                 max_train_samples=None, scale_weight=0.0):
+                 max_train_samples=None, scale_weight=0.0, under_weight=1.0):
     """Assemble the requested tiers. Tiers 4-6 import torch lazily (only if requested).
 
     If ``online_cfg`` is given, an ``<name>+online`` variant of every global tier is
@@ -104,6 +104,12 @@ def build_models(tiers, hsteps, seasonal_sarima, panel, lookback, epochs, online
                 m.online_lr = online_cfg["lr"]
             m.name = f"{m.name}+online"
             models.append(m)
+
+    if under_weight and under_weight != 1.0:
+        # asymmetric Huber on every torch tier (see torch_common.under_weight)
+        for m in models:
+            if hasattr(m, "under_weight"):
+                m.under_weight = under_weight
     return models
 
 
@@ -300,6 +306,11 @@ def main():
                          "the training-side mirror of the log-volume-weighted ratio "
                          "metric). Applies to GRU/TCN/DLinear/PatchTST and, as "
                          "per-node weights, to the STGNN.")
+    ap.add_argument("--under-weight", type=float, default=1.0,
+                    help="asymmetric-Huber factor on UNDER-predicted steps for the "
+                         "torch tiers (1 = symmetric). ~2 counteracts peak shaving "
+                         "by moving the point forecast above the conditional "
+                         "median; judge the effect in peaks.csv.")
     ap.add_argument("--horizons", nargs="+", default=["5min", "1h", "day"],
                     choices=list(config.HORIZONS))
     ap.add_argument("--stride", type=int, default=None)
@@ -356,7 +367,11 @@ def main():
     models = build_models(args.tiers, hsteps, args.seasonal_sarima, panel,
                           args.lookback, args.epochs, online_cfg=online_cfg,
                           max_train_samples=args.max_train_samples,
-                          scale_weight=args.scale_weight)
+                          scale_weight=args.scale_weight,
+                          under_weight=args.under_weight)
+    if args.under_weight != 1.0:
+        print(f"[loss] asymmetric Huber: under-prediction weighted "
+              f"{args.under_weight:g}x (torch tiers, train + val criterion)")
     if args.scale_weight:
         how = "w ~ log10(Mbps)" if args.scale_weight == "log" \
             else f"w ~ Mbps**{args.scale_weight:g}"
@@ -381,11 +396,13 @@ def main():
     per_link = result.per_link()
     skill = result.skill_table(metric=args.metric)
     ratio = result.ratio_table(metric=args.metric)
+    peaks = result.peak_table()
 
     agg.to_csv(out / "aggregate.csv", index=False)
     per_link.to_csv(out / "per_link.csv", index=False)
     skill.to_csv(out / f"skill_{args.metric}.csv")
     ratio.to_csv(out / f"ratio_vs_persistence_{args.metric}.csv", index=False)
+    peaks.to_csv(out / "peaks.csv", index=False)
     with open(out / "config.json", "w") as fh:
         json.dump(vars(args) | {"n_links": panel.L, "n_steps": panel.T,
                                 "links": panel.links}, fh, indent=2)
@@ -406,6 +423,12 @@ def main():
         rw = rw.reindex(columns=pd.MultiIndex.from_product(
             [["logv_ratio", "median_ratio", "geomean_ratio"], horder]))
         print(rw.round(3).to_string())
+    if not peaks.empty:
+        print("\n===== peaks: top-decile actuals per link (bias% / underpred rate) =====")
+        pw = peaks.assign(cell=peaks.peak_bias_pct.round(1).astype(str) + "% / " +
+                          (peaks.peak_underpred_rate * 100).round(0).astype(int).astype(str) + "%")
+        print(pw.pivot_table(index=["model", "tier"], columns="horizon_name",
+                             values="cell", aggfunc="first").to_string())
 
     plot_skill(result, out, args.metric, "persistence")
     plot_overlays(result, models, panel, split, out,

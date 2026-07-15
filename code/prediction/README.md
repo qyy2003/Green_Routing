@@ -42,10 +42,12 @@ statsmodels/matplotlib/scipy/torch-CUDA):
 The torch tiers default to their published configurations: GRU 2×128; TCN with
 Bai-et-al. residual blocks (64 ch, depth auto-sized so the receptive field covers the
 lookback); PatchTST at the paper's supervised encoder config (patch 16 / stride 8,
-d_model 128, 16 heads, 3 layers, d_ff 256, dropout 0.2, lr 1e-4) but with an
-attention-pooled head (d→h, ~0.3 M params) instead of the paper's flatten head
-(n_patch·d→h, ~65 M at week horizons — it memorised the train regime by epoch 2 on
-the 547-link cohort); Graph WaveNet at its paper design
+d_model 128, 16 heads, 3 layers, d_ff 256, dropout 0.2, lr 1e-4) but with a
+**low-rank flatten head** (flatten → 384-d bottleneck → h, ~13 M params): the paper's
+flatten head (n_patch·d→h, ~65 M at week horizons) memorised the train regime by
+epoch 2 on the 547-link cohort, and its attention-pooled replacement (d→h, ~0.3 M)
+over-corrected — squeezing 251 patch tokens through one 128-d vector made it the
+worst learned tier on pred_547d (lost to GRU on 94% of links); Graph WaveNet at its paper design
 (gated dilated convs 32 ch, skip 256 / end 512, order-2 diffusion over fixed + adaptive
 adjacency, dropout 0.3 — input truncated to the receptive field, as GWN is a
 short-window model). DLinear is unchanged: it is linear by design (the control).
@@ -54,6 +56,16 @@ automatically as `--lookback` grows (and, for the STGNN, as the node count grows
 week-long window over hundreds of links fits a 6 GB GPU — the STGNN also
 gradient-checkpoints its layers to bound activation memory. LR is cosine-annealed over
 the run, which stabilises the GRU (its constant-LR curve had late-training blow-ups).
+
+**Peak-aware training (`--under-weight`)**: every learned tier under-predicted each
+link's top-decile traffic on pred_547d (−36…−46% signed error at day/week vs −28% for
+seasonal-naive-week — the irreducible regression-to-the-mean part). `--under-weight W`
+multiplies the Huber loss of *under-predicted* steps by `W` for the torch tiers, in
+the train **and** val criterion, moving the point forecast above the conditional
+median. `W≈2` is a sensible start; the cost is mild off-peak over-prediction. Judge
+the trade in `peaks.csv` (peak bias %, underprediction rate, peak MAE, off-peak bias —
+per model × horizon; thresholds are per-link q90 of the identically-scored targets,
+so the naive rows give the irreducible floor).
 
 ## Modules
 
@@ -163,7 +175,9 @@ GRU/TCN/DLinear/PatchTST and, per-node, to the STGNN),
 Writes to `--out`: `aggregate.csv`, `per_link.csv`, `skill_<metric>.csv`,
 `ratio_vs_persistence_<metric>.csv` (normalise-then-weight table: per-link error
 ratio vs persistence aggregated as median / geometric mean / log10(volume)-weighted
-mean — the scale-domination-free leaderboard; <1 beats persistence), `config.json`,
+mean — the scale-domination-free leaderboard; <1 beats persistence), `peaks.csv`
+(peak bias / underprediction rate / peak MAE per model × horizon — see *Peak-aware
+training*), `config.json`,
 `skill_vs_persistence_<metric>.png`, `overlay_forecasts.png` (busy / bursty / quiet link
 paths — the roadmap's "did it just learn to output the last value one step late?" check).
 

@@ -142,6 +142,13 @@ class TorchTrainer:
     plateau_factor: float = 0.3
     plateau_patience: int = 3
     max_sample_weight: float = 10.0   # cap scale weights: no link dominates a batch
+    # Asymmetric Huber: multiply the loss of UNDER-predicted steps (pred < target)
+    # by this factor. 1.0 = symmetric. >1 moves the point forecast above the
+    # conditional median (pinball-style) — the counterweight to peak shaving:
+    # on pred_547d every learned tier under-shot top-decile traffic by -36..-46%
+    # at day/week vs -28% for seasonal-naive (the irreducible part). Applies to
+    # train AND val, so early stopping selects for the same objective.
+    under_weight: float = 1.0
     # online fine-tune: fewer epochs + lower LR (warm-start, avoid forgetting)
     online_epochs: int = 3
     online_lr: float = 3e-4
@@ -162,7 +169,9 @@ class TorchTrainer:
         weights — a shape mismatch (e.g. a changed --lookback) raises, and the
         harness falls back to fitting."""
         torch = _torch()
-        state = torch.load(path, map_location="cpu")
+        # the file is a plain tensor state_dict, so the safe loader suffices
+        # (and silences torch's weights_only FutureWarning)
+        state = torch.load(path, map_location="cpu", weights_only=True)
         self._n_links = values_filled.shape[1]   # sizes the link embedding, if any
         net = self._build_net(self.lookback, self.max_h)
         net.load_state_dict(state)
@@ -279,8 +288,13 @@ class TorchTrainer:
                 hw_cache[h] = w * (h / w.sum())
             return hw_cache[h]
 
+        uw = float(self.under_weight)
+
         def _wloss(pred, tgt, w):
             per = loss_fn(pred, tgt)                   # [b, h] or [b, N, h]
+            if uw != 1.0:
+                # under-predicted steps cost uw x (see under_weight above)
+                per = per * ((pred < tgt).to(per.dtype) * (uw - 1.0) + 1.0)
             if per.dim() >= 2:
                 per = per * _hw(per.shape[-1])         # near horizons matter more
             if per.dim() == 3 and nw_t is not None:    # [b, N, h]: weighted node mean
@@ -314,7 +328,9 @@ class TorchTrainer:
         start_ep = 0
         if state_path is not None and state_path.exists():
             try:
-                st = torch.load(state_path, map_location="cpu")
+                # our own trusted bundle (optimiser state, RNG blobs) — needs the
+                # full unpickler, so pin weights_only against torch's default flip
+                st = torch.load(state_path, map_location="cpu", weights_only=False)
                 net.load_state_dict(st["net"])
                 opt.load_state_dict(st["opt"])
                 if sched is not None and st.get("sched") is not None:
