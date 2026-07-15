@@ -76,6 +76,25 @@ def make_anchors(train_slice, lookback, max_h, min_ctx, cap, n_links_stride=1):
     return anchors
 
 
+def make_val_anchors(val_slice, lookback, max_h, cap):
+    """Anchor indices for the CHRONOLOGICAL validation block.
+
+    The input window [t-lookback, t) may reach back before the block (that is
+    real, permissible history — exactly what the harness's predict does); the
+    target path [t, t+max_h) stays strictly inside the block, so validation
+    never sees a test-block value.
+    """
+    lo = max(val_slice[0], lookback)
+    hi = val_slice[1] - max_h
+    if hi <= lo:
+        return np.empty(0, np.int64)
+    anchors = np.arange(lo, hi)
+    if cap and anchors.size > cap:
+        sel = np.linspace(0, anchors.size - 1, cap).round().astype(int)
+        anchors = anchors[np.unique(sel)]
+    return anchors
+
+
 def link_scale_weights(tr_mean_mbps, scale_weight):
     """Per-link training-loss weights from train-window mean traffic.
 
@@ -116,7 +135,12 @@ class TorchTrainer:
     weight_decay: float = 1e-5
     patience: int = 10          # early stop after this many non-improving epochs
     clip_grad: float = 5.0
-    cosine_lr: bool = True      # cosine-anneal LR over the full run (helps stability)
+    # LR schedule: ReduceLROnPlateau on the (chronological) val loss. Early stop is
+    # gated on >= 2 LR reductions so a high-LR plateau triggers refinement instead
+    # of killing the run (the pred_547c failure mode: cosine T_max=epochs never
+    # decayed before patience fired).
+    plateau_factor: float = 0.3
+    plateau_patience: int = 3
     max_sample_weight: float = 10.0   # cap scale weights: no link dominates a batch
     # online fine-tune: fewer epochs + lower LR (warm-start, avoid forgetting)
     online_epochs: int = 3
@@ -139,6 +163,7 @@ class TorchTrainer:
         harness falls back to fitting."""
         torch = _torch()
         state = torch.load(path, map_location="cpu")
+        self._n_links = values_filled.shape[1]   # sizes the link embedding, if any
         net = self._build_net(self.lookback, self.max_h)
         net.load_state_dict(state)
         self.net = net.to(get_device())
@@ -146,7 +171,8 @@ class TorchTrainer:
         self._train_start = split.train[0]
         return True
 
-    def _fit_torch(self, net, X, Y, verbose_name="", epochs=None, lr=None, W=None):
+    def _fit_torch(self, net, X=None, Y=None, verbose_name="", epochs=None, lr=None,
+                   W=None, val=None, ids=None, sampler=None):
         """Train (or, warm-started from an already-trained ``net``, fine-tune) the
         network. ``epochs``/``lr`` override the defaults — online fine-tuning passes
         a smaller LR and fewer epochs so the model nudges toward the recent regime
@@ -154,9 +180,32 @@ class TorchTrainer:
 
         ``W`` (optional, shape ``[n]``): per-sample loss weights (normalised to mean
         1 internally). Used for scale-weighted training so high-traffic links pull
-        the fit more — the pooled-MAE objective — instead of RevIN's equal say.
-        Both the train step and the val criterion use the same weights, so early
-        stopping tracks the weighted objective too."""
+        the fit more, mirroring the log-volume-weighted evaluation.
+
+        ``val`` (optional): ``(Xv, Yv, Wv[, idsv])`` — an explicit CHRONOLOGICAL
+        validation set (windows anchored in the harness's val block, i.e. strictly
+        later than every training target). This is the criterion for early stopping,
+        LR reduction, and best-checkpoint selection, so model selection measures
+        forward generalisation, not in-distribution fit. When given, ALL training
+        samples take gradient steps. Without it (online fine-tunes), a random 10%
+        of the training windows is held out as a stability guard only.
+
+        ``ids`` (optional, shape ``[n]`` int64): per-sample link indices, forwarded
+        to nets with a link embedding as ``net(x, lid)``.
+
+        ``sampler`` (optional): callable ``sampler(epoch) -> (X, Y, W, ids)`` that
+        draws a FRESH training set every epoch (anchor resampling). With a fixed
+        anchor set, every epoch revisits the same windows and epochs add
+        optimisation but no information; resampling multiplies the distinct windows
+        seen by the number of epochs. Requires ``val``.
+
+        Loss: Huber on RevIN-normalised paths, horizon-weighted by 1/sqrt(h)
+        (mean-1 normalised) so the near steps — the scored horizons — are not
+        drowned by the (mostly irreducible) far tail of a week-long path.
+
+        Schedule: ReduceLROnPlateau on the val loss (factor 0.3, patience 3).
+        Early stopping fires only after the LR has been reduced at least twice —
+        a val plateau at high LR triggers refinement, not death."""
         torch = _torch()
         import torch.nn as nn
 
@@ -166,30 +215,54 @@ class TorchTrainer:
         lr = self.lr if lr is None else lr
         device = get_device()
         net = net.to(device)
-        # Keep the dataset on the CPU and stream mini-batches to the GPU: samples ×
-        # a week-long target path is gigabytes, so residency on a laptop GPU would
-        # OOM — while the per-batch copy (a few MB) is negligible next to compute.
-        Xt = torch.tensor(np.asarray(X, np.float32))
-        Yt = torch.tensor(np.asarray(Y, np.float32))
-        if W is None:
-            Wt = torch.ones(Xt.shape[0])
-        else:
-            Wt = torch.tensor(np.asarray(W, np.float32)).clamp_min(0)
-            Wt = Wt * (Wt.numel() / Wt.sum().clamp_min(1e-8))   # normalise mean -> 1
+        if sampler is not None and val is None:
+            raise ValueError("per-epoch sampler requires an explicit val set")
+
+        def _prep_w(Warr, n_samples):
+            """mean-1 normalised, capped sample weights (train and val alike)."""
+            if Warr is None:
+                return torch.ones(n_samples)
+            t = torch.tensor(np.asarray(Warr, np.float32)).clamp_min(0)
+            t = t * (t.numel() / t.sum().clamp_min(1e-8))   # normalise mean -> 1
             # cap so a single high-traffic link can't dominate a batch and blow up
-            # the gradient (scale-weighting otherwise diverges the deeper nets), then
-            # re-normalise mean -> 1 to keep the effective LR unchanged.
-            Wt = Wt.clamp(max=self.max_sample_weight)
-            Wt = Wt * (Wt.numel() / Wt.sum().clamp_min(1e-8))
-        n = Xt.shape[0]
-        n_val = max(1, int(0.1 * n))
-        perm = torch.randperm(n)
-        tr, va = perm[n_val:], perm[:n_val]
+            # the gradient, then re-normalise so the effective LR is unchanged.
+            t = t.clamp(max=self.max_sample_weight)
+            return t * (t.numel() / t.sum().clamp_min(1e-8))
+
+        def _tensors(Xa, Ya, Wa, Ia):
+            # CPU-resident; mini-batches are streamed to the GPU (a full week-path
+            # dataset is gigabytes and would OOM a laptop GPU). from_numpy shares
+            # the numpy buffer — torch.tensor() would COPY, and at STGNN scale
+            # (13 GB per tensor) that transient copy OOM-killed the box.
+            Xt = torch.from_numpy(np.ascontiguousarray(np.asarray(Xa, np.float32)))
+            Yt = torch.from_numpy(np.ascontiguousarray(np.asarray(Ya, np.float32)))
+            Wt = _prep_w(Wa, Xt.shape[0])
+            It = None if Ia is None else \
+                torch.from_numpy(np.ascontiguousarray(np.asarray(Ia, np.int64)))
+            return Xt, Yt, Wt, It
+
+        tr = va = None
+        if sampler is None:
+            Xt, Yt, Wt, It = _tensors(X, Y, W, ids)
+            n = Xt.shape[0]
+            if val is None:
+                # legacy fallback (online fine-tunes): random 10% stability guard
+                n_val = max(1, int(0.1 * n))
+                perm = torch.randperm(n)
+                tr, va = perm[n_val:], perm[:n_val]
+                Xva, Yva, Wva, Iva = Xt, Yt, Wt, It
+        if val is not None:
+            Xv, Yv, Wv, *rest = val
+            Xva, Yva, Wva, Iva = _tensors(Xv, Yv, Wv, rest[0] if rest else None)
+            va = torch.arange(Xva.shape[0])
+
         opt = torch.optim.Adam(net.parameters(), lr=lr,
                                weight_decay=self.weight_decay)
         sched = None
-        if self.cosine_lr and epochs > 3:
-            sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=epochs)
+        if epochs > 3:
+            sched = torch.optim.lr_scheduler.ReduceLROnPlateau(
+                opt, mode="min", factor=self.plateau_factor,
+                patience=self.plateau_patience)
         loss_fn = nn.SmoothL1Loss(reduction="none")   # Huber: robust to traffic bursts
         # Optional per-node weights (STGNN whole-panel samples: pred is [b, N, h]).
         # Sequence tiers weight per *sample* via W instead; both mirror the
@@ -197,31 +270,110 @@ class TorchTrainer:
         nw = getattr(self, "_node_w", None)
         nw_t = None if nw is None else \
             torch.tensor(np.asarray(nw, np.float32), device=device)
+        hw_cache = {}
+
+        def _hw(h):                       # horizon weights 1/sqrt(h), mean 1
+            if h not in hw_cache:
+                w = 1.0 / torch.sqrt(torch.arange(1, h + 1, dtype=torch.float32,
+                                                  device=device))
+                hw_cache[h] = w * (h / w.sum())
+            return hw_cache[h]
 
         def _wloss(pred, tgt, w):
-            per = loss_fn(pred, tgt)                   # [b, ...]
+            per = loss_fn(pred, tgt)                   # [b, h] or [b, N, h]
+            if per.dim() >= 2:
+                per = per * _hw(per.shape[-1])         # near horizons matter more
             if per.dim() == 3 and nw_t is not None:    # [b, N, h]: weighted node mean
                 per = (per.mean(dim=2) * nw_t).sum(dim=1) / nw_t.sum().clamp_min(1e-8)
             else:
                 per = per.flatten(1).mean(dim=1) if per.dim() > 1 else per
             return (per * w).sum() / w.sum().clamp_min(1e-8)
 
+        def _fwd(xb, ib):
+            return net(xb) if ib is None else net(xb, ib)
+
         best = float("inf")
         best_state = None
         bad = 0
+        lr_now = lr
+        min_lr_for_stop = lr * (self.plateau_factor ** 2) * 1.001
         chatty = bool(verbose_name) and epochs > 3   # quiet during online refits
-        for ep in range(epochs):
+
+        # ---- mid-training checkpointing -------------------------------------
+        # The full training state (weights, Adam moments, plateau-scheduler state,
+        # early-stop counters, RNG) is flushed to disk after every epoch, so an
+        # interruption — Ctrl-C, OOM kill, suspend-induced CUDA loss — costs at
+        # most one epoch: rerunning the same command resumes exactly where it
+        # stopped. The file is transient: deleted when training completes (the
+        # harness then saves the final weights-only checkpoint). Online
+        # fine-tunes (":online", few epochs) are excluded.
+        state_path = None
+        ckpt_dir = getattr(self, "train_ckpt_dir", None)
+        if ckpt_dir and verbose_name and ":" not in verbose_name and epochs > 3:
+            state_path = Path(ckpt_dir) / f"{verbose_name}.train.pt"
+        start_ep = 0
+        if state_path is not None and state_path.exists():
+            try:
+                st = torch.load(state_path, map_location="cpu")
+                net.load_state_dict(st["net"])
+                opt.load_state_dict(st["opt"])
+                if sched is not None and st.get("sched") is not None:
+                    sched.load_state_dict(st["sched"])
+                best, bad, lr_now = st["best"], st["bad"], st["lr_now"]
+                best_state = st["best_state"]
+                start_ep = st["epoch"] + 1
+                torch.set_rng_state(st["torch_rng"])
+                if torch.cuda.is_available() and st.get("cuda_rng") is not None:
+                    try:
+                        torch.cuda.set_rng_state_all(st["cuda_rng"])
+                    except Exception:
+                        pass          # device count changed: keep fresh CUDA rng
+                print(f"[{verbose_name}] resuming training at epoch "
+                      f"{start_ep + 1}/{epochs} (best val={best:.4f}, "
+                      f"lr={lr_now:.2e})", flush=True)
+            except Exception as e:    # incompatible shapes/config: start fresh
+                print(f"[{verbose_name}] training-state resume failed ({e}); "
+                      f"starting fresh")
+                start_ep, best, bad, lr_now, best_state = 0, float("inf"), 0, lr, None
+
+        def _save_train_state(ep):
+            if state_path is None:
+                return
+            bundle = {
+                "epoch": ep,
+                "net": {k: v.detach().cpu() for k, v in net.state_dict().items()},
+                "opt": opt.state_dict(),
+                "sched": sched.state_dict() if sched is not None else None,
+                "best": best, "bad": bad, "lr_now": lr_now,
+                "best_state": None if best_state is None else
+                              {k: v.cpu() for k, v in best_state.items()},
+                "torch_rng": torch.get_rng_state(),
+                "cuda_rng": torch.cuda.get_rng_state_all()
+                            if torch.cuda.is_available() else None,
+            }
+            tmp = state_path.with_suffix(".tmp")
+            torch.save(bundle, tmp)
+            os.replace(tmp, state_path)    # atomic: never a half-written file
+
+        for ep in range(start_ep, epochs):
             t0 = time.time()
+            if sampler is not None:
+                Xs, Ys, Ws, Is = sampler(ep)
+                Xt, Yt, Wt, It = _tensors(Xs, Ys, Ws, Is)
+            if tr is None or sampler is not None:
+                tr_idx = torch.randperm(Xt.shape[0])
+            else:
+                tr_idx = tr[torch.randperm(tr.shape[0])]
             net.train()
-            idx = tr[torch.randperm(tr.shape[0])]
             tsum, twsum = 0.0, 0.0
-            for i in range(0, idx.shape[0], self.batch_size):
-                b = idx[i:i + self.batch_size]
+            for i in range(0, tr_idx.shape[0], self.batch_size):
+                b = tr_idx[i:i + self.batch_size]
                 xb = Xt[b].to(device, non_blocking=True)
                 yb = Yt[b].to(device, non_blocking=True)
                 wb = Wt[b].to(device, non_blocking=True)
+                ib = None if It is None else It[b].to(device, non_blocking=True)
                 opt.zero_grad()
-                loss = _wloss(net(xb), yb, wb)
+                loss = _wloss(_fwd(xb, ib), yb, wb)
                 if not torch.isfinite(loss):
                     continue            # skip a bad batch rather than corrupt weights
                 tsum += loss.item() * float(wb.sum())
@@ -231,8 +383,6 @@ class TorchTrainer:
                 if torch.isfinite(gnorm):
                     opt.step()
             tloss = tsum / max(1e-8, twsum)
-            if sched is not None:
-                sched.step()
             net.eval()
             with torch.no_grad():
                 # Batch the val forward too: a single full-set pass can OOM the GPU
@@ -240,25 +390,39 @@ class TorchTrainer:
                 vsum, wsum = 0.0, 0.0
                 for i in range(0, va.shape[0], self.batch_size):
                     b = va[i:i + self.batch_size]
-                    xb = Xt[b].to(device, non_blocking=True)
-                    yb = Yt[b].to(device, non_blocking=True)
-                    wb = Wt[b].to(device, non_blocking=True)
-                    vsum += _wloss(net(xb), yb, wb).item() * float(wb.sum())
+                    xb = Xva[b].to(device, non_blocking=True)
+                    yb = Yva[b].to(device, non_blocking=True)
+                    wb = Wva[b].to(device, non_blocking=True)
+                    ib = None if Iva is None else Iva[b].to(device, non_blocking=True)
+                    vsum += _wloss(_fwd(xb, ib), yb, wb).item() * float(wb.sum())
                     wsum += float(wb.sum())
                 vloss = vsum / max(1e-8, wsum)
+            if sched is not None:
+                sched.step(vloss)
+                new_lr = opt.param_groups[0]["lr"]
+                if chatty and new_lr < lr_now * 0.999:
+                    print(f"[{verbose_name}] lr {lr_now:.2e} -> {new_lr:.2e}")
+                lr_now = new_lr
             if chatty:
                 print(f"[{verbose_name}] epoch {ep + 1}/{epochs} train={tloss:.4f} "
                       f"val={vloss:.4f} ({time.time() - t0:.1f}s)", flush=True)
             if vloss < best - 1e-5:
                 best, bad = vloss, 0
                 best_state = {k: v.detach().clone() for k, v in net.state_dict().items()}
+                _save_train_state(ep)
             else:
                 bad += 1
-                if self.patience and bad >= self.patience:
+                _save_train_state(ep)
+                # stop only once the plateau schedule has had its chance: LR must
+                # have been reduced >= 2 times before patience can kill the run
+                if (self.patience and bad >= self.patience
+                        and (sched is None or lr_now <= min_lr_for_stop)):
                     if chatty:
                         print(f"[{verbose_name}] early stop at epoch {ep + 1} "
                               f"(best val={best:.4f})")
                     break
+        if state_path is not None:
+            state_path.unlink(missing_ok=True)   # completed: transient state gone
         if best_state is not None:
             net.load_state_dict(best_state)
         net.eval()

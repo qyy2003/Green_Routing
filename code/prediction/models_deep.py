@@ -55,18 +55,37 @@ def _modules():
             seasonal = x - trend
             return self.lin_t(trend) + self.lin_s(seasonal)
 
+    class LinkEmb(nn.Module):
+        """Learned per-link identity vector concatenated before the head — the
+        deep-net analogue of GBDT's link-level features. One global net over
+        hundreds of heterogeneous links otherwise has no way to specialise
+        (RevIN deliberately erases the only identity signal, the scale)."""
+        def __init__(self, n_links, dim):
+            super().__init__()
+            self.emb = nn.Embedding(n_links, dim) if n_links else None
+            self.dim = dim if n_links else 0
+
+        def cat(self, z, lid):
+            if self.emb is None:
+                return z
+            if lid is None:
+                raise ValueError("net has a link embedding but no link ids given")
+            return torch.cat([z, self.emb(lid)], dim=-1)
+
     class GRUNet(nn.Module):
         """2-layer, 128-hidden GRU with inter-layer dropout — the standard strong
         RNN-forecaster configuration (there is no single canonical paper)."""
-        def __init__(self, lin, h, hidden=128, layers=2, dropout=0.1):
+        def __init__(self, lin, h, n_links=0, emb_dim=16, hidden=128, layers=2,
+                     dropout=0.1):
             super().__init__()
             self.gru = nn.GRU(1, hidden, layers, batch_first=True,
                               dropout=dropout if layers > 1 else 0.0)
-            self.head = nn.Linear(hidden, h)
+            self.lemb = LinkEmb(n_links, emb_dim)
+            self.head = nn.Linear(hidden + self.lemb.dim, h)
 
-        def forward(self, x):
+        def forward(self, x, lid=None):
             out, _ = self.gru(x[:, :, None])     # [B, L, hidden]
-            return self.head(out[:, -1])
+            return self.head(self.lemb.cat(out[:, -1], lid))
 
     class Chomp(nn.Module):
         """Trim the future-side padding so the dilated conv stays causal."""
@@ -100,7 +119,7 @@ def _modules():
         """Bai et al. 2018 TCN at its designed shape: residual blocks, 64 channels,
         dropout 0.2, and depth auto-sized so the receptive field covers the
         lookback (the paper's sizing rule), capped at 9 levels (RF 2045)."""
-        def __init__(self, lin, h, ch=64, k=3, dropout=0.2):
+        def __init__(self, lin, h, n_links=0, emb_dim=16, ch=64, k=3, dropout=0.2):
             super().__init__()
             levels = 1
             while 1 + 2 * (k - 1) * (2 ** levels - 1) < lin and levels < 9:
@@ -110,19 +129,23 @@ def _modules():
                 blocks.append(TCNBlock(c_in, ch, k, 2 ** i, dropout))
                 c_in = ch
             self.net = nn.Sequential(*blocks)
-            self.head = nn.Linear(ch, h)
+            self.lemb = LinkEmb(n_links, emb_dim)
+            self.head = nn.Linear(ch + self.lemb.dim, h)
 
-        def forward(self, x):
+        def forward(self, x, lid=None):
             z = self.net(x[:, None, :])
-            return self.head(z[:, :, -1])
+            return self.head(self.lemb.cat(z[:, :, -1], lid))
 
     class PatchTST(nn.Module):
-        """Nie et al. 2023 at the paper's supervised config: overlapping patches
-        (16/8), d_model 128, 16 heads, 3 encoder layers, d_ff 256, dropout 0.2
-        (LayerNorm in place of the paper's BatchNorm; RevIN is applied per window
-        by the forecaster)."""
-        def __init__(self, lin, h, patch=16, stride=8, d=128, heads=16,
-                     layers=3, d_ff=256, dropout=0.2, fc_dropout=0.2):
+        """Nie et al. 2023, patches 16/8, d_model 128, 16 heads, 3 encoder layers,
+        d_ff 256, dropout 0.2 (LayerNorm in place of the paper's BatchNorm; RevIN
+        applied per window by the forecaster). Departure from the paper: the
+        flatten head (n_patch*d -> h, ~65 M params at week horizons) memorised the
+        train regime by epoch 2 on the 547-link cohort — replaced by an
+        attention-pooled head (d -> h, ~0.3 M params)."""
+        def __init__(self, lin, h, n_links=0, emb_dim=16, patch=16, stride=8,
+                     d=128, heads=16, layers=3, d_ff=256, dropout=0.2,
+                     fc_dropout=0.2):
             super().__init__()
             self.patch, self.stride = patch, stride
             self.pad = (-(lin - patch)) % stride      # front-pad so patches tile lin
@@ -132,16 +155,19 @@ def _modules():
             enc = nn.TransformerEncoderLayer(d, heads, dim_feedforward=d_ff,
                                              batch_first=True, dropout=dropout)
             self.tr = nn.TransformerEncoder(enc, layers)
+            self.pool = nn.Linear(d, 1)               # learned attention pooling
             self.drop = nn.Dropout(fc_dropout)
-            self.head = nn.Linear(self.n_patch * d, h)
+            self.lemb = LinkEmb(n_links, emb_dim)
+            self.head = nn.Linear(d + self.lemb.dim, h)
 
-        def forward(self, x):
+        def forward(self, x, lid=None):
             if self.pad:
                 x = torch.nn.functional.pad(x, (self.pad, 0), mode="replicate")
             tokens = x.unfold(-1, self.patch, self.stride)   # [B, n_patch, patch]
-            z = self.embed(tokens) + self.pos
-            z = self.tr(z).reshape(x.shape[0], -1)
-            return self.head(self.drop(z))
+            z = self.tr(self.embed(tokens) + self.pos)       # [B, n_patch, d]
+            a = torch.softmax(self.pool(z), dim=1)           # [B, n_patch, 1]
+            z = (z * a).sum(dim=1)                           # [B, d]
+            return self.head(self.drop(self.lemb.cat(z, lid)))
 
     return dict(DLinear=DLinear, GRUNet=GRUNet, TCNNet=TCNNet, PatchTST=PatchTST)
 
@@ -175,6 +201,11 @@ class SeqForecaster(Forecaster, tc.TorchTrainer):
         self.net = None
         self._train_start = 0
         self._link_w = None        # per-link loss weight (raw Mbps ** scale_weight)
+        self._n_links = 0          # set in fit()/load(); sizes the link embedding
+
+    # learned link-identity embedding conditioning the head (DLinear opts out to
+    # stay the pure-linear control)
+    use_link_embedding: bool = True
 
     def _build_net(self, lin, h):
         raise NotImplementedError
@@ -207,9 +238,13 @@ class SeqForecaster(Forecaster, tc.TorchTrainer):
             return None
         return self._link_w[src]
 
+    def _ids_for(self, src):
+        return src if self.use_link_embedding else None
+
     def fit(self, values_filled, split, timestamps):
         log_vals = tc.log1p(values_filled)
         L = log_vals.shape[1]
+        self._n_links = L
         self._train_start = split.train[0]
         if self.scale_weight:
             # link scale = mean raw throughput over the train slice (no test leak)
@@ -217,13 +252,50 @@ class SeqForecaster(Forecaster, tc.TorchTrainer):
             tr_mean = np.nan_to_num(np.clip(tr_mean, 0, None), nan=0.0)
             self._link_w = link_scale_weights(tr_mean, self.scale_weight)
         cap = max(1, self.max_train_samples // L)
-        anchors = tc.make_anchors(split.train, self.lookback, self.max_h,
-                                  min_ctx=self.lookback, cap=cap)
-        X, Y, src = self._windows(log_vals, anchors)
-        if X.shape[0] < 100:
-            raise ValueError(f"{self.name}: too few training windows ({X.shape[0]})")
-        self.net = self._fit_torch(self._build_net(self.lookback, self.max_h), X, Y,
-                                   verbose_name=self.name, W=self._weights_for(src))
+
+        # Chronological validation: windows anchored in the harness's val block
+        # (targets strictly later than every training target) drive early stopping,
+        # LR reduction and checkpoint selection — forward generalisation, not
+        # in-distribution fit.
+        val = None
+        v_anchors = tc.make_val_anchors(split.val, self.lookback, self.max_h,
+                                        cap=max(1, (self.max_train_samples // 5) // L))
+        if v_anchors.size:
+            Xv, Yv, srcv = self._windows(log_vals, v_anchors)
+            if Xv.shape[0] >= 50:
+                val = (Xv, Yv, self._weights_for(srcv), self._ids_for(srcv))
+
+        # Per-epoch anchor resampling: a fixed anchor set means every epoch
+        # revisits the same windows (epochs add optimisation, not information);
+        # drawing fresh anchors each epoch multiplies the distinct windows seen.
+        lo = max(split.train[0] + self.lookback, self.lookback)
+        hi = split.train[1] - self.max_h
+        pool = np.arange(lo, hi)
+
+        def sampler(ep):
+            # seeded per epoch (not sequentially): epoch k draws identical anchors
+            # whether the run got there directly or via a mid-training resume
+            rng = np.random.default_rng(1_000_003 + ep)
+            anchors = np.sort(rng.choice(pool, size=min(cap, pool.size),
+                                         replace=False))
+            X, Y, src = self._windows(log_vals, anchors)
+            return X, Y, self._weights_for(src), self._ids_for(src)
+
+        if val is not None:
+            self.net = self._fit_torch(
+                self._build_net(self.lookback, self.max_h),
+                verbose_name=self.name, val=val, sampler=sampler)
+        else:
+            print(f"[{self.name}] warning: val block unusable for chronological "
+                  f"validation; fixed anchors + random train-window split")
+            anchors = tc.make_anchors(split.train, self.lookback, self.max_h,
+                                      min_ctx=self.lookback, cap=cap)
+            X, Y, src = self._windows(log_vals, anchors)
+            if X.shape[0] < 100:
+                raise ValueError(f"{self.name}: too few training windows ({X.shape[0]})")
+            self.net = self._fit_torch(self._build_net(self.lookback, self.max_h),
+                                       X, Y, verbose_name=self.name,
+                                       W=self._weights_for(src), ids=self._ids_for(src))
 
     def online_update(self, values_filled, timestamps, upto: int) -> None:
         if self.net is None:
@@ -242,7 +314,7 @@ class SeqForecaster(Forecaster, tc.TorchTrainer):
         # warm-start: continue training the existing net briefly at a low LR
         self.net = self._fit_torch(self.net, X, Y, verbose_name=f"{self.name}:online",
                                    epochs=self.online_epochs, lr=self.online_lr,
-                                   W=self._weights_for(src))
+                                   W=self._weights_for(src), ids=self._ids_for(src))
 
     def predict(self, ctx: Context) -> np.ndarray:
         torch = tc._torch()
@@ -257,7 +329,12 @@ class SeqForecaster(Forecaster, tc.TorchTrainer):
         xn = ((win - m) / s).astype(np.float32)
         device = next(self.net.parameters()).device
         with torch.no_grad():
-            yn = self.net(torch.tensor(xn[None], device=device)).cpu().numpy().ravel()
+            xb = torch.tensor(xn[None], device=device)
+            if self.use_link_embedding:
+                lid = torch.tensor([ctx.link], dtype=torch.int64, device=device)
+                yn = self.net(xb, lid).cpu().numpy().ravel()
+            else:
+                yn = self.net(xb).cpu().numpy().ravel()
         path = np.expm1(yn * s + m)
         n = min(ctx.horizon, path.size)
         out[:n] = np.clip(path[:n], 0, None)
@@ -270,7 +347,7 @@ class GRUForecaster(SeqForecaster):
     tier = 4
 
     def _build_net(self, lin, h):
-        return _modules()["GRUNet"](lin, h)
+        return _modules()["GRUNet"](lin, h, n_links=self._n_links)
 
 
 class TCNForecaster(SeqForecaster):
@@ -278,12 +355,13 @@ class TCNForecaster(SeqForecaster):
     tier = 4
 
     def _build_net(self, lin, h):
-        return _modules()["TCNNet"](lin, h)
+        return _modules()["TCNNet"](lin, h, n_links=self._n_links)
 
 
 class DLinearForecaster(SeqForecaster):
     name = "dlinear"
     tier = 5
+    use_link_embedding = False   # the control stays purely linear, no identity
 
     def _build_net(self, lin, h):
         return _modules()["DLinear"](lin, h)
@@ -293,6 +371,8 @@ class PatchTSTForecaster(SeqForecaster):
     name = "patchtst"
     tier = 5
     lr = 1e-4                   # the paper's supervised LR (1e-3 diverges at d=128)
+    weight_decay = 1e-3         # the pooled head still rides a 3-layer encoder;
+                                # decay guards the epoch-2 memorisation seen at 547
 
     def __init__(self, lookback=config.DAILY_STEPS,
                  horizons=tuple(config.HORIZONS.values()), patch=16, stride=8, **kw):
@@ -301,7 +381,8 @@ class PatchTSTForecaster(SeqForecaster):
         self.stride = stride
 
     def _build_net(self, lin, h):
-        return _modules()["PatchTST"](lin, h, patch=self.patch, stride=self.stride)
+        return _modules()["PatchTST"](lin, h, n_links=self._n_links,
+                                      patch=self.patch, stride=self.stride)
 
 
 def default_deep(horizons, lookback=config.DAILY_STEPS):

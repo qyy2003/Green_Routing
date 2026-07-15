@@ -168,8 +168,15 @@ class STGNNForecaster(Forecaster, tc.TorchTrainer):
         return xn.astype(np.float32), m, s
 
     def _windows(self, log_vals, anchors):
-        """Per-anchor whole-panel (input, target) tensors, RevIN-normalised per node."""
-        X, Y = [], []
+        """Per-anchor whole-panel (input, target) tensors, RevIN-normalised per node.
+
+        Preallocated and filled in place: at 547 nodes a week-lookback window set
+        is ~13 GB per tensor, so the list-of-arrays + np.asarray-copy pattern
+        transiently doubles that and OOM-killed the 62 GB box."""
+        N = log_vals.shape[1]
+        X = np.empty((len(anchors), N, self.lookback), np.float32)
+        Y = np.empty((len(anchors), N, self.max_h), np.float32)
+        k = 0
         for t in anchors:
             win = log_vals[t - self.lookback:t, :].T            # [N, lin]
             tgt = log_vals[t:t + self.max_h, :].T               # [N, max_h]
@@ -178,9 +185,10 @@ class STGNNForecaster(Forecaster, tc.TorchTrainer):
             xn, m, s = self._revin_matrix(win)
             yn = np.clip((tgt - m) / s, -20.0, 20.0)   # bounded targets (see models_deep)
             yn[~np.isfinite(yn)] = 0.0
-            X.append(xn)
-            Y.append(yn.astype(np.float32))
-        return np.asarray(X, np.float32), np.asarray(Y, np.float32)
+            X[k] = xn
+            Y[k] = yn
+            k += 1
+        return X[:k], Y[:k]
 
     def fit(self, values_filled, split, timestamps):
         log_vals = tc.log1p(values_filled)
@@ -195,8 +203,21 @@ class STGNNForecaster(Forecaster, tc.TorchTrainer):
         X, Y = self._windows(log_vals, anchors)
         if X.shape[0] < 50:
             raise ValueError(f"stgnn: too few training samples ({X.shape[0]})")
+        # chronological validation on the harness's val block (see models_deep.fit);
+        # capped at 1/10 of the train budget — whole-panel val windows cost ~9 MB
+        # each at 547 nodes, so a generous cap OOMs the box
+        val = None
+        v_anchors = tc.make_val_anchors(split.val, self.lookback, self.max_h,
+                                        cap=max(50, self.max_train_samples // 10))
+        if v_anchors.size:
+            Xv, Yv = self._windows(log_vals, v_anchors)
+            if Xv.shape[0] >= 10:
+                val = (Xv, Yv, None)   # node weights apply inside the loss
+        if val is None:
+            print(f"[{self.name}] warning: val block unusable for chronological "
+                  f"validation; falling back to a random train-window split")
         self.net = self._fit_torch(self._build_net(self.lookback, self.max_h), X, Y,
-                                   verbose_name=self.name)
+                                   verbose_name=self.name, val=val)
 
     def online_update(self, values_filled, timestamps, upto: int) -> None:
         if self.net is None:

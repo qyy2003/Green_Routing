@@ -370,8 +370,14 @@ class BacktestResult:
           logv_ratio      weight = log10(test-mean Mbps) — gentle size preference
                           (top-50 share drops to ~20% on the 547 cohort).
 
-        Ratios < 1 beat the baseline. Links where the baseline's error is ~0
-        (perfectly constant) are excluded; ``n_links`` reports the count used.
+        Ratios < 1 beat the baseline. Two robustness guards: links whose baseline
+        error is tiny in absolute terms (< 1e-3 Mbps — near-constant series where
+        the ratio is pure noise amplification) are excluded, and the ratios
+        entering the *arithmetic* logv mean are winsorised at 20 (ratios are
+        unbounded above, so one catastrophic link otherwise owns the mean — the
+        pred_547c run showed values of 33 and 454 without this). The median and
+        geometric mean are computed on unclipped ratios; ``n_links`` reports the
+        count used.
         """
         pl = self.per_link()
         vol = self.records.groupby("link")["y_true"].apply(lambda s: s.abs().mean())
@@ -384,7 +390,7 @@ class BacktestResult:
             b = base.loc[h]
             g = g.set_index("link")[metric]
             common = [l for l in g.index
-                      if l in b.index and np.isfinite(b[l]) and b[l] > 1e-9
+                      if l in b.index and np.isfinite(b[l]) and b[l] > 1e-3
                       and np.isfinite(g[l])]
             if not common:
                 continue
@@ -395,9 +401,13 @@ class BacktestResult:
                 "horizon_name": self._h_name.get(h, str(h)),
                 "median_ratio": float(r.median()),
                 "geomean_ratio": float(np.exp(np.log(r.clip(lower=1e-9)).mean())),
-                "logv_ratio": float((r * w).sum() / w.sum()),
+                "logv_ratio": float((r.clip(upper=20.0) * w).sum() / w.sum()),
                 "n_links": len(common),
             })
+        if not rows:            # e.g. the baseline model wasn't in this run
+            return pd.DataFrame(columns=["model", "tier", "horizon", "horizon_name",
+                                         "median_ratio", "geomean_ratio",
+                                         "logv_ratio", "n_links"])
         return (pd.DataFrame(rows)
                 .sort_values(["horizon", "logv_ratio"]).reset_index(drop=True))
 

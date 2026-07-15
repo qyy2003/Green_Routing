@@ -41,8 +41,11 @@ statsmodels/matplotlib/scipy/torch-CUDA):
 
 The torch tiers default to their published configurations: GRU 2×128; TCN with
 Bai-et-al. residual blocks (64 ch, depth auto-sized so the receptive field covers the
-lookback); PatchTST at the paper's supervised config (patch 16 / stride 8, d_model 128,
-16 heads, 3 layers, d_ff 256, dropout 0.2, lr 1e-4); Graph WaveNet at its paper design
+lookback); PatchTST at the paper's supervised encoder config (patch 16 / stride 8,
+d_model 128, 16 heads, 3 layers, d_ff 256, dropout 0.2, lr 1e-4) but with an
+attention-pooled head (d→h, ~0.3 M params) instead of the paper's flatten head
+(n_patch·d→h, ~65 M at week horizons — it memorised the train regime by epoch 2 on
+the 547-link cohort); Graph WaveNet at its paper design
 (gated dilated convs 32 ch, skip 256 / end 512, order-2 diffusion over fixed + adaptive
 adjacency, dropout 0.3 — input truncated to the receptive field, as GWN is a
 short-window model). DLinear is unchanged: it is linear by design (the control).
@@ -62,7 +65,7 @@ the run, which stabilises the GRU (its constant-LR curve had late-training blow-
 | `baselines.py` | **Tier 1** — persistence, seasonal-naive (day/week), historical average. |
 | `models_classical.py` | **Tier 2** — Holt-Winters, SARIMA (per-link, log space, recent-window refit). |
 | `models_gbdt.py` | **Tier 3** — global histogram gradient boosting; lag + rolling + calendar features, per-link id, direct multi-horizon. |
-| `torch_common.py` | Shared trainer for torch tiers: global model, log1p, RevIN per window, Huber loss, patience-10 early stop, grad clip, CPU→GPU batch streaming (OOM-safe at week horizons). |
+| `torch_common.py` | Shared trainer for torch tiers: global model, log1p, RevIN per window (std floored at 0.05, targets clipped ±20), Huber loss **horizon-weighted 1/√h**, **per-epoch anchor resampling** (fresh windows every epoch), **ReduceLROnPlateau** on the chronological val loss with LR-gated early stopping, grad clip, CPU→GPU batch streaming (OOM-safe at week horizons). GRU/TCN/PatchTST condition their heads on a **learned link embedding** (DLinear stays the pure-linear control). |
 | `models_deep.py` | **Tier 4** GRU (2×128), residual TCN (Bai et al., 64ch, RF-covering depth); **Tier 5** DLinear (linear control) + PatchTST at the paper's supervised config (patch 16/stride 8, d128, 16 heads, 3 layers). |
 | `models_gnn.py` | **Tier 6** Graph WaveNet at its paper design (gated dilated convs, skip 256/end 512, order-2 diffusion, adaptive adjacency) over a link-level graph (shared/adjacent routers from `dataset.topology`). |
 | `run.py` | CLI: build panel → run tiers → tabulate skill → plot. `--tiers 1 2 3 4 5 6`, `--lookback`, `--epochs`. |
@@ -71,7 +74,12 @@ the run, which stabilises the GRU (its constant-LR curve had late-training blow-
 
 Every model — a `Forecaster` — is scored on **identical rolling origins**:
 
-1. One chronological `train/val/test` split with a purge gap (`dataset.splits`).
+1. One chronological `train/val/test` split (`dataset.splits`). The gap between
+   blocks is whatever the CLI dates encode — passing `--val-start` == `--train-end`
+   and `--test-start` == `--val-end` gives a standard contiguous split (purge 0).
+   The deep tiers early-stop and select checkpoints on windows anchored **in the
+   val block** (context may reach back into train — real history; targets stay
+   inside val), so model selection measures forward generalisation.
 2. Forecast origins across the test block (spaced by `--stride`, capped by `--max-origins`).
    At each origin `o`, a model may use only data `< o` and returns a path of `max(horizon)`
    steps. Point `path[h-1]` is scored against `actual[o+h-1]`.
@@ -159,10 +167,12 @@ mean — the scale-domination-free leaderboard; <1 beats persistence), `config.j
 `skill_vs_persistence_<metric>.png`, `overlay_forecasts.png` (busy / bursty / quiet link
 paths — the roadmap's "did it just learn to output the last value one step late?" check).
 
-Deep-tier epoch lines log both losses (`[gru] epoch 3/100 train=0.171 val=0.116 …`);
+Deep-tier epoch lines log both losses (`[gru] epoch 3/100 train=0.171 val=0.254 …`),
+where `val` is the **chronological** val-block loss (fit-time model selection);
 with the RevIN variance floor (std floored at 0.05 in log1p space, targets clipped to
 ±20) healthy epoch-1 val is ~0.3–0.7 — a val stuck at 10+ means degenerate windows are
-back.
+back. Online fine-tunes (`--online`) have no future block to validate on and fall back
+to a random train-window split as a stability guard.
 
 ### Checkpoints, incremental results, and `--resume`
 
