@@ -44,6 +44,7 @@ HORIZONS = {
     "15min": 3,
     "30min": 6,
     "1h": 12,
+    "8h": 96,
     "day": DAILY_STEPS,
     "week": WEEKLY_STEPS,
 }

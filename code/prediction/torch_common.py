@@ -58,6 +58,25 @@ def get_device():
     return _DEVICE
 
 
+def seed_model(name: str, offset: int = 0) -> None:
+    """Deterministic per-model RNG seed, called at the top of each fit().
+
+    Models train sequentially in one process, so with only the global
+    process-level seed, model k+1's weight init and dropout draws depend on how
+    many RNG draws model k consumed — e.g. a GRU early-stopping at epoch 37
+    instead of 71 shifted the *unchanged* DLinear control by +0.6-1.1% per-link
+    (p~1e-16) between pred_547f and pred_547g. Seeding by model name makes each
+    model's init/dropout stream independent of training order and of other
+    models' epoch counts.
+    """
+    import hashlib
+    torch = _torch()
+    seed = (int(hashlib.md5(name.encode()).hexdigest()[:8], 16) + offset) % (2 ** 31)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+
 def log1p(x):
     return np.log1p(np.clip(x, 0, None))
 
@@ -181,7 +200,8 @@ class TorchTrainer:
         return True
 
     def _fit_torch(self, net, X=None, Y=None, verbose_name="", epochs=None, lr=None,
-                   W=None, val=None, ids=None, sampler=None):
+                   W=None, val=None, ids=None, aids=None, sampler=None,
+                   val_steps=None):
         """Train (or, warm-started from an already-trained ``net``, fine-tune) the
         network. ``epochs``/``lr`` override the defaults — online fine-tuning passes
         a smaller LR and fewer epochs so the model nudges toward the recent regime
@@ -212,6 +232,13 @@ class TorchTrainer:
         (mean-1 normalised) so the near steps — the scored horizons — are not
         drowned by the (mostly irreducible) far tail of a week-long path.
 
+        ``val_steps`` (optional): 0-based path positions (the scored horizons,
+        h-1) at which the VAL criterion is evaluated, equally weighted. Without
+        it, val uses the same 1/sqrt(h) weighting as training — which gives the
+        week tail ~no say in selection: two TCNs whose day-horizon test MAE
+        differed by 13% had val losses 0.3952 vs 0.3990. Training keeps the
+        dense 1/sqrt(h) supervision either way.
+
         Schedule: ReduceLROnPlateau on the val loss (factor 0.3, patience 3).
         Early stopping fires only after the LR has been reduced at least twice —
         a val plateau at high LR triggers refinement, not death."""
@@ -238,7 +265,7 @@ class TorchTrainer:
             t = t.clamp(max=self.max_sample_weight)
             return t * (t.numel() / t.sum().clamp_min(1e-8))
 
-        def _tensors(Xa, Ya, Wa, Ia):
+        def _tensors(Xa, Ya, Wa, Ia, Aa=None):
             # CPU-resident; mini-batches are streamed to the GPU (a full week-path
             # dataset is gigabytes and would OOM a laptop GPU). from_numpy shares
             # the numpy buffer — torch.tensor() would COPY, and at STGNN scale
@@ -248,21 +275,25 @@ class TorchTrainer:
             Wt = _prep_w(Wa, Xt.shape[0])
             It = None if Ia is None else \
                 torch.from_numpy(np.ascontiguousarray(np.asarray(Ia, np.int64)))
-            return Xt, Yt, Wt, It
+            At = None if Aa is None else \
+                torch.from_numpy(np.ascontiguousarray(np.asarray(Aa, np.int64)))
+            return Xt, Yt, Wt, It, At
 
         tr = va = None
         if sampler is None:
-            Xt, Yt, Wt, It = _tensors(X, Y, W, ids)
+            Xt, Yt, Wt, It, At = _tensors(X, Y, W, ids, aids)
             n = Xt.shape[0]
             if val is None:
                 # legacy fallback (online fine-tunes): random 10% stability guard
                 n_val = max(1, int(0.1 * n))
                 perm = torch.randperm(n)
                 tr, va = perm[n_val:], perm[:n_val]
-                Xva, Yva, Wva, Iva = Xt, Yt, Wt, It
+                Xva, Yva, Wva, Iva, Ava = Xt, Yt, Wt, It, At
         if val is not None:
             Xv, Yv, Wv, *rest = val
-            Xva, Yva, Wva, Iva = _tensors(Xv, Yv, Wv, rest[0] if rest else None)
+            Xva, Yva, Wva, Iva, Ava = _tensors(
+                Xv, Yv, Wv, rest[0] if rest else None,
+                rest[1] if len(rest) > 1 else None)
             va = torch.arange(Xva.shape[0])
 
         opt = torch.optim.Adam(net.parameters(), lr=lr,
@@ -290,12 +321,20 @@ class TorchTrainer:
 
         uw = float(self.under_weight)
 
-        def _wloss(pred, tgt, w):
+        vsteps_t = None
+        if val_steps:
+            vsteps_t = torch.tensor(sorted({int(v) for v in val_steps}),
+                                    dtype=torch.int64, device=device)
+
+        def _wloss(pred, tgt, w, steps=None):
             per = loss_fn(pred, tgt)                   # [b, h] or [b, N, h]
             if uw != 1.0:
                 # under-predicted steps cost uw x (see under_weight above)
                 per = per * ((pred < tgt).to(per.dtype) * (uw - 1.0) + 1.0)
-            if per.dim() >= 2:
+            if steps is not None and per.dim() >= 2:
+                # selection criterion: scored horizons only, equal weight each
+                per = per.index_select(-1, steps.clamp(max=per.shape[-1] - 1))
+            elif per.dim() >= 2:
                 per = per * _hw(per.shape[-1])         # near horizons matter more
             if per.dim() == 3 and nw_t is not None:    # [b, N, h]: weighted node mean
                 per = (per.mean(dim=2) * nw_t).sum(dim=1) / nw_t.sum().clamp_min(1e-8)
@@ -303,8 +342,12 @@ class TorchTrainer:
                 per = per.flatten(1).mean(dim=1) if per.dim() > 1 else per
             return (per * w).sum() / w.sum().clamp_min(1e-8)
 
-        def _fwd(xb, ib):
-            return net(xb) if ib is None else net(xb, ib)
+        def _fwd(xb, ib, ab=None):
+            if ib is None:
+                return net(xb)
+            if ab is not None:
+                return net(xb, ib, ab)     # calendar-conditioned nets
+            return net(xb, ib)
 
         best = float("inf")
         best_state = None
@@ -374,8 +417,9 @@ class TorchTrainer:
         for ep in range(start_ep, epochs):
             t0 = time.time()
             if sampler is not None:
-                Xs, Ys, Ws, Is = sampler(ep)
-                Xt, Yt, Wt, It = _tensors(Xs, Ys, Ws, Is)
+                smp = sampler(ep)                     # (X, Y, W, ids[, aids])
+                Xt, Yt, Wt, It, At = _tensors(*smp) if len(smp) == 5 else \
+                    _tensors(*smp, None)
             if tr is None or sampler is not None:
                 tr_idx = torch.randperm(Xt.shape[0])
             else:
@@ -388,8 +432,9 @@ class TorchTrainer:
                 yb = Yt[b].to(device, non_blocking=True)
                 wb = Wt[b].to(device, non_blocking=True)
                 ib = None if It is None else It[b].to(device, non_blocking=True)
+                ab = None if At is None else At[b].to(device, non_blocking=True)
                 opt.zero_grad()
-                loss = _wloss(_fwd(xb, ib), yb, wb)
+                loss = _wloss(_fwd(xb, ib, ab), yb, wb)
                 if not torch.isfinite(loss):
                     continue            # skip a bad batch rather than corrupt weights
                 tsum += loss.item() * float(wb.sum())
@@ -410,7 +455,9 @@ class TorchTrainer:
                     yb = Yva[b].to(device, non_blocking=True)
                     wb = Wva[b].to(device, non_blocking=True)
                     ib = None if Iva is None else Iva[b].to(device, non_blocking=True)
-                    vsum += _wloss(_fwd(xb, ib), yb, wb).item() * float(wb.sum())
+                    ab = None if Ava is None else Ava[b].to(device, non_blocking=True)
+                    vsum += _wloss(_fwd(xb, ib, ab), yb, wb,
+                                   steps=vsteps_t).item() * float(wb.sum())
                     wsum += float(wb.sum())
                 vloss = vsum / max(1e-8, wsum)
             if sched is not None:

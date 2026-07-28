@@ -70,7 +70,8 @@ def _new_global_models(tiers, hsteps, panel, lookback, epochs, max_train_samples
 
 
 def build_models(tiers, hsteps, seasonal_sarima, panel, lookback, epochs, online_cfg=None,
-                 max_train_samples=None, scale_weight=0.0, under_weight=1.0):
+                 max_train_samples=None, scale_weight=0.0, under_weight=1.0,
+                 calendar=False):
     """Assemble the requested tiers. Tiers 4-6 import torch lazily (only if requested).
 
     If ``online_cfg`` is given, an ``<name>+online`` variant of every global tier is
@@ -110,6 +111,17 @@ def build_models(tiers, hsteps, seasonal_sarima, panel, lookback, epochs, online
         for m in models:
             if hasattr(m, "under_weight"):
                 m.under_weight = under_weight
+    if calendar:
+        # day-of-week + Swiss-holiday conditioning (designs A+C, see
+        # calendar_features / models_deep.CalendarCond). Rides the link-embedding
+        # plumbing, so DLinear (the linear control) is excluded by the same rule;
+        # GBDT gets is_holiday/is_workday feature columns instead.
+        for m in models:
+            if (getattr(m, "use_link_embedding", False)
+                    and not getattr(m, "calendar_opt_out", False)):
+                m.use_calendar = True
+            if hasattr(m, "extra_calendar"):
+                m.extra_calendar = True
     return models
 
 
@@ -311,6 +323,19 @@ def main():
                          "torch tiers (1 = symmetric). ~2 counteracts peak shaving "
                          "by moving the point forecast above the conditional "
                          "median; judge the effect in peaks.csv.")
+    ap.add_argument("--seed", type=int, default=0,
+                    help="seed offset for the torch tiers (per-model base seed + "
+                         "this) -- for multi-seed error bars; 0 = canonical.")
+    ap.add_argument("--only", type=str, default=None,
+                    help="comma-separated model names to keep (applied after tier "
+                         "assembly), e.g. 'persistence,seasonal_naive_day,tcn' — "
+                         "for cheap targeted ablations. Skill/ratio tables need "
+                         "'persistence' in the list.")
+    ap.add_argument("--calendar", action="store_true",
+                    help="feed day-of-week + Swiss public holidays to the models: "
+                         "anchor covariates + future-known path code on the torch "
+                         "tiers' heads (GRU/TCN/PatchTST; DLinear stays the plain "
+                         "control), is_holiday/is_workday features on GBDT.")
     ap.add_argument("--horizons", nargs="+", default=["5min", "1h", "day"],
                     choices=list(config.HORIZONS))
     ap.add_argument("--stride", type=int, default=None)
@@ -368,7 +393,23 @@ def main():
                           args.lookback, args.epochs, online_cfg=online_cfg,
                           max_train_samples=args.max_train_samples,
                           scale_weight=args.scale_weight,
-                          under_weight=args.under_weight)
+                          under_weight=args.under_weight,
+                          calendar=args.calendar)
+    if args.seed:
+        for m in models:
+            if hasattr(m, "under_weight"):   # torch tiers
+                m.seed_offset = args.seed
+        print(f"[seed] torch-tier seed offset {args.seed}")
+    if args.only:
+        keep = {n.strip() for n in args.only.split(",") if n.strip()}
+        models = [m for m in models if m.name in keep]
+        missing = keep - {m.name for m in models}
+        if missing:
+            print(f"[models] warning: --only names not found: {sorted(missing)}")
+    if args.calendar:
+        print("[features] calendar conditioning ON: dow one-hot + sin/cos tod + "
+              "Swiss holidays; anchor vec + future-path code (torch tiers), "
+              "holiday/workday columns (GBDT)")
     if args.under_weight != 1.0:
         print(f"[loss] asymmetric Huber: under-prediction weighted "
               f"{args.under_weight:g}x (torch tiers, train + val criterion)")

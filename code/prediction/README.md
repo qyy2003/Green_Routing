@@ -182,7 +182,16 @@ training*), `config.json`,
 paths — the roadmap's "did it just learn to output the last value one step late?" check).
 
 Deep-tier epoch lines log both losses (`[gru] epoch 3/100 train=0.171 val=0.254 …`),
-where `val` is the **chronological** val-block loss (fit-time model selection);
+where `val` is the **chronological** val-block loss (fit-time model selection),
+evaluated **at the scored horizons only, equally weighted** — training keeps dense
+1/√h path supervision, but selection must see day/week quality (with the 1/√h val,
+two TCNs whose day-horizon test MAE differed by 13% were indistinguishable).
+Torch tiers are seeded **per model name** (`torch_common.seed_model`), so results
+are bit-reproducible and independent of training order; `--seed N` offsets all
+torch-tier seeds for multi-seed error bars. `--only name,name` runs a subset of the
+assembled models (keep `persistence` for the skill/ratio tables). `--calendar`
+skips PatchTST by design (seed-clean ablation showed net harm — see
+`PatchTSTForecaster.calendar_opt_out`);
 with the RevIN variance floor (std floored at 0.05 in log1p space, targets clipped to
 ±20) healthy epoch-1 val is ~0.3–0.7 — a val stuck at 10+ means degenerate windows are
 back. Online fine-tunes (`--online`) have no future block to validate on and fall back

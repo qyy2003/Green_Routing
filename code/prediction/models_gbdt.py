@@ -40,7 +40,13 @@ class GlobalGBDT(Forecaster):
         roll_windows=(12, config.DAILY_STEPS),
         max_train_rows: int = 300_000,
         random_state: int = 0,
+        extra_calendar: bool = False,
     ):
+        # extra_calendar: add is_holiday/is_workday columns (Swiss public
+        # holidays, prediction.calendar_features) to the anchor-time calendar
+        # block — dow/tod are already features. Off by default so the model
+        # stays bit-identical to earlier runs.
+        self.extra_calendar = extra_calendar
         self.horizons = tuple(sorted(set(horizons)))
         self.lags = tuple(lags)
         self.roll_windows = tuple(roll_windows)
@@ -70,21 +76,28 @@ class GlobalGBDT(Forecaster):
         tod = ((idx.hour * 3600 + idx.minute * 60 + idx.second)
                // config.STEP_SECONDS).to_numpy()
         dow = idx.dayofweek.to_numpy()
-        self._cal = np.column_stack([
+        cal_cols = [
             np.sin(2 * np.pi * tod / config.DAILY_STEPS),
             np.cos(2 * np.pi * tod / config.DAILY_STEPS),
             np.sin(2 * np.pi * dow / 7),
             np.cos(2 * np.pi * dow / 7),
             (dow >= 5).astype(np.float32),
-        ]).astype(np.float32)
+        ]
+        if self.extra_calendar:
+            from .calendar_features import build_calendar
+            grid = build_calendar(timestamps)
+            cal_cols += [grid[:, 9], grid[:, 10]]     # is_holiday, is_workday
+        self._cal = np.column_stack(cal_cols).astype(np.float32)
         self._n_links = L
 
     def _feature_names(self) -> list[str]:
         names = [f"lag{k}" for k in self.lags]
         for w in self.roll_windows:
             names += [f"rmean{w}", f"rstd{w}"]
-        names += ["tod_sin", "tod_cos", "dow_sin", "dow_cos", "weekend",
-                  "link_level", "link_lstd"]
+        names += ["tod_sin", "tod_cos", "dow_sin", "dow_cos", "weekend"]
+        if self.extra_calendar:
+            names += ["is_holiday", "is_workday"]
+        names += ["link_level", "link_lstd"]
         return names
 
     def _set_link_stats(self, tr_start: int, tr_end: int) -> None:

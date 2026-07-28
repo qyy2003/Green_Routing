@@ -191,6 +191,8 @@ class STGNNForecaster(Forecaster, tc.TorchTrainer):
         return X[:k], Y[:k]
 
     def fit(self, values_filled, split, timestamps):
+        # order-independent init/dropout; --seed offsets for multi-seed runs
+        tc.seed_model(self.name, getattr(self, 'seed_offset', 0))
         log_vals = tc.log1p(values_filled)
         self._train_start = split.train[0]
         if self.scale_weight:
@@ -217,7 +219,8 @@ class STGNNForecaster(Forecaster, tc.TorchTrainer):
             print(f"[{self.name}] warning: val block unusable for chronological "
                   f"validation; falling back to a random train-window split")
         self.net = self._fit_torch(self._build_net(self.lookback, self.max_h), X, Y,
-                                   verbose_name=self.name, val=val)
+                                   verbose_name=self.name, val=val,
+                                   val_steps=[h - 1 for h in self.horizons])
 
     def online_update(self, values_filled, timestamps, upto: int) -> None:
         if self.net is None:
