@@ -27,7 +27,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-SW = Path("/media/yuyqin/share/switch")
+# Filesystem mirror of the Cricket export. These builders stream CSVs with the stdlib
+# `csv` module and are **not** S3-native (unlike code/dataset/, which reads the bucket
+# directly) — point GR_LOCAL_ROOT at a mirror, or at code/dataset's object cache
+# (~/.cache/green-routing/s3/switchlan-load-timeseries) once it has been warmed.
+SW = Path(os.environ.get("GR_LOCAL_ROOT", "/media/yuyqin/share/switch"))
 FRAMES = HERE / "data" / "frames"
 STEP = 300
 NAN = float("nan")

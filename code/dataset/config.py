@@ -1,37 +1,146 @@
-"""Paths and constants for the SWITCH Cricket dataset processing pipeline.
+"""Paths, data source and constants for the SWITCH Cricket dataset pipeline.
 
 See ../../dataset.md and ../../benchmark_design.md for the data description and the
 split/benchmark design this package implements.
+
+**Data source.** The time-series are produced daily by the research repo's
+``parse_rrd.py``, which uploads every cumulative CSV to SWITCHengines object storage
+(bucket ``switchlan-load-timeseries``); a local ``~/switch`` tree is only ever a mirror
+of that bucket. The package therefore reads S3 by default and takes the filesystem as
+an opt-in override, so it runs on a cloud box with nothing but credentials. Object keys
+mirror the directory layout exactly (``router-interfaces/ag1/tengige0_0_1_0.csv``), so
+``SUBTREES`` is the same shape either way — only the root changes.
+
+Everything below is overridable by environment variable, since a cloud deployment
+configures itself through the environment rather than by editing this file:
+
+    GR_DATA_SOURCE   "s3" (default) | "local" | "auto" (local mirror if present)
+    GR_LOCAL_ROOT    filesystem mirror root                (default ~/switch)
+    GR_S3_BUCKET     bucket holding the CSVs               (switchlan-load-timeseries)
+    GR_S3_PREFIX     key prefix inside the bucket          (default: none)
+    GR_S3_ENDPOINT   S3 endpoint URL                       (SWITCHengines zhw-b)
+    GR_S3_PROFILE    AWS profile name / else AWS_PROFILE   (default: default chain)
+    GR_S3_REGION     region                                (eu-central-1)
+    GR_S3_ADDRESSING "path" (default) | "virtual"
+    GR_S3_CACHE      1 (default) cache objects+listings on disk | 0 no disk writes
+    GR_S3_VALIDATE   1 (default) check cached objects against the bucket ETag | 0 trust
+    GR_CACHE_DIR     cache location            (default ~/.cache/green-routing/s3)
+    GR_S3_LIST_TTL   seconds a cached bucket listing stays valid   (default 43200)
+    GR_S3_WORKERS    parallel prefetch/download threads            (default 8)
+    GR_RESEARCH_ROOT checkout of network-energy-efficiency-research (topology source)
 """
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
-# --- Roots -------------------------------------------------------------------
-# The parsed Cricket time-series (output of network-energy-efficiency-research/
-# parsing-rrd/parse_rrd.py). ~45 GB, 5-min-averaged CSVs, UTC epoch timestamps.
-SWITCH_ROOT = Path.home() / "switch"
 
-# The research repo that generated the data (topology, metadata, etc.).
+def _env(name: str, default: str = "") -> str:
+    return os.environ.get(name, default).strip()
+
+
+def _env_flag(name: str, default: bool) -> bool:
+    raw = _env(name)
+    return default if not raw else raw.lower() not in ("0", "false", "no", "off")
+
+
+def _env_int(name: str, default: int) -> int:
+    raw = _env(name)
+    try:
+        return int(raw) if raw else default
+    except ValueError:
+        return default
+
+
+# --- Data source -------------------------------------------------------------
+DATA_SOURCE = _env("GR_DATA_SOURCE", "s3").lower()      # s3 | local | auto
+
+# Filesystem mirror (used for DATA_SOURCE=local, and by "auto" when it exists).
+LOCAL_ROOT = Path(_env("GR_LOCAL_ROOT") or (Path.home() / "switch"))
+
+# SWITCHengines object storage — written daily by parsing-rrd/parse_rrd.py.
+S3_BUCKET = _env("GR_S3_BUCKET", "switchlan-load-timeseries")
+S3_PREFIX = _env("GR_S3_PREFIX").strip("/")
+S3_ENDPOINT = _env("GR_S3_ENDPOINT", "https://zhw-b.s3.cloud.switch.ch")
+S3_PROFILE = _env("GR_S3_PROFILE") or _env("AWS_PROFILE") or None
+S3_REGION = _env("GR_S3_REGION", "eu-central-1")
+S3_ADDRESSING = _env("GR_S3_ADDRESSING", "path")
+
+# Object cache: the coverage scan reads every interface CSV, so downloading each one
+# once and reusing it is the difference between a slow first run and slow every run.
+S3_CACHE = _env_flag("GR_S3_CACHE", True)
+# The bucket is rewritten daily, so a cached object is only good until its ETag moves.
+# Listing a subtree already returns every ETag, making validation free for the scans;
+# a lone read of an unlisted object pays one HEAD. Turn off to trust the cache blindly.
+S3_VALIDATE = _env_flag("GR_S3_VALIDATE", True)
+CACHE_DIR = Path(
+    _env("GR_CACHE_DIR") or (Path.home() / ".cache" / "green-routing" / "s3")
+)
+S3_LIST_TTL = _env_int("GR_S3_LIST_TTL", 12 * 3600)     # upstream writes daily
+S3_WORKERS = _env_int("GR_S3_WORKERS", 8)
+
+_S3_ROOT = f"s3://{S3_BUCKET}" + (f"/{S3_PREFIX}" if S3_PREFIX else "")
+
+if DATA_SOURCE == "local":
+    DATA_ROOT: str = str(LOCAL_ROOT)
+elif DATA_SOURCE == "auto":
+    DATA_ROOT = str(LOCAL_ROOT) if LOCAL_ROOT.exists() else _S3_ROOT
+else:
+    DATA_ROOT = _S3_ROOT
+
+USING_S3 = DATA_ROOT.startswith("s3://")
+
+# Kept for callers that still reference the old name; it is the *mirror* root, which
+# is only where the data actually lives when USING_S3 is False.
+SWITCH_ROOT = LOCAL_ROOT
+
+
+def describe_source() -> str:
+    """One-line summary of where data is being read from (for logs/meta.json)."""
+    if not USING_S3:
+        return f"local:{DATA_ROOT}"
+    profile = S3_PROFILE or "default-chain"
+    cache = f"cache={CACHE_DIR}" if S3_CACHE else "cache=off"
+    return f"{DATA_ROOT} (endpoint={S3_ENDPOINT}, profile={profile}, {cache})"
+
+
+# --- Topology / metadata -----------------------------------------------------
+# The research repo that generated the data. Not present on a cloud box, hence the
+# committed fallback below.
 RESEARCH_ROOT = Path(
-    "/home/yuyqin/ETH_Master_Study/Green_Routing/network-energy-efficiency-research"
+    _env("GR_RESEARCH_ROOT")
+    or "/home/yuyqin/ETH_Master_Study/Green_Routing/network-energy-efficiency-research"
 )
 _RESEARCH_TOPOLOGY = RESEARCH_ROOT / "switch-network-topology" / "switch-network-topology.txt"
 # Fallback: a device-level topology rebuilt from web/data JSON by
-# ``dataset.build_topology_txt`` (for machines without the research checkout).
+# ``dataset.build_topology_txt``, committed alongside this package. The topology is
+# *not* in the bucket (parse_rrd.py uploads only time-series), so on a cloud box this
+# committed copy is the source of truth — refresh it when the topology changes.
 _LOCAL_TOPOLOGY = Path(__file__).resolve().parent / "switch-network-topology.txt"
-TOPOLOGY_TXT = _RESEARCH_TOPOLOGY if _RESEARCH_TOPOLOGY.exists() else _LOCAL_TOPOLOGY
-METADATA_JSON = RESEARCH_ROOT / "parsing-rrd" / "metadata.json"
+TOPOLOGY_TXT = str(
+    _RESEARCH_TOPOLOGY if _RESEARCH_TOPOLOGY.exists() else _LOCAL_TOPOLOGY
+)
+METADATA_JSON = str(RESEARCH_ROOT / "parsing-rrd" / "metadata.json")
 
 # --- Subtrees ----------------------------------------------------------------
-SUBTREES = {
-    "router-interfaces": SWITCH_ROOT / "router-interfaces",   # per-interface traffic
-    "transceiver-monitoring": SWITCH_ROOT / "transceiver-monitoring",
-    "routers": SWITCH_ROOT / "routers",                       # per-router cpu/mem/temp
-    "router-power": SWITCH_ROOT / "router-power",             # PSU U/I -> power
-    "eci": SWITCH_ROOT / "eci" / "apollo",                    # optical shelves incl. power
-    "cpu-usage": SWITCH_ROOT / "cpu-usage",
+# Relative layout, identical in the bucket and in the filesystem mirror.
+SUBTREE_KEYS = {
+    "router-interfaces": "router-interfaces",           # per-interface traffic
+    "transceiver-monitoring": "transceiver-monitoring",
+    "routers": "routers",                               # per-router cpu/mem/temp
+    "router-power": "router-power",                     # PSU U/I -> power
+    "eci": "eci/apollo",                                # optical shelves incl. power
+    "cpu-usage": "cpu-usage",
 }
+
+
+def _subtree_uri(rel: str) -> str:
+    if USING_S3:
+        return f"{DATA_ROOT.rstrip('/')}/{rel}"
+    return str(Path(DATA_ROOT).joinpath(*rel.split("/")))
+
+
+SUBTREES = {name: _subtree_uri(rel) for name, rel in SUBTREE_KEYS.items()}
 
 # --- Sampling ----------------------------------------------------------------
 STEP_SECONDS = 300          # native 5-min sampling

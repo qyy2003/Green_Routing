@@ -135,7 +135,17 @@ def build_panel(
     n_scanned = 0
     if verbose:
         print(f"[data] scanning interfaces over {start}..{end} "
-              f"(grid={grid_len} steps, min_coverage={min_coverage})")
+              f"(grid={grid_len} steps, min_coverage={min_coverage}) "
+              f"from {config.describe_source()}")
+
+    # Warm the object cache in parallel before the serial scan (no-op on a local
+    # mirror). With --max-links we stop early, so cap the warm-up rather than
+    # pulling the whole subtree for a quick experiment.
+    loaders.prefetch_interfaces(
+        devices=set(devices) if devices else None,
+        limit=None if max_links is None else max_links * 3,
+        verbose=verbose,
+    )
 
     for dev_short, iface, path in loaders.iter_interface_files():
         if keep_dev is not None and dev_short not in keep_dev:

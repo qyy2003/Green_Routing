@@ -356,6 +356,16 @@ class TorchTrainer:
         min_lr_for_stop = lr * (self.plateau_factor ** 2) * 1.001
         chatty = bool(verbose_name) and epochs > 3   # quiet during online refits
 
+        # ---- training history ------------------------------------------------
+        # The per-epoch curve is otherwise only printed; recording it lets a run be
+        # promoted to the model zoo with its learning curve attached (prediction.zoo).
+        # ``verbose_name`` carries ":online" for warm-start refits, so the phases stay
+        # separable in the saved history.
+        phase = "online" if ":" in (verbose_name or "") else "fit"
+        if not hasattr(self, "train_history"):
+            self.train_history: list[dict] = []
+        stop_reason = "epochs_exhausted"
+
         # ---- mid-training checkpointing -------------------------------------
         # The full training state (weights, Adam moments, plateau-scheduler state,
         # early-stop counters, RNG) is flushed to disk after every epoch, so an
@@ -466,9 +476,15 @@ class TorchTrainer:
                 if chatty and new_lr < lr_now * 0.999:
                     print(f"[{verbose_name}] lr {lr_now:.2e} -> {new_lr:.2e}")
                 lr_now = new_lr
+            secs = time.time() - t0
             if chatty:
                 print(f"[{verbose_name}] epoch {ep + 1}/{epochs} train={tloss:.4f} "
-                      f"val={vloss:.4f} ({time.time() - t0:.1f}s)", flush=True)
+                      f"val={vloss:.4f} ({secs:.1f}s)", flush=True)
+            self.train_history.append({
+                "phase": phase, "epoch": ep + 1, "epochs": epochs,
+                "train_loss": float(tloss), "val_loss": float(vloss),
+                "lr": float(lr_now), "seconds": round(secs, 2),
+            })
             if vloss < best - 1e-5:
                 best, bad = vloss, 0
                 best_state = {k: v.detach().clone() for k, v in net.state_dict().items()}
@@ -480,12 +496,25 @@ class TorchTrainer:
                 # have been reduced >= 2 times before patience can kill the run
                 if (self.patience and bad >= self.patience
                         and (sched is None or lr_now <= min_lr_for_stop)):
+                    stop_reason = "early_stop"
                     if chatty:
                         print(f"[{verbose_name}] early stop at epoch {ep + 1} "
                               f"(best val={best:.4f})")
                     break
         if state_path is not None:
             state_path.unlink(missing_ok=True)   # completed: transient state gone
+        rows = [r for r in self.train_history if r["phase"] == phase]
+        self.train_summary = {
+            **getattr(self, "train_summary", {}),
+            phase: {
+                "best_val_loss": None if best == float("inf") else float(best),
+                "epochs_run": len(rows),
+                "epochs_requested": epochs,
+                "final_lr": float(lr_now),
+                "stop_reason": stop_reason,
+                "seconds": round(sum(r["seconds"] for r in rows), 1),
+            },
+        }
         if best_state is not None:
             net.load_state_dict(best_state)
         net.eval()

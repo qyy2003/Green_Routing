@@ -6,9 +6,13 @@ predict per-link traffic at 5-minute granularity, start with the dumbest baselin
 escalate one tier at a time — **keeping a more complex model only when it clearly beats the
 simpler one on the *same* chronological split and metric.**
 
-Data comes from the [`dataset/`](../dataset/) package (the SWITCH Cricket CSVs at
-`~/switch`, see `dataset/config.py:SWITCH_ROOT`); this package never re-implements
-loading/coalescing.
+Data comes from the [`dataset/`](../dataset/) package, which reads the SWITCH Cricket
+CSVs **straight out of SWITCHengines object storage** (`s3://switchlan-load-timeseries`,
+see [`dataset/README.md`](../dataset/README.md#data-source) for the env vars and
+`python -m dataset check`); a local mirror is opt-in via `GR_DATA_SOURCE=local`. This
+package never re-implements loading/coalescing. `build_panel` warms the object cache in
+parallel before its scan, so the first run pays the download and later runs read from
+local disk.
 
 **Link census** (scan 2026-07-13, details + CSVs in `artifacts/link_census/`): the raw
 tree has 1 923 interface series on 208 devices; over the working window
@@ -80,7 +84,8 @@ so the naive rows give the irreducible floor).
 | `torch_common.py` | Shared trainer for torch tiers: global model, log1p, RevIN per window (std floored at 0.05, targets clipped ±20), Huber loss **horizon-weighted 1/√h**, **per-epoch anchor resampling** (fresh windows every epoch), **ReduceLROnPlateau** on the chronological val loss with LR-gated early stopping, grad clip, CPU→GPU batch streaming (OOM-safe at week horizons). GRU/TCN/PatchTST condition their heads on a **learned link embedding** (DLinear stays the pure-linear control). |
 | `models_deep.py` | **Tier 4** GRU (2×128), residual TCN (Bai et al., 64ch, RF-covering depth); **Tier 5** DLinear (linear control) + PatchTST at the paper's supervised config (patch 16/stride 8, d128, 16 heads, 3 layers). |
 | `models_gnn.py` | **Tier 6** Graph WaveNet at its paper design (gated dilated convs, skip 256/end 512, order-2 diffusion, adaptive adjacency) over a link-level graph (shared/adjacent routers from `dataset.topology`). |
-| `run.py` | CLI: build panel → run tiers → tabulate skill → plot. `--tiers 1 2 3 4 5 6`, `--lookback`, `--epochs`. |
+| `run.py` | CLI: build panel → run tiers → tabulate skill → plot. `--tiers 1 2 3 4 5 6`, `--lookback`, `--epochs`. Tees the console to `<out>/run.log` and writes per-epoch curves to `<out>/history/`. |
+| `zoo.py` | **Model zoo**: promote the models worth keeping out of a run directory into `artifacts/zoo/<model>/<tag>/` — weights + learning curve + that model's log slice + metrics + a provenance manifest. CLI: `add`, `list`, `show`, `pack`, `remove`, `index`. |
 
 ## The testing loop (harness)
 
@@ -169,6 +174,7 @@ weight from per-link train-mean traffic: a float exponent — 0 = uniform/RevIN,
 the training-side mirror of the log-volume-weighted ratio metric; applies to
 GRU/TCN/DLinear/PatchTST and, per-node, to the STGNN),
 `--metric {mae,rmse,smape,wape}`, `--seasonal-sarima` (enable a true `s=288` SARIMA),
+`--zoo` (+ `--zoo-models/--zoo-tag/--zoo-note/--zoo-records`, see [Model zoo](#model-zoo--keeping-the-good-runs)),
 `--online` (add test-time-fine-tuned `+online` variants — see *Online adaptation*),
 `--resume` (continue an interrupted run — see *Checkpoints*).
 
@@ -252,6 +258,57 @@ These are small CPU nets at short horizons (where the roadmap expects deep model
 *least* advantaged). Widen the lead by: longer horizons (`--horizons day week`), longer
 `--lookback`, more `--epochs`, a core-link cohort, or bigger nets.
 
+## Model zoo — keeping the good runs
+
+A run directory is *working state*: it mixes every model together, is named after an
+experiment rather than a result, and gets pruned (`prune_checkpoints`) and overwritten.
+The zoo is where a run goes when it turns out well. Each promoted model gets its own
+immutable directory:
+
+```
+artifacts/zoo/<model>/<tag>/
+    weights.pt | weights.pkl     the fitted model (sha256 in the manifest)
+    history.csv                  per-epoch train/val loss, lr, seconds (torch tiers)
+    train.log                    this model's slice of the run's console log
+    aggregate.csv per_link.csv   its metrics, sliced out of the run tables
+    ratio_vs_persistence.csv peaks.csv
+    run_config.json              the exact flags the run was invoked with
+    records.csv.gz               raw per-point predictions (only with --with-records)
+    manifest.json                everything above plus provenance (below)
+```
+
+`manifest.json` is what makes an entry worth uploading on its own: the data window and
+**the source the run actually read** (S3 vs local mirror — recorded by the run, not
+guessed at promotion time), the split dates, link count, the git commit and whether the
+tree was dirty, the environment (python/torch/numpy/pandas, GPU), the training summary
+(best val loss, epochs run, why it stopped), and the weights' sha256.
+
+```bash
+# promote — explicit, nothing is saved unless you ask
+python -m prediction.zoo add ../artifacts/pred_online \
+    --models gbdt+online,tcn --note "best day-horizon so far"
+
+python -m prediction.zoo list                    # table of every entry + skill
+python -m prediction.zoo show tcn/pred_online    # one manifest
+python -m prediction.zoo pack tcn/pred_online    # -> .tar.gz + the upload command
+python -m prediction.zoo remove tcn/pred_online
+```
+
+Or promote straight from a run with `--zoo` (plus `--zoo-models`, `--zoo-tag`,
+`--zoo-note`, `--zoo-records`). That runs **before** `prune_checkpoints`, so an
+`+online` variant keeps its own weights file even though the run then drops it as a
+warm-start duplicate.
+
+**Uploading is yours to do.** `pack` builds the archive and prints an `aws s3 cp`
+(and `rsync`) line — it never uploads. Publish to a bucket you own, not the read-only
+data bucket. `artifacts/` is gitignored, so weights never land in git by accident; if
+you want an entry in version control, copy it out deliberately.
+
+Entries are keyed `<model>/<tag>`, tag defaulting to the run directory's name. Re-adding
+the same pair needs `--force`; use `--tag` to keep several versions of one model side by
+side. `index.json` and a browsable `README.md` are regenerated on every change, and
+`GR_ZOO_DIR` moves the whole zoo elsewhere.
+
 ## Frontier (not built)
 
 Tier-5 iTransformer/Informer, Tier-6 DCRNN/MTGNN, foundation models (TimesFM/Chronos
@@ -265,9 +322,8 @@ window (see *Link census* above). The first cold build reads all ~19 GB once
 (~10–15 min), then the panel is cached to `artifacts/panel_<hash>.npz`.
 
 ```bash
-mkdir -p ../artifacts/pred_full
 env -u PYTHONPATH PRED_DEVICE=cuda PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
-  /home/qyy/anaconda3/envs/green-pred/bin/python -m prediction.run \
+  /home/yuyqin/anaconda3/envs/green-pred/bin/python -m prediction.run \
     --start 2025-12-01 --end 2026-07-11 \
     --train-end 2026-05-01 --val-start 2026-05-08 \
     --val-end 2026-05-29 --test-start 2026-06-05 \
@@ -275,8 +331,12 @@ env -u PYTHONPATH PRED_DEVICE=cuda PYTORCH_CUDA_ALLOC_CONF=expandable_segments:T
     --horizons 15min 1h day week \
     --max-origins 48 \
     --lookback 336 --epochs 12 \
-    --out ../artifacts/pred_full 2>&1 | tee ../artifacts/pred_full/run.log
+    --out ../artifacts/pred_full
 ```
+
+> Do **not** append `| tee ../artifacts/pred_full/run.log` any more: `run.py` writes
+> that file itself, and a shell `tee` on the same path interleaves with it. The run
+> creates `--out` too, so the old `mkdir -p` is unnecessary.
 
 (The earlier `pred_real`/`pred_paper` results above were produced with
 `--max-links 20`, i.e. ~2 % of the usable cohort — alphabetically biased. Full-cohort

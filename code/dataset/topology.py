@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from . import config
+from . import config, storage
 
 _LINE = re.compile(
     r"^(\S+)\s+(\S+)\s+<=>\s+(\S+)\s+(\S+)\s+\(([^)]+)\)\s+\(([^)]+)\)"
@@ -30,8 +30,11 @@ class Link:
 
 
 def parse_links(path=config.TOPOLOGY_TXT) -> list[Link]:
+    """Parse the topology file. ``path`` may be local or an ``s3://`` URI; the
+    default resolves to the research checkout when present, else the copy
+    committed next to this package (the bucket holds time-series only)."""
     links: list[Link] = []
-    with open(path) as fh:
+    with storage.open_text(path) as fh:
         for line in fh:
             m = _LINE.match(line.strip())
             if not m:

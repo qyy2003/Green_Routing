@@ -1,6 +1,10 @@
 """End-to-end builder: scan coverage -> select cohort -> build tensor + adjacency ->
 compute splits -> write artifacts.
 
+Reads from whatever ``dataset.config`` resolves as the source -- SWITCHengines object
+storage by default, a local mirror with ``GR_DATA_SOURCE=local`` -- and records that
+choice in meta.json so an artifact says where it came from.
+
 Usage (run as a module from the code/ dir so relative imports resolve):
     cd /home/yuyqin/ETH_Master_Study/Green_Routing/Green_Routing/code
     python -m dataset.build --start 2024-01-01 --end 2025-01-01 \
@@ -45,7 +49,8 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
 
     print(f"[1/5] scanning interface coverage over {args.start}..{args.end} ...")
-    cov = cohort_mod.scan_interfaces(args.start, args.end)
+    print(f"      source: {config.describe_source()}")
+    cov = cohort_mod.scan_interfaces(args.start, args.end, verbose=True)
     cohort = cohort_mod.select_cohort(cov, min_coverage=args.min_coverage)
     cohort_mod.coverage_frame(cov).to_csv(out / "coverage_all.csv", index=False)
     cohort_mod.coverage_frame(cohort).to_csv(out / "cohort.csv", index=False)
@@ -122,6 +127,8 @@ def main():
             "step_seconds": config.STEP_SECONDS,
             "n_nodes": len(t["node_index"]),
             "n_steps": n,
+            "data_source": config.describe_source(),
+            "data_root": config.DATA_ROOT,
         }, fh, indent=2)
     print(f"done -> {out}")
 

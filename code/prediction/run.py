@@ -10,15 +10,25 @@
 
 Writes to --out: aggregate.csv, per_link.csv, skill_<metric>.csv, and PNG plots
 (predicted-vs-actual overlays + a skill bar), plus checkpoints/ (fitted model weights,
-saved right after each training) and records/ (per-model raw predictions, flushed as
-each model finishes). Ctrl-C keeps everything already flushed; rerun with --resume to
+saved right after each training), records/ (per-model raw predictions, flushed as each
+model finishes), history/ (per-epoch learning curves) and run.log (the full console
+output of this run). Ctrl-C keeps everything already flushed; rerun with --resume to
 skip the finished models and reload saved weights. Everything is scored on the identical
 rolling origins, so "model X beats persistence by Y%" is an honest number.
+
+A run directory is working state — it mixes every model together and gets pruned and
+overwritten. When a run turns out well, promote the models worth keeping into the
+model zoo, which gives each one its own immutable, self-describing entry:
+
+    python -m prediction.zoo add <out> --models tcn,gbdt+online --note "why"
+
+or pass --zoo here to promote automatically once the run completes. See prediction/zoo.py.
 """
 from __future__ import annotations
 
 import argparse
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -27,9 +37,60 @@ import pandas as pd
 
 from dataset import config, splits as splits_mod
 
-from . import baselines, data as data_mod, harness
+from . import baselines, data as data_mod, harness, zoo as zoo_mod
 from .models_classical import default_classical
 from .models_gbdt import GlobalGBDT
+
+
+class _Tee:
+    """Mirror a stream into a file, so the console output of a run is also on disk.
+
+    The training curve, the fit/backtest ordering and every warning are printed, not
+    logged — which means they only ever lived in terminal scrollback. Teeing to
+    ``<out>/run.log`` makes a run's log an artifact the zoo can carry.
+    """
+
+    def __init__(self, stream, path: Path):
+        self.stream = stream
+        self.fh = open(path, "a", buffering=1)
+
+    def write(self, s):
+        self.stream.write(s)
+        self.fh.write(s)
+        return len(s)
+
+    def flush(self):
+        self.stream.flush()
+        self.fh.flush()
+
+    def isatty(self):
+        return self.stream.isatty()
+
+    def close(self):
+        try:
+            self.fh.close()
+        except Exception:
+            pass
+
+
+def save_histories(models, out: Path) -> None:
+    """Persist each trainer's per-epoch curve to ``<out>/history/``.
+
+    Only the torch tiers record one (see torch_common._fit_torch); models without a
+    history simply contribute nothing.
+    """
+    hist_dir = out / "history"
+    for m in models:
+        rows = getattr(m, "train_history", None)
+        summary = getattr(m, "train_summary", None)
+        if not rows and not summary:
+            continue
+        hist_dir.mkdir(parents=True, exist_ok=True)
+        if rows:
+            pd.DataFrame(rows).to_csv(hist_dir / f"{m.name}.csv", index=False)
+        if summary:
+            with open(hist_dir / f"{m.name}.summary.json", "w") as fh:
+                json.dump(summary, fh, indent=2)
 
 
 def _scale_weight_arg(v: str):
@@ -357,12 +418,39 @@ def main():
                     help="reuse <out>/records/*.csv and <out>/checkpoints/* from an "
                          "earlier (e.g. interrupted) run: finished models are not "
                          "re-run, fitted torch/GBDT models reload their weights")
+    ap.add_argument("--zoo", action="store_true",
+                    help="on a complete run, promote the trained models into the "
+                         "model zoo (artifacts/zoo/) — weights + learning curve + "
+                         "log slice + metrics per model. See prediction/zoo.py")
+    ap.add_argument("--zoo-models", default=None,
+                    help="comma-separated names to promote (default: every model "
+                         "that has saved weights)")
+    ap.add_argument("--zoo-tag", default=None,
+                    help="zoo entry name (default: the --out directory's name)")
+    ap.add_argument("--zoo-note", default="",
+                    help="why this run is worth keeping — shown in the zoo index")
+    ap.add_argument("--zoo-records", action="store_true",
+                    help="also store the raw per-point predictions in the entry")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
 
+    # Tee the console into <out>/run.log before anything else prints, so the run's
+    # log is a file the zoo can carry rather than terminal scrollback.
+    tee = _Tee(sys.stdout, out / "run.log")
+    sys.stdout = tee
+    try:
+        print(f"# {datetime.now(timezone.utc).isoformat(timespec='seconds')} "
+              f"$ {' '.join(sys.argv)}")
+        _execute(args, out)
+    finally:
+        sys.stdout = tee.stream
+        tee.close()
+
+
+def _execute(args, out: Path):
     panel = data_mod.build_panel(
         args.start, args.end, value_col=args.value_col,
         min_coverage=args.min_coverage, max_links=args.max_links,
@@ -446,7 +534,9 @@ def main():
     peaks.to_csv(out / "peaks.csv", index=False)
     with open(out / "config.json", "w") as fh:
         json.dump(vars(args) | {"n_links": panel.L, "n_steps": panel.T,
-                                "links": panel.links}, fh, indent=2)
+                                "links": panel.links,
+                                "data_source": config.describe_source()}, fh, indent=2)
+    save_histories(models, out)
 
     pd.set_option("display.width", 140, "display.max_columns", 30)
     print("\n===== aggregate (pooled over links) =====")
@@ -476,9 +566,21 @@ def main():
                   horizon_steps=min(config.DAILY_STEPS, max(hsteps)))
     if result.interrupted:
         print(f"\npartial results (interrupted) -> {out} — checkpoints kept for --resume")
-    else:
-        prune_checkpoints(out)
-        print(f"\ndone -> {out}")
+        return
+    if args.zoo:
+        # Before prune_checkpoints: the +online weights are dropped there as
+        # warm-start duplicates, but an entry should still carry its own file.
+        names = ([m.strip() for m in args.zoo_models.split(",")]
+                 if args.zoo_models else None)
+        print(f"\n[zoo] promoting -> {zoo_mod.ZOO_DIR}")
+        try:
+            zoo_mod.add(out, models=names, tag=args.zoo_tag, note=args.zoo_note,
+                        with_records=args.zoo_records, force=True,
+                        metric=args.metric)
+        except SystemExit as exc:      # a zoo problem must not lose a good run
+            print(f"[zoo] skipped: {exc}")
+    prune_checkpoints(out)
+    print(f"\ndone -> {out}")
 
 
 if __name__ == "__main__":

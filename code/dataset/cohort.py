@@ -7,9 +7,7 @@ dense over a common window, and place them on a shared 5-min grid.
 from __future__ import annotations
 
 from dataclasses import dataclass, asdict
-from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 from . import config, loaders
@@ -19,7 +17,7 @@ from . import config, loaders
 class Coverage:
     key: str            # identifier, e.g. "ag1/tengige0_0_1_0"
     device: str         # full swi* device name
-    path: str
+    path: str           # source URI: "s3://<bucket>/..." or a local path
     first: pd.Timestamp
     last: pd.Timestamp
     n_rows: int
@@ -32,9 +30,17 @@ def _window_coverage(index: pd.DatetimeIndex, start, end) -> float:
     return len(present) / len(grid) if len(grid) else 0.0
 
 
-def scan_interfaces(start, end, value_col: str = "total_mbps") -> list[Coverage]:
-    """Scan every interface series and measure coverage over [start, end]."""
+def scan_interfaces(
+    start, end, value_col: str = "total_mbps", verbose: bool = False
+) -> list[Coverage]:
+    """Scan every interface series and measure coverage over [start, end].
+
+    Reads the whole ``router-interfaces`` subtree, so it warms the object cache in
+    parallel first (a no-op on a local mirror or with ``GR_S3_CACHE=0``); without
+    that, ~2 300 sequential GETs dominate the runtime.
+    """
     start, end = pd.Timestamp(start, tz="UTC"), pd.Timestamp(end, tz="UTC")
+    loaders.prefetch_interfaces(verbose=verbose)
     out: list[Coverage] = []
     for dev_short, iface, path in loaders.iter_interface_files():
         try:
