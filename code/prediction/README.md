@@ -181,9 +181,13 @@ GRU/TCN/DLinear/PatchTST and, per-node, to the STGNN),
 Writes to `--out`: `aggregate.csv`, `per_link.csv`, `skill_<metric>.csv`,
 `ratio_vs_persistence_<metric>.csv` (normalise-then-weight table: per-link error
 ratio vs persistence aggregated as median / geometric mean / log10(volume)-weighted
-mean — the scale-domination-free leaderboard; <1 beats persistence), `peaks.csv`
-(peak bias / underprediction rate / peak MAE per model × horizon — see *Peak-aware
-training*), `config.json`,
+mean — the scale-domination-free leaderboard; <1 beats persistence — plus the
+per-link median WAPE and the share of links beating persistence), `wape.csv`
+(WAPE = Σ|e|/Σ|y| in %, per model × horizon: pooled over all links, median and p90
+of the per-link WAPEs — pooled WAPE ranks models exactly like pooled MAE on these
+identical targets, so the per-link median is the new information), `peaks.csv`
+(peak bias / underprediction rate / peak MAE / peak WAPE per model × horizon — see
+*Peak-aware training*), `config.json`,
 `skill_vs_persistence_<metric>.png`, `overlay_forecasts.png` (busy / bursty / quiet link
 paths — the roadmap's "did it just learn to output the last value one step late?" check).
 
@@ -257,6 +261,35 @@ control) underperforming confirms PatchTST's gain is real, not an artifact.
 These are small CPU nets at short horizons (where the roadmap expects deep models to be
 *least* advantaged). Widen the lead by: longer horizons (`--horizons day week`), longer
 `--lookback`, more `--epochs`, a core-link cohort, or bigger nets.
+
+## Dense prediction log (`dense.py`) — every 5-min step
+
+The harness scores a *sample* of origins (`--max-origins`), and the sample is
+time-of-day biased: on pred_year the 160 origins (6-h grid, subsampled to 18 h
+spacing) fall at only four local times (~02/08/14/20 h). `prediction.dense` re-runs
+a finished run's checkpoints at **every** 5-min origin of the test block (batched
+on the GPU, mirroring each model's `predict`; full fp32 — TF32 drifted ~3e-4) and
+logs two layouts per model, indexed by target time:
+
+* **rolling** — fixed lead: the forecast for t made exactly h steps earlier
+  (the harness's horizon definition, at all ~32k origins);
+* **block** — window by window: consecutive h-step windows, each forecast in full
+  from its start (a prediction at every 5-min step; metrics average leads 1..h).
+  GBDT is direct-per-horizon, so it has no block log.
+
+```bash
+python -m prediction.dense predict --run ../artifacts/pred_year/merged --models tcn --batch 1024
+python -m prediction.dense verify  --run ../artifacts/pred_year/merged   # vs records/
+python -m prediction.dense metrics --run ../artifacts/pred_year/merged   # -> dense/<mode>/*.csv
+```
+
+Output in `<run>/dense/`: `pred_<mode>_<model>.npy` (float32 [L, H, n_targets],
+~340 MB each), `meta.json`, and per mode the harness's tables (`aggregate`,
+`per_link`, `ratio_vs_persistence_mae`, `wape`, `peaks`). `web_pred/` serves all
+three views. Cost on an L40S: baselines/DLinear seconds, GRU/PatchTST ~14 min,
+TCN ~40 min, GBDT ~48 min (CPU). `verify` on pred_year: baselines/GBDT exact,
+DLinear ~3e-6, GRU/TCN/PatchTST p99 ~2e-4 relative (cuDNN picks different kernels
+at batch 1 vs 1024).
 
 ## Model zoo — keeping the good runs
 

@@ -364,8 +364,8 @@ class BacktestResult:
             rows.append(r)
         return pd.DataFrame(rows).sort_values(["horizon", "mae"]).reset_index(drop=True)
 
-    def ratio_table(self, metric: str = "mae",
-                    baseline: str = "persistence") -> pd.DataFrame:
+    def ratio_table(self, metric: str = "mae", baseline: str = "persistence",
+                    per_link: pd.DataFrame | None = None) -> pd.DataFrame:
         """Normalise-then-weight evaluation: per-link ``metric`` ratio vs ``baseline``.
 
         Pooled raw-Mbps metrics are a traffic-weighted vote (per-link MAE scales
@@ -379,6 +379,10 @@ class BacktestResult:
           logv_ratio      weight = log10(test-mean Mbps) — gentle size preference
                           (top-50 share drops to ~20% on the 547 cohort).
 
+        Plus two absolute companions: ``median_wape`` (median over links of the
+        per-link WAPE = sum|e|/sum|y|, in %) and ``share_beats_base`` (fraction of
+        links where the model's error is below the baseline's).
+
         Ratios < 1 beat the baseline. Two robustness guards: links whose baseline
         error is tiny in absolute terms (< 1e-3 Mbps — near-constant series where
         the ratio is pure noise amplification) are excluded, and the ratios
@@ -388,7 +392,7 @@ class BacktestResult:
         geometric mean are computed on unclipped ratios; ``n_links`` reports the
         count used.
         """
-        pl = self.per_link()
+        pl = self.per_link() if per_link is None else per_link
         vol = self.records.groupby("link")["y_true"].apply(lambda s: s.abs().mean())
         w_all = np.log10(np.maximum(vol, 1.0)) + 0.01
         base = pl[pl.model == baseline].set_index(["horizon", "link"])[metric]
@@ -405,20 +409,63 @@ class BacktestResult:
                 continue
             r = (g.loc[common] / b.loc[common]).astype(float)
             w = w_all.reindex(common).fillna(0.01)
+            wl = pl[(pl.model == model) & (pl.horizon == h)].set_index("link")["wape"]
+            wl = wl.reindex(common)
+            wl = wl[np.isfinite(wl)]
             rows.append({
                 "model": model, "tier": tier, "horizon": h,
                 "horizon_name": self._h_name.get(h, str(h)),
                 "median_ratio": float(r.median()),
                 "geomean_ratio": float(np.exp(np.log(r.clip(lower=1e-9)).mean())),
                 "logv_ratio": float((r.clip(upper=20.0) * w).sum() / w.sum()),
+                # per-link WAPE (sum|e|/sum|y|, %), one link one vote: the typical
+                # link's error as a share of its own traffic
+                "median_wape": float(wl.median()) if len(wl) else np.nan,
+                "share_beats_base": float((r < 1.0).mean()),
                 "n_links": len(common),
             })
         if not rows:            # e.g. the baseline model wasn't in this run
             return pd.DataFrame(columns=["model", "tier", "horizon", "horizon_name",
                                          "median_ratio", "geomean_ratio",
-                                         "logv_ratio", "n_links"])
+                                         "logv_ratio", "median_wape",
+                                         "share_beats_base", "n_links"])
         return (pd.DataFrame(rows)
                 .sort_values(["horizon", "logv_ratio"]).reset_index(drop=True))
+
+    def wape_table(self, per_link: pd.DataFrame | None = None) -> pd.DataFrame:
+        """WAPE = sum|e| / sum|y| (%) per (model, horizon), two ways:
+
+          pooled_wape   over every scored point of every link — volume-weighted,
+                        so the big links dominate (the carbon-bill view: the
+                        bill's error is in bytes);
+          median_wape   median of the per-link WAPEs — one link one vote, the
+                        typical link's error as a share of its own traffic;
+          p90_wape      90th percentile of the per-link WAPEs — the hard tail.
+
+        On identical targets, pooled WAPE ranks models exactly like pooled MAE
+        (same denominator), so its skill vs a baseline equals the MAE skill; the
+        per-link median is the genuinely new number.
+        """
+        pl = self.per_link() if per_link is None else per_link
+        agg = self.aggregate().set_index(["model", "horizon"])["wape"]
+        rows = []
+        for (model, tier, h), g in pl.groupby(["model", "tier", "horizon"]):
+            w = g["wape"].to_numpy(dtype=float)
+            w = w[np.isfinite(w)]
+            rows.append({
+                "model": model, "tier": tier, "horizon": h,
+                "horizon_name": self._h_name.get(h, str(h)),
+                "pooled_wape": float(agg.get((model, h), np.nan)),
+                "median_wape": float(np.median(w)) if w.size else np.nan,
+                "p90_wape": float(np.quantile(w, 0.9)) if w.size else np.nan,
+                "n_links": int(w.size),
+            })
+        cols = ["model", "tier", "horizon", "horizon_name", "pooled_wape",
+                "median_wape", "p90_wape", "n_links"]
+        if not rows:
+            return pd.DataFrame(columns=cols)
+        return (pd.DataFrame(rows, columns=cols)
+                .sort_values(["horizon", "median_wape"]).reset_index(drop=True))
 
     def peak_table(self, q: float = 0.90) -> pd.DataFrame:
         """Peak behaviour per (model, horizon): how forecasts treat each link's
@@ -432,6 +479,7 @@ class BacktestResult:
                                (negative = under-prediction / peak shaving)
           peak_underpred_rate  fraction of peak points predicted below actual
           peak_mae             MAE on peak points (Mbps)
+          peak_wape            WAPE on peak points, sum|e|/sum|y| (%)
           off_bias_pct         signed error off-peak — the price paid for any
                                peak correction shows up here as over-prediction
 
@@ -443,7 +491,8 @@ class BacktestResult:
         if r.empty:
             return pd.DataFrame(columns=["model", "tier", "horizon", "horizon_name",
                                          "peak_bias_pct", "peak_underpred_rate",
-                                         "peak_mae", "off_bias_pct", "n_peak"])
+                                         "peak_mae", "peak_wape", "off_bias_pct",
+                                         "n_peak"])
         thr = (r.groupby(["link", "horizon"])["y_true"].quantile(q)).rename("thr")
         d = r.join(thr, on=["link", "horizon"])
         d["is_peak"] = d.y_true >= d.thr
@@ -459,6 +508,7 @@ class BacktestResult:
                 "peak_bias_pct": float(100 * err.sum() / pk.y_true.sum()),
                 "peak_underpred_rate": float((err < 0).mean()),
                 "peak_mae": float(err.abs().mean()),
+                "peak_wape": float(100 * err.abs().sum() / max(pk.y_true.abs().sum(), 1e-9)),
                 "off_bias_pct": float(100 * (off.y_pred - off.y_true).sum() /
                                       max(off.y_true.sum(), 1e-9)),
                 "n_peak": int(len(pk)),

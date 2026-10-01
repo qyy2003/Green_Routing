@@ -296,8 +296,21 @@ class TorchTrainer:
                 rest[1] if len(rest) > 1 else None)
             va = torch.arange(Xva.shape[0])
 
-        opt = torch.optim.Adam(net.parameters(), lr=lr,
-                               weight_decay=self.weight_decay)
+        # Weight-norm directions (``parametrizations.weight.original1``, the TCN's
+        # v in w = g * v/||v||) get NO weight decay: w is invariant to ||v||, so
+        # decay regularises nothing — but on a dead ReLU channel it is v's only
+        # gradient, and Adam turns it into a fixed-size step toward 0. ||v|| then
+        # collapses (1e-13 on pred_year), the norm's backward overflows float32,
+        # every batch's grad norm is NaN and every step is skipped: the TCN froze
+        # at epoch 4 (val bit-identical for 10 epochs) and early-stopped silently.
+        wn_dir = [p for n, p in net.named_parameters()
+                  if n.endswith("parametrizations.weight.original1")]
+        wn_ids = {id(p) for p in wn_dir}
+        rest = [p for p in net.parameters() if id(p) not in wn_ids]
+        groups = [{"params": rest, "weight_decay": self.weight_decay}]
+        if wn_dir:
+            groups.append({"params": wn_dir, "weight_decay": 0.0})
+        opt = torch.optim.Adam(groups, lr=lr)
         sched = None
         if epochs > 3:
             sched = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -436,6 +449,7 @@ class TorchTrainer:
                 tr_idx = tr[torch.randperm(tr.shape[0])]
             net.train()
             tsum, twsum = 0.0, 0.0
+            n_steps = n_skipped = 0
             for i in range(0, tr_idx.shape[0], self.batch_size):
                 b = tr_idx[i:i + self.batch_size]
                 xb = Xt[b].to(device, non_blocking=True)
@@ -451,9 +465,18 @@ class TorchTrainer:
                 twsum += float(wb.sum())
                 loss.backward()
                 gnorm = nn.utils.clip_grad_norm_(net.parameters(), self.clip_grad)
+                n_steps += 1
                 if torch.isfinite(gnorm):
                     opt.step()
+                else:
+                    n_skipped += 1
             tloss = tsum / max(1e-8, twsum)
+            if n_skipped and verbose_name:
+                # a skipped step is silent by design (one bad batch must not
+                # corrupt the weights) — but a run where most steps skip is not
+                # training at all, so say so
+                print(f"[{verbose_name}] warning: {n_skipped}/{n_steps} optimizer "
+                      f"steps skipped (non-finite grad norm)", flush=True)
             net.eval()
             with torch.no_grad():
                 # Batch the val forward too: a single full-set pass can OOM the GPU
@@ -484,6 +507,7 @@ class TorchTrainer:
                 "phase": phase, "epoch": ep + 1, "epochs": epochs,
                 "train_loss": float(tloss), "val_loss": float(vloss),
                 "lr": float(lr_now), "seconds": round(secs, 2),
+                "skipped_steps": n_skipped,
             })
             if vloss < best - 1e-5:
                 best, bad = vloss, 0

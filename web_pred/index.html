@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prediction viewer — SWITCHlan</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Prediction viewer</h1>
+  <div id="runinfo" class="muted">loading…</div>
+  <div class="spacer"></div>
+  <label>view
+    <select id="mode"></select>
+  </label>
+  <label>horizon
+    <select id="horizon"></select>
+  </label>
+  <label class="chk"><input type="checkbox" id="statsVisible"> stats over visible window</label>
+  <button id="lbBtn" type="button">Leaderboard</button>
+</header>
+
+<main>
+  <aside id="sidebar">
+    <div class="pad">
+      <input id="search" type="search" placeholder="filter links / devices…" autocomplete="off">
+      <div class="row">
+        <select id="sort">
+          <option value="name">sort: name</option>
+          <option value="mean">sort: mean Mbps</option>
+          <option value="peak">sort: peak Mbps</option>
+          <option value="wape">sort: WAPE % (worst first)</option>
+          <option value="ratio">sort: ratio vs persistence (worst first)</option>
+        </select>
+        <span id="linkcount" class="muted"></span>
+      </div>
+      <div class="row" id="scoreRow" hidden>
+        <label>model <select id="scoreModel"></select></label>
+      </div>
+    </div>
+    <ul id="links"></ul>
+  </aside>
+
+  <section id="center">
+    <div id="leaderboard" hidden>
+      <div class="pad lbhead">
+        <h2>Leaderboard <span class="muted" id="lbsub"></span></h2>
+        <label>metric
+          <select id="lbMetric">
+            <option value="median_ratio">per-link median MAE ratio vs persistence</option>
+            <option value="share_beats">share of links beating persistence</option>
+            <option value="median_wape">median per-link WAPE %</option>
+            <option value="pooled_wape">pooled WAPE %</option>
+            <option value="pooled_mae">pooled MAE (Mbps)</option>
+            <option value="peak_bias_pct">peak bias % (top-decile actuals)</option>
+            <option value="peak_wape">peak WAPE %</option>
+          </select>
+        </label>
+        <button id="lbClose" type="button">back to links</button>
+      </div>
+      <div id="lbbody"></div>
+      <div class="pad muted small" id="lbnote"></div>
+    </div>
+    <div id="chartwrap">
+      <canvas id="chart"></canvas>
+      <div id="tooltip" class="hidden"></div>
+      <div id="hint" class="muted">wheel = zoom · drag = pan · shift+drag = box zoom · double-click = reset</div>
+    </div>
+    <div id="legend"></div>
+    <div id="errwrap">
+      <canvas id="errchart"></canvas>
+      <div class="axislabel muted">forecast error (pred − real)</div>
+    </div>
+  </section>
+
+  <aside id="statspanel">
+    <div class="pad">
+      <h2 id="statstitle">—</h2>
+      <div id="statsmeta" class="muted"></div>
+    </div>
+    <div id="statsbody"></div>
+    <div class="pad muted small" id="statsnote"></div>
+  </aside>
+</main>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+:root{
+  --bg:#0f1216; --panel:#161a20; --panel2:#1b2028; --line:#2a313c;
+  --fg:#e6e9ee; --muted:#8b95a5; --accent:#0c8f56; --accent2:#2760e6;
+  --real:#e6e9ee;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font:13px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{display:flex;align-items:center;gap:16px;padding:10px 14px;
+  background:var(--panel);border-bottom:1px solid var(--line)}
+header h1{font-size:14px;margin:0;font-weight:650;letter-spacing:.2px}
+.spacer{flex:1}
+.muted{color:var(--muted)}
+.small{font-size:11px}
+label{display:flex;align-items:center;gap:6px;color:var(--muted)}
+label.chk{cursor:pointer}
+select,input[type=search]{background:var(--panel2);color:var(--fg);
+  border:1px solid var(--line);border-radius:6px;padding:5px 8px;font:inherit}
+input[type=search]{width:100%}
+main{display:grid;grid-template-columns:270px 1fr 340px;height:calc(100vh - 45px)}
+aside{background:var(--panel);overflow:hidden;display:flex;flex-direction:column}
+#sidebar{border-right:1px solid var(--line)}
+#statspanel{border-left:1px solid var(--line)}
+.pad{padding:10px 12px}
+.row{display:flex;align-items:center;gap:8px;margin-top:8px}
+#links{list-style:none;margin:0;padding:0;overflow-y:auto;flex:1}
+#links li{padding:6px 12px;cursor:pointer;border-bottom:1px solid #1d222a;
+  display:flex;justify-content:space-between;gap:8px}
+#links li:hover{background:var(--panel2)}
+#links li.sel{background:#12351f;box-shadow:inset 3px 0 0 var(--accent)}
+#links li .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#links li .vl{color:var(--muted);font-variant-numeric:tabular-nums;flex:none}
+#center{display:flex;flex-direction:column;min-width:0}
+#chartwrap{position:relative;flex:1;min-height:0}
+#errwrap{position:relative;height:130px;border-top:1px solid var(--line)}
+canvas{display:block;width:100%;height:100%}
+#hint{position:absolute;right:10px;top:8px;font-size:11px;pointer-events:none}
+.axislabel{position:absolute;left:10px;top:6px;font-size:11px;pointer-events:none}
+#tooltip{position:absolute;pointer-events:none;background:#0b0e12ee;border:1px solid var(--line);
+  border-radius:6px;padding:7px 9px;font-size:11.5px;white-space:nowrap;z-index:5;
+  font-variant-numeric:tabular-nums}
+.hidden{display:none}
+#legend{display:flex;flex-wrap:wrap;gap:4px 10px;padding:8px 12px;
+  border-top:1px solid var(--line);background:var(--panel)}
+#legend .item{display:flex;align-items:center;gap:6px;cursor:pointer;
+  padding:2px 6px;border-radius:5px;border:1px solid transparent}
+#legend .item:hover{border-color:var(--line)}
+#legend .item.off{opacity:.35}
+#legend .sw{width:12px;height:3px;border-radius:2px}
+#legend .tier{color:var(--muted);font-size:10.5px}
+#statsbody{overflow-y:auto;flex:1}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:5px 8px;text-align:right;border-bottom:1px solid #1d222a;font-size:11.5px}
+th{position:sticky;top:0;background:var(--panel);color:var(--muted);font-weight:600;
+  text-align:right;z-index:1}
+th:first-child,td:first-child{text-align:left}
+tr.best td{color:#7ee2a8}
+td.pos{color:#7ee2a8}
+td.neg{color:#e8836f}
+h2{font-size:13px;margin:0 0 4px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}
+button{background:var(--panel2);color:var(--fg);border:1px solid var(--line);
+  border-radius:6px;padding:5px 10px;font:inherit;cursor:pointer}
+button:hover{border-color:var(--accent)}
+[hidden]{display:none!important}
+#leaderboard{position:absolute;inset:0;background:var(--bg);z-index:10;
+  display:flex;flex-direction:column;overflow:hidden}
+#center{position:relative}
+.lbhead{display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  border-bottom:1px solid var(--line);background:var(--panel)}
+.lbhead h2{margin:0}
+#lbbody{overflow:auto;flex:1}
+#lbbody table{width:auto;min-width:100%}
+#lbbody td.bestc{color:#7ee2a8;font-weight:650}
+#lbbody tr.base td:first-child{color:var(--muted)}
+#links li .vl.good{color:#7ee2a8}
+#links li .vl.bad{color:#e8836f}

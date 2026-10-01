@@ -57,6 +57,7 @@ MODEL_TABLES = {
     "aggregate.csv": "aggregate.csv",
     "per_link.csv": "per_link.csv",
     "peaks.csv": "peaks.csv",
+    "wape.csv": "wape.csv",
 }
 
 
@@ -194,7 +195,8 @@ def _headline_metrics(run: Path, model: str, metric: str = "mae") -> dict:
             out["ratio_vs_persistence"] = {
                 str(r["horizon_name"]): {
                     k: (float(r[k]) if pd.notna(r[k]) else None)
-                    for k in ("median_ratio", "geomean_ratio", "logv_ratio")
+                    for k in ("median_ratio", "geomean_ratio", "logv_ratio",
+                              "median_wape", "share_beats_base")
                     if k in r
                 }
                 for _, r in mr.iterrows()
@@ -207,7 +209,7 @@ def _headline_metrics(run: Path, model: str, metric: str = "mae") -> dict:
                 str(r["horizon_name"]): {
                     k: (float(r[k]) if pd.notna(r[k]) else None)
                     for k in ("peak_bias_pct", "peak_underpred_rate", "peak_mae",
-                              "off_bias_pct")
+                              "peak_wape", "off_bias_pct")
                     if k in r
                 }
                 for _, r in mp.iterrows()
@@ -460,6 +462,8 @@ def index_frame(metric: str = "mae") -> pd.DataFrame:
         }
         for hn, vals in by_h.items():
             row[f"{metric}@{hn}"] = vals.get(metric)
+            if metric != "wape":
+                row[f"wape@{hn}"] = vals.get("wape")      # sum|e|/sum|y|, %
         for hn, v in skill.items():
             row[f"skill@{hn}"] = v
         rows.append(row)
@@ -518,7 +522,8 @@ def write_index(metric: str = "mae") -> None:
         lines.append("_Empty — promote a run with `python -m prediction.zoo add`._")
     else:
         lines += [_markdown_table(df), ""]
-        lines += ["Lower `mae@<horizon>` is better; `skill@<horizon>` is "
+        lines += ["Lower `mae@<horizon>` is better; `wape@<horizon>` is the pooled "
+                  "WAPE, sum|e|/sum|y| in %; `skill@<horizon>` is "
                   "`1 - mae/persistence` (positive beats the naive baseline).", ""]
     (ZOO_DIR / "README.md").write_text("\n".join(lines))
 

@@ -524,13 +524,15 @@ def _execute(args, out: Path):
     agg = result.aggregate()
     per_link = result.per_link()
     skill = result.skill_table(metric=args.metric)
-    ratio = result.ratio_table(metric=args.metric)
+    ratio = result.ratio_table(metric=args.metric, per_link=per_link)
+    wape = result.wape_table(per_link)
     peaks = result.peak_table()
 
     agg.to_csv(out / "aggregate.csv", index=False)
     per_link.to_csv(out / "per_link.csv", index=False)
     skill.to_csv(out / f"skill_{args.metric}.csv")
     ratio.to_csv(out / f"ratio_vs_persistence_{args.metric}.csv", index=False)
+    wape.to_csv(out / "wape.csv", index=False)
     peaks.to_csv(out / "peaks.csv", index=False)
     with open(out / "config.json", "w") as fh:
         json.dump(vars(args) | {"n_links": panel.L, "n_steps": panel.T,
@@ -549,15 +551,26 @@ def _execute(args, out: Path):
               f"persistence (<1 beats it) =====")
         rw = ratio.pivot_table(index=["model", "tier"], columns="horizon_name",
                                values=["logv_ratio", "median_ratio", "geomean_ratio"])
-        horder = [h for h in ["5min", "15min", "30min", "1h", "day", "week"]
+        horder = [h for h in config.HORIZONS          # step order, incl. 8h
                   if h in ratio["horizon_name"].unique()]
         rw = rw.reindex(columns=pd.MultiIndex.from_product(
             [["logv_ratio", "median_ratio", "geomean_ratio"], horder]))
         print(rw.round(3).to_string())
+    if not wape.empty:
+        print("\n===== WAPE = sum|e|/sum|y| (%): pooled over links / median per-link "
+              "=====")
+        horder = [h for h in config.HORIZONS if h in wape["horizon_name"].unique()]
+        ww = wape.pivot_table(index=["model", "tier"], columns="horizon_name",
+                              values=["pooled_wape", "median_wape"])
+        ww = ww.reindex(columns=pd.MultiIndex.from_product(
+            [["pooled_wape", "median_wape"], horder]))
+        print(ww.round(1).to_string())
     if not peaks.empty:
-        print("\n===== peaks: top-decile actuals per link (bias% / underpred rate) =====")
+        print("\n===== peaks: top-decile actuals per link "
+              "(bias% / underpred rate / WAPE%) =====")
         pw = peaks.assign(cell=peaks.peak_bias_pct.round(1).astype(str) + "% / " +
-                          (peaks.peak_underpred_rate * 100).round(0).astype(int).astype(str) + "%")
+                          (peaks.peak_underpred_rate * 100).round(0).astype(int).astype(str) + "% / " +
+                          peaks.peak_wape.round(1).astype(str) + "%")
         print(pw.pivot_table(index=["model", "tier"], columns="horizon_name",
                              values="cell", aggfunc="first").to_string())
 
