@@ -13,22 +13,16 @@ prefix and any trailing digits, then matches the map code or its label alias.
 """
 
 import json
-import os
 import re
 from pathlib import Path
 
+import _source as src
+
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[1]
-# Filesystem mirror of the Cricket export. These builders stream CSVs with the stdlib
-# `csv` module and are **not** S3-native (unlike code/dataset/, which reads the bucket
-# directly) — point GR_LOCAL_ROOT at a mirror, or at code/dataset's object cache
-# (~/.cache/green-routing/s3/switchlan-load-timeseries) once it has been warmed.
-SW = Path(os.environ.get("GR_LOCAL_ROOT", "/media/yuyqin/share/switch"))
-_RESEARCH_TOPO = ROOT / "network-energy-efficiency-research" / "switch-network-topology" / "switch-network-topology.txt"
-# Fall back to the copy committed in code/dataset/ when the research checkout is
-# absent (cloud boxes); the topology is not in the bucket.
-TOPO = _RESEARCH_TOPO if _RESEARCH_TOPO.exists() else (
-    HERE.parent / "code" / "dataset" / "switch-network-topology.txt")
+# Data source: the green_routing package's (S3 bucket + object cache, or a local
+# mirror); see _source.py. The topology is not in the bucket: the research
+# checkout's copy is used when present, else the one committed with the package.
+TOPO = src.topology_txt()
 
 nodes = json.load(open(HERE / "data" / "nodes.json"))
 
@@ -53,8 +47,7 @@ def iface_file(dev, iface):
     """(short-device-dir, filename) for an interface, if the CSV exists."""
     short = dev_short(dev)
     fname = iface.lower().replace("/", "_") + ".csv"
-    p = SW / "router-interfaces" / short / fname
-    return (short, fname) if p.exists() else None
+    return (short, fname) if src.exists(f"router-interfaces/{short}/{fname}") else None
 
 
 def parse_topology():
@@ -91,19 +84,30 @@ def main():
 
     # node devices: routers + PSUs per map node
     node_dev = {code: {"routers": [], "psus": []} for code in nodes}
-    for f in sorted(os.listdir(SW / "routers")):
+    for f in src.names("routers"):
         if not f.endswith(".csv"):
             continue
         code = dev_to_node(f[:-4])
         if code in node_dev:
             node_dev[code]["routers"].append(f)
-    for f in sorted(os.listdir(SW / "router-power")):
+    for f in src.names("router-power"):
         if not f.endswith(".csv"):
             continue
         base = re.sub(r"_psu\d+$", "", f[:-4])
         code = dev_to_node(base)
         if code in node_dev:
             node_dev[code]["psus"].append(f)
+
+    n_with_iface = sum(1 for k in links for m in links[k]["members"] if m.get("file"))
+    if n_with_iface == 0:
+        # The committed fallback topology (rebuilt from this viewer's own JSON) has no
+        # real interface names, so nothing maps to a traffic CSV. Writing would wipe
+        # the working links.json — keep it and say what is needed instead.
+        raise SystemExit(
+            f"no topology link resolved to an interface CSV (topology: {TOPO}). "
+            "That happens with the fallback topology file; rebuild data/links.json only "
+            "with the network-energy-efficiency-research checkout present "
+            "(GR_RESEARCH_ROOT). Keeping the existing data/*.json.")
 
     with open(HERE / "data" / "links.json", "w") as fp:
         json.dump({
@@ -113,7 +117,6 @@ def main():
     with open(HERE / "data" / "node_devices.json", "w") as fp:
         json.dump(node_dev, fp, indent=2)
 
-    n_with_iface = sum(1 for k in links for m in links[k]["members"] if m.get("file"))
     print(f"drawable links: {len(links)}  (physical members with a CSV: {n_with_iface})")
     print("links missing any interface CSV:",
           [links[k]["id"] for k in sorted(links)

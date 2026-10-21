@@ -16,4 +16,8 @@ web/data/frames/
 # OS / editor cruft
 .DS_Store
 *.swp
-web_pred/.viewer_password
+
+# Local configuration and tool state
+.env
+.claude/settings.local.json
+.pytest_cache/

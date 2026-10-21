@@ -26,12 +26,12 @@ from array import array
 from datetime import datetime, timezone
 from pathlib import Path
 
+import _source as src
+
 HERE = Path(__file__).resolve().parent
-# Filesystem mirror of the Cricket export. These builders stream CSVs with the stdlib
-# `csv` module and are **not** S3-native (unlike code/dataset/, which reads the bucket
-# directly) — point GR_LOCAL_ROOT at a mirror, or at code/dataset's object cache
-# (~/.cache/green-routing/s3/switchlan-load-timeseries) once it has been warmed.
-SW = Path(os.environ.get("GR_LOCAL_ROOT", "/media/yuyqin/share/switch"))
+# Data source: the green_routing package's (S3 bucket, each CSV downloaded once into
+# the object cache, or a local mirror); see _source.py. Files are then streamed with
+# the stdlib csv module.
 FRAMES = HERE / "data" / "frames"
 STEP = 300
 NAN = float("nan")
@@ -157,9 +157,10 @@ def ingest_links():
         for m in link["members"]:
             if not m.get("file"):
                 continue
-            path = SW / "router-interfaces" / m["dir"] / m["file"]
-            if not path.exists():
+            rel = f"router-interfaces/{m['dir']}/{m['file']}"
+            if not src.exists(rel):
                 continue
+            path = src.local_path(rel)
             for ts, vals in read_series(path, ["ifHCInOctets", "ifHCOutOctets"]):
                 mo = month_for(ts)
                 if mo is None:
@@ -204,9 +205,9 @@ def ingest_nodes():
         for rf in dev["routers"]:
             if "-test" in rf:
                 continue
-            path = SW / "routers" / rf
-            if not path.exists():
+            if not src.exists(f"routers/{rf}"):
                 continue
+            path = src.local_path(f"routers/{rf}")
             with open(path, newline="") as f:
                 header = next(csv.reader(f), None)
             if not header:
@@ -235,9 +236,9 @@ def ingest_nodes():
                     add_max(mo.node_temp, code, mo, i, max(tvals))
         # power from router-power/ (U*I over PSUs)
         for pf in dev["psus"]:
-            path = SW / "router-power" / pf
-            if not path.exists():
+            if not src.exists(f"router-power/{pf}"):
                 continue
+            path = src.local_path(f"router-power/{pf}")
             for ts, vals in read_series(path, ["Cisco_PSU_U", "Cisco_PSU_I"]):
                 u, cur = vals.get("Cisco_PSU_U"), vals.get("Cisco_PSU_I")
                 if u is None or cur is None:
@@ -290,6 +291,7 @@ def write_months():
 
 
 def main():
+    print(f"source: {src.describe()}", flush=True)
     print("ingesting links...", flush=True)
     ingest_links()
     print("ingesting nodes...", flush=True)

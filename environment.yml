@@ -1,0 +1,31 @@
+# Conda environment for Green Routing — the versions the published results were made
+# with (reference machine, 2026-10). Create and finish it with:
+#
+#   conda env create -f environment.yml
+#   conda activate green
+#   pip install torch --index-url https://download.pytorch.org/whl/cu130   # see below
+#   pip install -e ".[dev]"
+#
+# PyTorch is installed with pip because the right build depends on the GPU driver:
+# pick the CUDA variant your driver supports at https://pytorch.org/get-started/
+# (the reference run used torch 2.13.0+cu130 with driver 580; on a CPU-only box use
+# --index-url https://download.pytorch.org/whl/cpu — tiers 4-6 are then very slow).
+#
+# pandas is pinned below 3: the pipeline was never validated against pandas 3's
+# copy-on-write and string-dtype changes (Anaconda's base env ships pandas 3).
+name: green
+channels:
+  - defaults
+dependencies:
+  - python=3.11
+  - pandas=2.2.3
+  - numpy=2.1.3
+  - scipy=1.17
+  - scikit-learn=1.9
+  - statsmodels=0.14
+  - matplotlib=3.11
+  - boto3
+  - networkx
+  - tqdm
+  - pytest
+  - pip

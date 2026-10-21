@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "green-routing"
+version = "0.3.0"
+description = "Per-link traffic forecasting on the SWITCH research backbone, for carbon accounting and green routing"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Yuyang Qin" }]
+# Tested versions are pinned in environment.yml; pandas 3 changes copy/str semantics
+# the pipeline was never validated against, hence the upper bound.
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1,<3",
+    "scipy>=1.11",
+    "scikit-learn>=1.4",
+    "statsmodels>=0.14",
+    "matplotlib>=3.8",
+    "boto3>=1.28",
+]
+
+[project.optional-dependencies]
+# Tiers 4-6 (GRU/TCN/DLinear/PatchTST/Graph WaveNet). Install the CUDA build that
+# matches your driver from https://pytorch.org rather than the default wheel.
+deep = ["torch>=2.1"]
+dev = ["pytest>=8"]
+# tools/topology: the hero map (networkx) and the old Dash prototype (dash, plotly)
+topology = ["networkx>=3", "dash>=2.14", "plotly>=5"]
+
+[project.scripts]
+gr-data = "green_routing.dataset.__main__:main"
+gr-build-tensor = "green_routing.dataset.build:main"
+gr-benchmark = "green_routing.prediction.run:main"
+gr-dense = "green_routing.prediction.dense:main"
+gr-zoo = "green_routing.prediction.zoo:main"
+gr-viewer = "green_routing.viewer.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"green_routing.viewer" = ["static/*"]
+"green_routing.dataset" = ["switch-network-topology.txt"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "e2e: end-to-end pipeline on synthetic data (a few minutes on CPU)",
+    "live: talks to the real S3 bucket; skipped without credentials",
+]

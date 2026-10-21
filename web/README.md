@@ -1,88 +1,11 @@
-# SWITCHlan Backbone Viewer — traffic & telemetry
+# Topology viewer
 
-Interactive viewer that overlays the SWITCH Cricket monitoring dataset on the
-optical backbone map, at any point in time. Links show traffic / utilization;
-nodes show CPU / power / temperature.
-
-## Run
+The SWITCH backbone map with traffic and router telemetry over time. Build the frames
+from the data (S3 or a local mirror, through the `green_routing` package) and serve:
 
 ```bash
-cd web
-python3 server.py            # http://localhost:8137/   (default port 8137)
+python build_frames.py      # -> data/frames/<YYYYMM>.json
+python server.py            # http://localhost:8137
 ```
 
-Open <http://localhost:8137/>.
-
-- **Layers panel (top-left):** toggle **Links** (metric: Utilization % or Traffic Mbps)
-  and **Nodes** (metric: CPU %, Power W, or Temperature °C).
-- **Line width = link capacity** (1G → 200G; see the width key in the panel).
-- **Time:** slider, datetime picker, or ▶ play.
-- **Window + aggregation:** pick a window (5 min instant … 1 month) and an
-  aggregate (mean / max / min / median). The map then colours each link/node by
-  that aggregate over the window; ▶ play advances by the window.
-- **Hover inspector (right panel):** hover a link or node to *preview* its
-  **traffic-vs-time plot** over the window, a min/mean/median/max table, and a
-  one-line description (peak value + time, % of capacity). **Click to pin** it
-  (highlighted with a glow) so it stays while you hover others; click again to
-  unpin. The map recolours with a smooth transition rather than snapping.
-- Scroll = zoom, drag = pan.
-- URL params for sharing a view:
-  `?links=1&link=util&nodes=1&node=cpu&w=604800&agg=max&t=<unix>&inspect=BA-EZ`.
-
-## Data source
-
-`/media/yuyqin/share/switch` — the parsed Cricket RRD export (see
-[../dataset.md](../../dataset.md)). 5-minute samples, UTC.
-
-Subtrees used:
-- `router-interfaces/` → link traffic (ifHCInOctets/OutOctets → Mbps)
-- `routers/` → node CPU % and temperature
-- `router-power/` → node power (Cisco_PSU_U × Cisco_PSU_I / 1e6 → W, summed over PSUs)
-
-Every CSV has the **two-era column quirk** (early rows in `ds0..dsN`, later rows
-in the named columns); the preprocessor coalesces them by position.
-
-## Pipeline
-
-```bash
-python3 build_topology.py   # -> data/links.json, data/node_devices.json
-python3 build_frames.py     # -> data/frames/<YYYYMM>.json  (slow: reads ~250 CSVs, ~3 min)
-python3 server.py           # serve
-```
-
-1. **`build_topology.py`** parses `switch-network-topology.txt`
-   (`swiag2 HundredGigE0/0/0/4 <=> swira4 …` = link AG↔RA), resolves each device
-   to a map node (strip `swi`, trailing digits → uppercase, with the label
-   aliases in `nodes.json`), and records **42 drawable node-pairs** with their
-   **capacity** (summed member speeds) and the interface CSV(s) that carry their
-   traffic. It also lists the router/PSU CSVs per node.
-2. **`build_frames.py`** reads only the needed CSVs, coalesces ds/named, converts
-   units, and resamples onto each month's 5-minute grid → compact
-   `data/frames/<YYYYMM>.json` (link in/out Mbps; node cpu/pw/temp).
-3. **`server.py`** serves the static site + `/api/frame?t=<unix>` (nearest slot,
-   month files cached in memory) and `/api/meta` (links, capacities, node
-   positions, span).
-
-Node positions come from `extract_nodes.py` → `data/nodes.json` (label
-coordinates read from the PDF via `pdftotext -bbox`); the base map is
-`assets/switchlan.svg` (`pdftocairo -svg` of the optical PDF).
-
-## API
-
-| endpoint | returns |
-|---|---|
-| `GET /api/meta` | links (with `capacity_bps`, endpoints), node positions, months, time span, units |
-| `GET /api/frame?t=<unix>` | instant slot: `{ t, slot_ts, links:{id:{in,out}}, nodes:{code:{cpu,pw,temp}} }` |
-| `GET /api/agg?t=&w=&agg=` | aggregate (mean/max/min/median) of every link/node metric over `[t, t+w)` |
-| `GET /api/series?kind=link\|node&id=&t=&w=&metric=` | downsampled time series + `{min,mean,median,max,peak_t}` stats for one link/node |
-
-## Coverage & caveats
-
-- Time span **Dec 2023 → mid-2026**, 5-min resolution (varies per series).
-- **42 links** drawable; `WI` and `CR` have no resolved topology link.
-- **Power is sparse:** only a subset of devices report PSU U/I, mostly for a
-  limited window — expect many grey (no-data) node markers on the Power layer.
-- Temperature is available for the router platforms that expose `tmp*`/temp
-  datasources (raw values >120 are treated as ×10 and divided).
-- Overlay links are straight lines between node centres (not the drawn cable
-  routing); values are exact, geometry is simplified.
+Full documentation: [docs/viewers.md](../docs/viewers.md#topology-viewer-web).
