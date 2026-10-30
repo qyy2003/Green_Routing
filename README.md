@@ -6,7 +6,9 @@
 
 Per-link traffic forecasting on real **SWITCHlan** telemetry: 5-minute SNMP data from
 ~200 routers, a ladder of models from `y(t+h) = y(t)` to transformers and graph networks,
-all scored on identical rolling origins, plus viewers that replay it link by link.
+all scored on identical rolling origins, plus viewers that replay it link by link. On top,
+a carbon-accounting pipeline that bills the network's emissions to every customer and
+external network, hour by hour, settled and a day ahead.
 
 <p>
 <img alt="Python" src="https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white">
@@ -36,6 +38,11 @@ one global model per tier cuts the typical link's error against "repeat the last
 **~20 % at 1 hour, ~50 % at 8 hours, ~25 % at 1 day and ~15 % at 1 week**
 ([results](docs/results.md)).
 
+Fed into the carbon bills of the same 111 days (2.66 t CO₂ over 306 parties), the best
+traffic model misses the daily bill by **12 %**, half of persistence's 25 %; with a
+day-ahead forecast of the grid's carbon intensity the miss grows to **31 %**, most of it
+from the grid forecast ([carbon.md](docs/carbon.md)).
+
 ## What you can do with it
 
 | | Command | Docs |
@@ -48,6 +55,8 @@ one global model per tier cuts the typical link's error against "repeat the last
 | Reproduce the published results and cross-check a new machine | `recipes/year/run.sh all` | [reproduce.md](docs/reproduce.md) |
 | Keep good models with their provenance | `gr-zoo add / pack` | [forecasting.md](docs/forecasting.md#model-zoo-gr-zoo) |
 | Build tensors + graph + splits for your own models | `gr-build-tensor` | [data.md](docs/data.md#node-tensors-for-other-models-gr-build-tensor) |
+| Find link ends, router tiers and interface roles (traffic matching + reverse DNS) | `gr-network all` | [carbon.md](docs/carbon.md#the-pipeline) |
+| Energy inventory, grid factors, per-party carbon bills settled and a day ahead | `gr-carbon …` · `recipes/carbon/run.sh all` | [carbon.md](docs/carbon.md) |
 
 ## Quickstart
 
@@ -129,12 +138,15 @@ Green_Routing/
 │   ├── dataset/        S3/local data access, era coalescing, cohorts, tensors, splits
 │   ├── prediction/     models, harness, dense logs, metrics, zoo, the gr-benchmark CLI
 │   ├── viewer/         gr-viewer (server + static page)
-│   └── analysis/       frequency-domain study of backbone traffic
-├── recipes/            reproduce the year benchmark and the experiments (+ verify)
+│   ├── analysis/       frequency-domain study of backbone traffic
+│   ├── network/        link ends, router tiers, interface roles, reverse DNS (gr-network)
+│   └── carbon/         inventory, grid factors, allocation, carbon bills (gr-carbon)
+├── recipes/            reproduce the year benchmark, the experiments and the carbon
+│                       bills (+ verify)
 ├── web/                topology viewer (backbone map over time)
 ├── tests/              unit + end-to-end smoke tests (synthetic data) + live S3 check
-├── docs/               setup · data · forecasting · reproduce · viewers · results ·
-│                       roadmap · reports/ (the two HTML reports)
+├── docs/               setup · data · forecasting · carbon · reproduce · viewers ·
+│                       results · roadmap · reports/ (the two HTML reports)
 ├── tools/              topology map scripts, reference copies of SWITCH's jobs
 ├── AGENTS.md           knowledge base for picking the work up (people and agents)
 ├── environment.yml     the conda environment (pinned)
@@ -148,7 +160,8 @@ Green_Routing/
 | [docs/setup.md](docs/setup.md) | machine, conda environment, PyTorch, S3 credentials, troubleshooting |
 | [docs/data.md](docs/data.md) | the bucket, the CSV format, the dataset package, panels |
 | [docs/forecasting.md](docs/forecasting.md) | models, training, harness, `gr-benchmark` options, metrics, dense logs, zoo |
-| [docs/reproduce.md](docs/reproduce.md) | the recipes, timings, verifying a new machine |
+| [docs/carbon.md](docs/carbon.md) | carbon bills: method, pipeline, inputs and their provenance, outputs, results, limits |
+| [docs/reproduce.md](docs/reproduce.md) | the recipes, timings, verifying a new machine (forecasts and carbon bills) |
 | [docs/viewers.md](docs/viewers.md) | prediction viewer and topology viewer |
 | [docs/results.md](docs/results.md) | all current results |
 | [docs/roadmap.md](docs/roadmap.md) | the design behind the model ladder and the evaluation |

@@ -5,14 +5,15 @@ from the code: the state of the work, the facts the numbers rest on, the decisio
 and the traps already fallen into. The user-facing docs are in `docs/`; this file links to
 them rather than repeating them.
 
-Last updated: 2026-10-21.
+Last updated: 2026-10-30.
 
 ## 1. State of the project
 
-- **Goal**: forecast traffic on every link of the SWITCH research backbone (5-minute
-  SNMP data), 15 minutes to a week ahead, for per-user carbon accounting and
-  carbon-aware ("green") routing. The core question is how much each tier of model
-  complexity buys over strong naive baselines, measured honestly.
+- **Goal**: forecast the carbon bill of every user/stakeholder of the SWITCH research
+  backbone: traffic on every link (5-minute SNMP data, 15 minutes to a week ahead) and the
+  grid's carbon intensity, combined into hourly per-party bills, settled and a day ahead;
+  later carbon-aware ("green") routing. The forecasting question is how much each tier of
+  model complexity buys over strong naive baselines, measured honestly.
 - **Done**:
   - Year-scale benchmark (534 links, 2025-07 → 2026-07, 111-day test) reproduced and
     verified against the original report; persistence matches it to the Mbit/s.
@@ -23,9 +24,17 @@ Last updated: 2026-10-21.
   - Repository reorganised into an installable package (`src/green_routing`), command-line
     tools, scripted recipes with verification, docs, and tests (unit + end-to-end on
     synthetic data). All tests pass.
-- **Next expected task**: rerun the year benchmark on a new machine and cross-verify it
-  (`recipes/year/run.sh all`, then read the `verify` output — see §6 and
-  [docs/reproduce.md](docs/reproduce.md)).
+  - Carbon accounting (2026-10-29/30, [docs/carbon.md](docs/carbon.md)): link roles from
+    traffic matching + SWITCH reverse DNS (`green_routing.network`, `gr-network`); energy
+    inventory, Electricity Maps grid factors, access/backbone allocation to doors and
+    parties, settled and day-ahead forecast bills over the year test block
+    (`green_routing.carbon`, `gr-carbon`); `recipes/carbon` with report and `verify`
+    (23/23 PASS). Moved from scripts in `artifacts/carbon_screening_2025` and
+    `artifacts/link_roles`, which stay as the frozen reference it was checked against.
+- **Next expected tasks**: improve the day-ahead grid-factor forecast (it causes most of
+  the bill error: log Electricity Maps' own forecast daily and score it); get the 31
+  routers missing from the export back from SWITCH. The year benchmark was cross-verified
+  on a second machine (135 PASS / 2 WARN).
 
 ## 2. Working agreements with the owner
 
@@ -35,7 +44,10 @@ Last updated: 2026-10-21.
 - Claims about results must be checked against the data before they are reported; say
   what was not verified. Negative results get reported like positive ones.
 - Reports for the owner have been published as HTML pages (claude.ai artifacts); copies
-  of both reports are in `docs/reports/`.
+  of the two forecasting reports are in `docs/reports/`. The carbon-bills report
+  (https://claude.ai/artifact/7QE4r5LaNaHAnvXNrzz6bk) is deliberately **not** copied there:
+  the repository is public, and it carries operator detail and Electricity-Maps-derived
+  aggregates. Keep licensed grid data, the API key and `artifacts/reference/` out of git.
 
 ## 3. Where things are
 
@@ -44,6 +56,10 @@ Last updated: 2026-10-21.
 | `src/green_routing/dataset/` | data access: `config` (every env setting), `storage` (S3 + cache), `loaders` (era coalescing), `cohort`, `tensor`, `splits`, `topology` |
 | `src/green_routing/prediction/` | `run.py` (`gr-benchmark`, model assembly, `apply_overrides`), `harness.py` (backtest, tables), `models_*.py`, `torch_common.py` (trainer), `dense.py` (`gr-dense`), `metrics.py`, `data.py` (panels), `zoo.py`, `calendar_features.py` |
 | `src/green_routing/viewer/` | `gr-viewer` (server.py + static/) |
+| `src/green_routing/network/` | `gr-network`: `traffic` (one pass over every interface CSV), `matching` (link ends, bundles), `roles` (tiers, roles), `dns` (reverse-DNS sweep and far ends) |
+| `src/green_routing/carbon/` | `gr-carbon`: `assumptions` (every assumed number), `inventory`, `grid` (Electricity Maps, day-ahead rules), `allocation` (pools, doors, parties), `bills` |
+| `recipes/carbon/` | `run.sh`, `build_report.py` + `report_template.html`, `verify.py` + `expected.json` |
+| `artifacts/reference/` | curated inputs not in the bucket (sites, external links, DNS snapshots, Zoo sample); gitignored, copy between machines |
 | `src/green_routing/paths.py` | repo root, `GR_ARTIFACTS_DIR` |
 | `recipes/year/` | flags of the year run, `run.sh`, `verify.py`, `expected.json`, `make_expected.py` |
 | `recipes/window_smoothing/` | the experiments: `run.sh`, `analyze.py`, `cost.py`, `build_report.py`, `report_template.html` |
@@ -62,6 +78,7 @@ Last updated: 2026-10-21.
 | PyTorch | 2.13.0+cu130, pip-installed (the conda channel for torch is deprecated) |
 | Package | `pip install -e ".[dev]"` → `gr-data`, `gr-benchmark`, `gr-dense`, `gr-zoo`, `gr-viewer`, `gr-build-tensor` |
 | Network | public IP (kept out of this public repo); prediction viewer on :8138 (Basic auth, password in `~/.config/green-routing/viewer_password`); topology viewer :8137 |
+| Electricity Maps | academic account; key as `export EM_API=...` in `~/.bashrc` (never print it, never commit it); hourly history max 10 days per request |
 
 Anaconda's base env ships pandas 3; the pipeline was never validated on it, hence the pin.
 
@@ -79,6 +96,9 @@ Anaconda's base env ships pandas 3; the pipeline was never validated on it, henc
 | Sampled origins | 160, stride 72 subsampled to ~18 h spacing → only **4 times of day** (≈ 02/08/14/20 h local). Dense logs fix this. |
 | Holidays | `calendar_features.HOLIDAYS` covers 2025-06-01 → 2026-08-31; `--calendar` refuses dates outside. Extend it before using newer windows. |
 | Topology | not in the bucket; the committed `switch-network-topology.txt` is a device-level reconstruction (fine for the graph model, no interface names). The real one is in the research checkout (`GR_RESEARCH_ROOT`). |
+| Power | `router-power/` (PSU) **ends 2024-11-01**, four schemas (`config.PSU_SCHEMAS`: Pin W, Pin_mW, U×I at 12 V, Arista U×I ×1e-4); `eci/apollo/` shelves live; `routers/` headers identify the router family. Router models are not in the bucket: matched from the Network Power Zoo sample (94/114). |
+| Missing routers | 31 routers alive in reverse DNS are absent from the SNMP export (ix3 since 2024-06, ce1 2025-01, ba3 2025-05, ez31, si2, ge3, ez11, bs1, …); ix3/ce1/ba3 hold most external links. SWITCH was asked to re-export them. |
+| Reverse DNS | SWITCH names router ports (`swiEZ2-400GE-0-0-0-3` = `ez2/fourhundredgige0_0_0_3`); link ends share a /31, a named /30 or a /64. Snapshot 2026-10-30 in `artifacts/reference/dns/`. |
 
 ## 6. Numbers to expect
 
@@ -101,6 +121,12 @@ Per-link median MAE ratio vs persistence (lower = better). Full tables:
   (92 min), PatchTST 71 (69 min), GRU 46 (40 min), DLinear 49 (18 min).
 - Dense logs (fp32): TCN ~40 min, GRU ~14, PatchTST ~14, DLinear < 1, GBDT minutes (CPU).
 
+Carbon bills (`recipes/carbon/expected.json`, [docs/carbon.md](docs/carbon.md#results-reference-run-2026-10-30)):
+2025 inventory 192 routers 254.6 MWh, optical 212.9 MWh, site 738.7 MWh, Scope 2 direct
+15.7 t; pools access 210 / backbone 529 MWh; 414 doors, 306 parties. Test block: 77.9 kW
+at the sites, settled 2.66 t; daily bill WAPE PatchTST 11.7 % (actual grid) / 31.4 %
+(grid forecast), persistence 24.5 % / 39.4 %, grid forecast alone 28.0 %.
+
 Experiments (dense, paired per link, 534 links; [report](docs/reports/month-window-smoothing.html)):
 
 - 1-month window at 1 day: GBDT −2.6 %, DLinear −3.4 %, PatchTST −2.8 %, TCN −4.7 %
@@ -120,6 +146,9 @@ Experiments (dense, paired per link, 534 links; [report](docs/reports/month-wind
 | 2026-10-02 | Experiments: month window (with controls: batch pinned at 85, TCN depth uncapped to 12, PatchTST patches 64/32, GBDT month lags) and smoothing (post-hoc MA, smoothed-target training). Month TCN at a matched 20-epoch budget (9× step cost). |
 | 2026-10-21 | Reorganised for other machines: package `src/green_routing` (was `code/`), CLI tools, `recipes/` (were scripts in gitignored `artifacts/`), `expected.json` + `verify.py`, docs, tests. Default bucket fixed. GBDT `predict_batch`. `web/` builders read S3. Viewer password moved to `~/.config/green-routing/`. |
 
+| 2026-10-29 | Carbon screening for 2025 (scripts in `artifacts/carbon_screening_2025`): PSU survey, Zoo model match, sites from DNS LOC, Electricity Maps grid. Link roles from traffic matching (`artifacts/link_roles`). |
+| 2026-10-30 | Reverse-DNS link map, hidden routers as doors, allocation rule agreed with the owner, forecast bills + report. Then moved into `green_routing.network` / `green_routing.carbon` + `recipes/carbon`; verified against the scripts (exact for roles, DNS, grid; three bugs fixed, +1.4 % on the bill). |
+
 Design decisions worth keeping:
 
 - **Headline metric = per-link median ratio vs persistence** (pooled errors are dominated
@@ -129,6 +158,14 @@ Design decisions worth keeping:
   `run.apply_overrides`, so `gr-dense` can rebuild any run's models from `config.json`.
 - Comparisons between variants are **paired per link on common targets**
   (`gr-dense metrics --common`).
+- **Carbon allocation** (agreed with the owner, 2026-10-30): access pool by allocated
+  bandwidth (port speed until contracted rates exist), backbone pool by bytes; customers
+  *and* external networks are billed, each byte half at its entry and half at its exit
+  door; trunks into routers missing from the export are virtual doors. Emissions (power ×
+  zone factor), not energy, are pooled. Energy is static: router power is < 1 %
+  traffic-dependent on 113 of 116 metered routers.
+- **Day-ahead bill** = block logs at the `day` horizon + a grid rule, issued 00:00 UTC; the
+  rolling logs would flatter it.
 
 ## 8. Pitfalls already hit
 
@@ -169,6 +206,25 @@ Design decisions worth keeping:
     network at all. `gr-data check` used to pass that way with no credentials; it now
     makes one live request. Likewise a cached `panel_<hash>.npz` short-circuits the
     bucket entirely (which is what pinning the data relies on).
+14. **PSU schemas.** `router-power/` has four column schemas; the old loader assumed U×I
+    only, which gives nonsense for the others (and the Arista scale is 1e-4). Use
+    `loaders.psu_power`. The topology viewer still reads U×I only.
+15. **Units in the inventory.** The Zoo sample is bytes/s like our export (a ×300 slip made
+    matching fail); W × 8.76 is kWh per year, not MWh (÷1e3).
+16. **Shell scans of CSV tails lose data**: a `tail -c | grep` for the last data row
+    misses files that end in empty rows (it dropped `swislf2` from the 2025 inventory).
+    Use `read_series` (the network extract records `first_data`/`last_data`).
+17. **Ad-hoc post-filters get lost.** The first link-role run filtered bundles with
+    `rel_err < 0.05` in a one-liner that never made it into the script; rerunning the
+    script gave 44 bundles instead of 32. Now `matching.MAX_BUNDLE_ERR`. Put every filter
+    in code.
+18. **The listing re-validates the cache.** `GR_S3_VALIDATE=0` only skips HEAD requests;
+    objects covered by a fresh listing are still re-downloaded when their ETag changed. To
+    rerun on a frozen cache, point a local source at it: `GR_DATA_SOURCE=local
+    GR_LOCAL_ROOT=~/.cache/green-routing/s3/network-energy-efficiency-research`.
+19. **Licensed and private data.** Electricity Maps (academic) forbids redistribution:
+    `artifacts/carbon/grid/`, `bills/hourly_network.csv` and any hourly grid series stay
+    out of git and out of published pages. The Zoo match de-anonymises a public sample.
 
 ## 9. Conventions for changes
 
@@ -178,6 +234,8 @@ Design decisions worth keeping:
   plus an e2e test in `tests/test_pipeline.py`.
 - Before claiming an improvement: dense logs, `metrics --common`, paired per-link test
   (`recipes/window_smoothing/analyze.py` shows how), and say what was *not* controlled.
+- Carbon: every assumed number goes into `carbon/assumptions.py`; after a change, rerun
+  `recipes/carbon/run.sh all` and read `verify` (re-snapshot only from a trusted run).
 - Keep `docs/` and this file current: results → `docs/results.md`; facts and pitfalls →
   here.
 - Run `pytest -m "not e2e"` (seconds) after any change, `pytest -m e2e` (~4 min) before
@@ -196,7 +254,13 @@ Design decisions worth keeping:
 - **Per-link fine-tuning** for the ~11 % of links the global model loses on
   (`--online` machinery exists; compute-bound).
 - **Foundation models** (TimesFM, Chronos) zero-shot on the same origins.
-- **Energy model** (PSU / shelf power is loaded) and the actual green-routing optimiser;
-  **privacy** of operator data ([docs/ideas.md](docs/ideas.md)).
+- **Grid-factor forecast**: the bill's main error (28 % of 31 %). Log Electricity Maps'
+  forecast endpoint daily and score it against `carbon.grid.RULES`; consider weather and
+  imports.
+- **Data from SWITCH**: the 31 missing routers (back-filled from 2025-01), PSU export,
+  `ifAlias` and contracted bandwidths, measured site PUE.
+- **Winter window** for the bills (needs a newer forecasting test block).
+- The actual green-routing optimiser (the marginal signal inside SWITCHlan is ~1e-6
+  g/GB); **privacy** of operator data ([docs/ideas.md](docs/ideas.md)).
 - **Newer windows**: extend the holiday table; re-snapshot `expected.json` only from a
   trusted run.

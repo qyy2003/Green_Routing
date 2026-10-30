@@ -5,6 +5,8 @@ zoo, the viewer's default run) resolves them through here, so the checkout can s
 anywhere and the outputs can live on another disk:
 
     GR_ARTIFACTS_DIR   where run outputs go          (default: <repo>/artifacts)
+    GR_REFERENCE_DIR   curated inputs that are not in the bucket: sites, external
+                       links, DNS snapshots, the Zoo sample (default: <artifacts>/reference)
 """
 from __future__ import annotations
 
@@ -27,3 +29,10 @@ def artifacts_dir() -> Path:
 
 
 ARTIFACTS_DIR = artifacts_dir()
+
+
+def reference_dir() -> Path:
+    """Curated inputs of the network and carbon pipelines: ``$GR_REFERENCE_DIR`` or
+    ``<artifacts>/reference``. Kept out of the repository (see docs/carbon.md)."""
+    raw = os.environ.get("GR_REFERENCE_DIR", "").strip()
+    return Path(raw).expanduser().resolve() if raw else artifacts_dir() / "reference"

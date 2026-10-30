@@ -1,13 +1,14 @@
 # Reproducing the results on a new machine
 
-Two studies are scripted end to end in [`recipes/`](../recipes/):
+Three studies are scripted end to end in [`recipes/`](../recipes/):
 
 | Recipe | Reproduces | Time on an L40S | Disk |
 |---|---|---|---|
 | [`recipes/year/`](../recipes/year/) | the year-scale benchmark behind the carbon-accounting report ([`docs/reports/carbon-accounting-report.html`](reports/carbon-accounting-report.html)) | ~4.5 h | ~8 GB + 20 GB data cache |
 | [`recipes/window_smoothing/`](../recipes/window_smoothing/) | the month-window and smoothing experiments ([`docs/reports/month-window-smoothing.html`](reports/month-window-smoothing.html)) | ~13 h (needs the year run) | ~15 GB |
+| [`recipes/carbon/`](../recipes/carbon/) | the carbon bills: inventory, allocation, settled and day-ahead bills, their report ([carbon.md](carbon.md)) | ~3 min with a warm data cache (needs the year run's dense logs) | ~1 GB + ~4 GB more data cache |
 
-Both write under `$GR_ARTIFACTS_DIR` (default `artifacts/`), skip finished steps and
+All three write under `$GR_ARTIFACTS_DIR` (default `artifacts/`), skip finished steps and
 resume interrupted ones, so a step can simply be run again.
 
 ## Before you start
@@ -156,6 +157,36 @@ Post-smoothing ≤ 1 h at 8 h+ horizons: −0.2 … +0.3 %. Smoothed-target trai
 +1.5 … +8 %. These came from single runs; expect the same signs and similar sizes, not
 identical decimals.
 
+## The carbon bills
+
+```bash
+recipes/carbon/run.sh all        # network grid inventory dependence allocate bills report verify
+```
+
+Needs the year run's dense logs (`artifacts/pred_year/merged/dense`, block layout), the
+reference inputs in `$GR_REFERENCE_DIR` and either the Electricity Maps raw cache
+(`artifacts/carbon/grid/raw/`, copy it) or `EM_API` with `DOWNLOAD=1`
+([setup.md](setup.md#carbon-pipeline-extras)). The first run also downloads `router-power/`
+(0.5 GB) and `eci/apollo/` (3.6 GB) into the cache; `routers/` is read by header only.
+
+`verify` compares 23 numbers with [`recipes/carbon/expected.json`](../recipes/carbon/expected.json):
+counts exactly (interfaces, core routers, bundles, DNS far ends, routers in service, doors,
+parties, model doors, the best scenario), energies within 0.5–1 %, emissions within 2 %,
+bill errors within 0.5 pp.
+
+```text
+PASS  network.interfaces                                         2037  expected 2037 (tol 0)
+...
+PASS  bills.WAPE_daily[traffic actual + grid fc]              0.280011  expected 0.280011 (tol abs:0.005)
+23 PASS, 0 FAIL
+```
+
+A failure usually means the inputs moved, not the code: the bucket is rewritten daily
+(new routers, a re-export), the reverse-DNS snapshot is today's network, and Electricity
+Maps revises its estimates. A changed count of routers, doors or parties points at the
+first two; a shifted WAPE with unchanged counts at the grid data. `python
+recipes/carbon/verify.py --snapshot` rewrites `expected.json`, only from a run you trust.
+
 ## Moving results between machines
 
 Everything a run produced is in its directory; copy it whole:
@@ -164,6 +195,9 @@ Everything a run produced is in its directory; copy it whole:
 rsync -a --info=progress2 artifacts/pred_year/merged/ newbox:Green_Routing/artifacts/pred_year/merged/
 rsync -a artifacts/panel_19ea24bef019.npz newbox:Green_Routing/artifacts/   # the viewer needs the panel
 ```
+
+For the carbon bills copy `artifacts/reference/` and `artifacts/carbon/grid/raw/` too
+(both private: operator detail and licensed data).
 
 `dense/` is most of the size (~6 GB for the year models, ~15 GB more with the
 experiments). To ship a single model with its provenance, use the zoo

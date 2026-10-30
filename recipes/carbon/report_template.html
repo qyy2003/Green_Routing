@@ -1,0 +1,348 @@
+<title>SWITCHlan Forecast Carbon Bills</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Public+Sans:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (~70ch) with figures allowed to run wider; a technical report, not a landing page. */
+:root {
+  --bg: #f5f7f5; --surface: #ffffff; --ink: #17201c; --muted: #56635d; --rule: #d6ddd9; --accent: #1b6a50; --accent-soft: #e3efe9;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --ref: #8a948f;
+  --f-display: "Newsreader", Georgia, "Times New Roman", serif;
+  --f-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121614; --surface: #1a201d; --ink: #e6ebe8; --muted: #a2ada8; --rule: #2d3632; --accent: #5cc29b; --accent-soft: #1d2c25;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --ref: #7d8783; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #121614; --surface: #1a201d; --ink: #e6ebe8; --muted: #a2ada8; --rule: #2d3632; --accent: #5cc29b; --accent-soft: #1d2c25;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --ref: #7d8783; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font: 16px/1.6 var(--f-body); }
+.wrap { max-width: 980px; margin: 0 auto; padding-block: 40px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.col { max-width: 70ch; }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 600; line-height: 1.2; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2rem, 4.5vw, 2.8rem); }
+h2 { font-size: 1.6rem; margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--rule); }
+h3 { font-size: 1.2rem; margin-top: 28px; }
+p, ul, ol { margin: 12px 0 0; }
+li + li { margin-top: 6px; }
+a { color: var(--accent); }
+code, .mono { font-family: var(--f-mono); font-size: 0.86em; }
+.eyebrow { font: 500 0.78rem/1.4 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: 1.12rem; color: var(--ink); margin-top: 16px; }
+.meta { color: var(--muted); font-size: 0.9rem; margin-top: 10px; }
+.brief { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 18px 22px; margin-top: 28px; }
+.brief ol { padding-left: 1.2em; margin-top: 8px; }
+.brief b { font-variant-numeric: tabular-nums; }
+.tablewrap { overflow-x: auto; margin-top: 16px; }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--rule); }
+th { font: 600 0.78rem/1.3 var(--f-body); color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.choice { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; padding: 16px 0; border-bottom: 1px solid var(--rule); }
+.choice h3 { margin: 0; font-size: 1.1rem; }
+.choice .alt { color: var(--muted); font-size: 0.92rem; }
+.fig { margin-top: 22px; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 16px 12px; }
+.fig .cap { font-size: 0.88rem; color: var(--muted); margin-top: 8px; }
+.fig .ttl { font-weight: 600; font-size: 0.98rem; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.84rem; color: var(--muted); margin-top: 6px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.multi { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.multi > div { min-width: 0; }
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+svg text { font-family: var(--f-body); font-size: 11px; fill: var(--muted); }
+svg .lab { fill: var(--ink); font-size: 11.5px; }
+svg .axis { stroke: var(--rule); stroke-width: 1; }
+svg .grid { stroke: var(--rule); stroke-width: 1; stroke-dasharray: 2 3; }
+.k1 { fill: var(--s1); } .k2 { fill: var(--s2); } .k3 { fill: var(--s3); }
+.l1 { stroke: var(--s1); } .l2 { stroke: var(--s2); } .lref { stroke: var(--ref); }
+.box rect { fill: var(--surface); stroke: var(--rule); }
+.box.in rect { fill: var(--accent-soft); stroke: var(--accent); }
+.box.out rect { fill: var(--surface); stroke: var(--s1); stroke-width: 1.5; }
+.box text { fill: var(--ink); font-size: 12px; }
+.box .sub { fill: var(--muted); font-size: 10.5px; }
+.arrow { stroke: var(--muted); stroke-width: 1.3; fill: none; marker-end: url(#ah); }
+#tip { position: fixed; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--rule); border-radius: 5px; padding: 6px 9px; font-size: 0.82rem; box-shadow: 0 2px 10px rgb(0 0 0 / 0.12); z-index: 20; max-width: 280px; font-variant-numeric: tabular-nums; }
+.note { font-size: 0.9rem; color: var(--muted); }
+.formula { font-family: var(--f-mono); font-size: 0.86rem; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 12px 14px; overflow-x: auto; margin-top: 14px; white-space: pre; line-height: 1.7; }
+details { margin-top: 10px; } summary { cursor: pointer; color: var(--accent); font-size: 0.9rem; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+<header class="col">
+  <div class="eyebrow">Green Routing · carbon accounting with forecast traffic</div>
+  <h1>SWITCHlan forecast carbon bills</h1>
+  <p class="lede">Can SWITCH tell each customer and each peering partner, a day in advance, how much CO₂ its traffic will be billed? I joined the carbon accounting to the traffic forecasts and replayed the year benchmark's {{days}}-day test window ({{window_text}}), hour by hour. It works. The weak link is the grid-intensity forecast, not the traffic forecast.</p>
+  <p class="meta">Built {{built}} by <code>recipes/carbon</code> from the repository's data and public sources. Location-based, combustion-only (Scope 2) emissions throughout. A screening study, not an assured inventory.</p>
+</header>
+
+<section class="brief col" aria-label="In brief">
+  <div class="eyebrow">In brief</div>
+  <ol>
+    <li>Over the window, SWITCHlan's network equipment drew <b>{{kw_total}} kW</b> at the sites (access {{kw_acc}} kW, backbone {{kw_bb}} kW) and emitted <b>{{t_total}} t CO₂</b>. Spring and summer grid electricity in Switzerland is very clean, about {{I_mean}} g/kWh.</li>
+    <li>With the real grid factor, a day-ahead bill from the best traffic model ({{best_model}}) misses the settled daily bill by <b>{{e_best_a}}</b> WAPE, against {{e_pers_a}} for persistence.</li>
+    <li>With a day-ahead grid forecast ({{grid_rule}}), the miss grows to <b>{{e_best_f}}</b>. The grid forecast alone, with perfect traffic, causes <b>{{e_grid}}</b>. Better grid forecasts are worth more than better traffic models.</li>
+    <li>Sending flexible traffic in the hour the forecast marks as greenest cuts its <em>billed</em> g/GB from {{g_avg}} to {{g_pick}}. That captures {{captured}} of what hindsight would allow. The network's <em>physical</em> emissions barely move: an extra GB costs about {{marg_hi}} g, {{oom}} orders of magnitude below the billed rate.</li>
+  </ol>
+</section>
+
+<section>
+<h2>1 · How the pieces fit</h2>
+<div class="col">
+<p>Every hour, each party's bill has two parts. The <b>access part</b> pays for equipment reserved for that party: its access router, or its share of a PoP router's customer-facing ports. It is split by allocated bandwidth. The <b>backbone part</b> pays for shared transport: trunk-facing router capacity and the whole optical layer. It is split by the bytes the party actually sends and receives. Both parts are energy times the hourly grid factor of the site's zone.</p>
+</div>
+<div class="formula">settled bill   C_k(h) = Σ_d P_acc[d,k] · I_zone(d)(h)   +   B(h) · V_k(h) / Σ_j V_j(h)
+backbone pool  B(h)   = Σ_d P_bb[d] · I_zone(d)(h)  +  Σ_shelves P_e · I_zone(e)(h)
+forecast bill  Ĉ_k(h) : same formula with V̂ (day-ahead traffic forecast) and Î (day-ahead grid forecast)</div>
+<div class="fig" role="figure" aria-label="Pipeline diagram">
+<div class="ttl">From measurements to bills</div>
+<div class="tablewrap"><svg viewBox="0 0 940 330" role="img" aria-label="Inputs on the left feed device energy, door map, traffic and grid factors, which combine into settled and forecast bills.">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs>
+<g class="box in"><rect x="10" y="12" width="210" height="50" rx="5"/><text x="22" y="33">SNMP traffic, 5 min</text><text class="sub" x="22" y="50">{{n_if}} interfaces · S3 bucket</text></g>
+<g class="box in"><rect x="10" y="74" width="210" height="50" rx="5"/><text x="22" y="95">Router &amp; optical power</text><text class="sub" x="22" y="112">PSU 2024 · ECI shelves live</text></g>
+<g class="box in"><rect x="10" y="136" width="210" height="50" rx="5"/><text x="22" y="157">Public network facts</text><text class="sub" x="22" y="174">DNS · looking glass · PeeringDB · Zoo</text></g>
+<g class="box in"><rect x="10" y="198" width="210" height="50" rx="5"/><text x="22" y="219">Grid factors, hourly</text><text class="sub" x="22" y="236">Electricity Maps · CH, FR</text></g>
+<g class="box in"><rect x="10" y="260" width="210" height="50" rx="5"/><text x="22" y="281">Traffic forecasts</text><text class="sub" x="22" y="298">dense block logs · {{n_models}} models</text></g>
+<g class="box"><rect x="330" y="40" width="230" height="56" rx="5"/><text x="342" y="63">Energy pools per device</text><text class="sub" x="342" y="81">access vs backbone · facility overhead</text></g>
+<g class="box"><rect x="330" y="120" width="230" height="56" rx="5"/><text x="342" y="143">Door map and parties</text><text class="sub" x="342" y="161">{{n_doors}} doors · {{n_parties}} parties · hidden routers</text></g>
+<g class="box"><rect x="330" y="200" width="230" height="56" rx="5"/><text x="342" y="223">Volumes &amp; factors per hour</text><text class="sub" x="342" y="241">actual and day-ahead forecast</text></g>
+<g class="box out"><rect x="680" y="70" width="240" height="56" rx="5"/><text x="692" y="93">Settled bill per party, hour</text><text class="sub" x="692" y="111">actual volumes · actual grid</text></g>
+<g class="box out"><rect x="680" y="160" width="240" height="56" rx="5"/><text x="692" y="183">Forecast bill, issued 00:00 UTC</text><text class="sub" x="692" y="201">day-ahead volumes · day-ahead grid</text></g>
+<g class="box out"><rect x="680" y="250" width="240" height="56" rx="5"/><text x="692" y="273">g/GB signal per party, hour</text><text class="sub" x="692" y="291">for scheduling flexible traffic</text></g>
+<path class="arrow" d="M220,99 C280,99 280,68 328,68"/>
+<path class="arrow" d="M220,161 C280,161 280,148 328,148"/>
+<path class="arrow" d="M220,37 C290,37 290,140 328,140"/>
+<path class="arrow" d="M220,37 C300,37 300,222 328,222"/>
+<path class="arrow" d="M220,223 L328,228"/>
+<path class="arrow" d="M220,285 C290,285 290,236 328,236"/>
+<path class="arrow" d="M560,68 C620,68 620,98 678,98"/>
+<path class="arrow" d="M560,148 C620,148 620,105 678,105"/>
+<path class="arrow" d="M560,228 C620,228 620,112 678,112"/>
+<path class="arrow" d="M560,228 C620,228 620,188 678,188"/>
+<path class="arrow" d="M560,68 C640,68 640,180 678,180"/>
+<path class="arrow" d="M800,216 L800,248"/>
+</svg></div>
+<div class="cap">Green boxes are inputs; blue-edged boxes are outputs. Energy needs no forecast: router power does not follow traffic.</div>
+</div>
+</section>
+
+<section>
+<h2>2 · Data: what, where from, how</h2>
+<div class="col"><p>Every input is listed with its source and how I obtained it. Nothing here needed SWITCH's help beyond the bucket the project already reads. Where public data stood in for operator data, the last column says what it costs.</p></div>
+<div class="tablewrap"><table>
+<thead><tr><th>Input</th><th>Source and access</th><th>Coverage</th><th>Caveat</th></tr></thead>
+<tbody>
+<tr><td>Interface traffic</td><td>SWITCH Cricket SNMP, nightly CSV export to the <code>network-energy-efficiency-research</code> S3 bucket, read through <code>green_routing.dataset</code></td><td>{{n_if}} interfaces, 5 min, Dec 2023 → today</td><td>{{n_missing}} running routers are missing from the export (below)</td></tr>
+<tr><td>Router power</td><td><code>router-power/</code> in the same bucket: PSU readings in four formats (W, mW, 12 V U×I, Arista U×I)</td><td>{{n_psu}} production routers, {{psu_span}}</td><td>Export stopped Nov 2024. Carried forward as flat power: hourly readings of the median router vary by ±{{psu_var}} (5th–95th percentile)</td></tr>
+<tr><td>Router models</td><td>Network Power Zoo public sample (May 2025), anonymised router ids matched to our devices by per-interface traffic; the rest from telemetry format and port layout</td><td>{{zoo_matched}} of {{zoo_total}} Zoo routers matched uniquely</td><td>Routers without readings use the median of the same model, or datasheet power scaled to measured levels</td></tr>
+<tr><td>Optical layer</td><td>ECI Apollo shelf power in the bucket (<code>shelfPowerS0</code>)</td><td>{{n_shelves}} live shelves at {{n_shelf_sites}} sites</td><td>Shelf power dropped in 2026, probably a hardware change</td></tr>
+<tr><td>Which routers run</td><td>First/last traffic sample, plus SWITCH's public reverse DNS (routers with named interfaces today), checked by ping and, for ix3, ce1, ba3, by live BGP sessions in SWITCH's looking glass</td><td>{{n_dns_routers}} routers named in DNS; {{n_missing}} not in the export</td><td>Ping proves an address answers, not the name of the box behind it</td></tr>
+<tr><td>Sites and hosts</td><td>DNS LOC records for router names, PeeringDB (AS559), SWITCHlan map Feb 2026, OpenStreetMap</td><td>{{n_sites_high}} site codes placed with high confidence</td><td>Optical shelves assumed in the same building as same-code routers</td></tr>
+<tr><td>Internal links</td><td>Traffic matching (one port's in = the other's out) plus SWITCH reverse DNS: full sweep of 130.59.0.0/16 ({{n_ptr4}} names) and a walk of 2001:620:0::/48 ({{n_ptr6}} names)</td><td>{{n_dns_pairs}} router-port pairs; DNS and traffic agree on {{dns_agree}} of {{dns_both}} links</td><td>DNS shows today's configuration, not 2025's</td></tr>
+<tr><td>External partners</td><td>SWITCH looking glass (BGP neighbours), PeeringDB, GÉANT Compendium, SWITCH network blog</td><td>{{n_ext}} connections at {{n_ext_sites}} sites</td><td>No per-partner traffic: most sit on routers missing from the export</td></tr>
+<tr><td>Facility overhead</td><td>Swiss studies (BFE 2014: 2.1 for small server rooms; BFE 2026: 1.2–1.5), Green Datacenter 1.19</td><td>By host type: colocation 1.3, universities and institutes 1.6, hospitals 1.8</td><td>Not measured per site; ±30 % on site energy</td></tr>
+<tr><td>Grid factor</td><td>Electricity Maps academic API: hourly, flow-traced (imports counted), direct and lifecycle, CH and FR</td><td>{{em_span}}, {{em_requests}} requests</td><td>{{em_est}} of Swiss hours in {{year}} are model estimates; academic licence, so no raw series in this page</td></tr>
+<tr><td>Traffic forecasts</td><td>The year benchmark's dense logs (<code>pred_year/merged/dense</code>), block layout, day horizon: one 24-hour path per link issued at 00:00 UTC</td><td>{{n_links}} links, {{n_models}} models; {{model_doors}} doors ({{model_share}} of the window's door traffic)</td><td>{{fb_doors}} small doors outside the panel use the same hour last week</td></tr>
+</tbody></table></div>
+</section>
+
+<section>
+<h2>3 · Design choices</h2>
+<div class="col"><p>Each choice below names the alternative I rejected and the evidence that decided it.</p></div>
+<div class="col">
+<div class="choice"><h3>Energy is static; do not forecast it from traffic</h3>
+<p>Router power is treated as constant per device, measured where possible. On {{dep_n}} metered SWITCH routers, February to October 2024, traffic explains under 1 % of power on {{dep_under1}} and at most {{dep_max}} on any. {{dep_big}}, the largest, stays within {{dep_p5}}–{{dep_p95}} W (5th–95th percentile) while its traffic reaches {{dep_gbps}} Gb/s (95th percentile). The IMC'25 study on the same network puts forwarding at about 6 W in total, 0.02 %.</p>
+<p class="alt">Rejected: energy = traffic × kWh/GB. It would make a forecast of traffic a forecast of emissions, which the measurements contradict.</p></div>
+
+<div class="choice"><h3>Two pools: access by allocated bandwidth, backbone by bytes</h3>
+<p>Equipment reserved for one party is billed to that party whatever it sends; shared transport is billed by use. Access routers go wholly to their site. Routers with both kinds of port are split first: the optics of customer-facing ports plus the chassis in proportion to customer-facing port capacity go to the access pool. In this window the access pool is {{kw_acc}} kW and the backbone pool {{kw_bb}} kW, about {{opt_share}} of it optical.</p>
+<p class="alt">Rejected: one key for everything. Bytes alone bill a small site almost nothing for a router that exists only for it; capacity alone ignores who loads the shared trunks.</p></div>
+
+<div class="choice"><h3>Bill every door, customers and external networks alike</h3>
+<p>A door is any port where traffic enters or leaves SWITCHlan: {{n_doors}} of them, grouped into {{n_parties}} parties. GÉANT, transit providers, exchanges and content networks get bills too. Each byte is billed half at the door where it enters and half where it leaves, so nothing is counted twice. With one rule for all doors, telling customers from external partners changes the name on a bill, not the numbers.</p>
+<p class="alt">Rejected: billing customers only. Customers would then pay for the external half of every byte, and the ISPs and exchanges would get no statement.</p></div>
+
+<div class="choice"><h3>Routers missing from the export become group doors</h3>
+<p>{{n_missing}} routers that still run are absent from the export. I don't see their ports, but I do see our cables into them. Each becomes one door that stands for everyone behind it, with the traffic on those cables as its volume. The three border routers ix3, ce1 and ba3 carry most external links, so most external partners appear as three groups.</p>
+<p class="alt">Rejected: dropping them. Their traffic would vanish from the denominator and their energy from the inventory (routers {{mwh_nodns}} → {{mwh_dns}} MWh in {{year}} once they were counted).</p></div>
+
+<div class="choice"><h3>Allocate emissions, not kilowatt-hours</h3>
+<p>Each pool is multiplied by the hourly factor of its site's zone before it is split. Every site is Swiss except CERN, which draws from the French grid. Liechtenstein sits in Swissgrid's control area.</p>
+<p class="alt">Rejected: one national annual factor. In {{year}} the Swiss factor's hour-of-day average ranged about {{hod_ratio}}× ({{hod_min}}–{{hod_max}} g/kWh) and its monthly average about {{mon_ratio}}× ({{mon_min}}–{{mon_max}} g/kWh). The bill should show that.</p></div>
+
+<div class="choice"><h3>Combustion-only, flow-traced grid factor</h3>
+<p>Scope 2 under the GHG Protocol counts combustion only; upstream and losses go to Scope 3. Flow tracing counts imports, which matters for Switzerland: its own generation is almost carbon-free, but winter imports are not. Lifecycle factors are reported separately.</p>
+<p class="alt">Checked (October 2026) against my own series built from Energy-Charts generation and cross-border flows: within ±4 % in 2023–24 and hourly correlation about 0.96, but 28 % higher in 2025.</p></div>
+
+<div class="choice"><h3>A day-ahead bill, issued once at midnight</h3>
+<p>The forecast bill for a day is made at 00:00 UTC, from information available then. Traffic comes from the block logs: one 24-hour path per link, issued at the start of the day. {{rule_sentence}} Energy needs no forecast.</p>
+<p class="alt">Rejected: the rolling logs, which re-forecast every 5 minutes. A plan for tomorrow is made once; rolling forecasts would flatter the result.</p></div>
+
+<div class="choice"><h3>Measure the bill error, and take it apart</h3>
+<p>The headline metric is daily WAPE: the sum of absolute errors of all parties' daily bills over the sum of the bills. I also replace one forecast at a time with the truth: actual grid with forecast traffic, and actual traffic with forecast grid. That shows which forecast matters.</p></div>
+</div>
+</section>
+
+<section>
+<h2>4 · Results</h2>
+<h3 class="col">Who pays</h3>
+<div class="col"><p>Customer ports on PoP routers carry the largest share. The groups behind hidden routers come next, mostly as backbone: they are high-volume aggregates. Customer sites with their own access router pay almost entirely for access.</p></div>
+<div class="fig" role="figure"><div class="ttl">Settled emissions by party type, {{window_short}} (t CO₂)</div>
+<div class="legend"><span><i class="sw" style="background:var(--s3)"></i>Access part</span><span><i class="sw" style="background:var(--s1)"></i>Backbone part</span></div>
+<div id="c-stack"></div>
+<details><summary>Show as table</summary><div class="tablewrap" id="t-stack"></div></details></div>
+
+<h3 class="col">How good is a day-ahead bill?</h3>
+<div class="col"><p>Blue dots use the real grid factor, so they measure the traffic forecast alone. Orange dots add the day-ahead grid forecast. The dashed line is the error with perfect traffic and the grid forecast: {{e_grid}}. Learned models halve the traffic-driven error ({{e_pers_a}} → {{e_best_a}}), but every orange dot sits near that line. Errors common to all doors cancel, because the backbone is split by shares. The grid forecast also biases the total bill by {{bias}}.</p></div>
+<div class="fig" role="figure"><div class="ttl">Daily bill error by traffic model (WAPE across parties)</div>
+<div class="legend"><span><i class="sw" style="background:var(--s1)"></i>Actual grid factor</span><span><i class="sw" style="background:var(--s2)"></i>Day-ahead grid forecast</span><span><i class="sw" style="background:var(--ref)"></i>Perfect traffic, grid forecast</span></div>
+<div id="c-dumb"></div>
+<details><summary>Show as table</summary><div class="tablewrap" id="t-dumb"></div></details></div>
+
+<div class="fig" role="figure"><div class="ttl">Daily bill, settled vs forecast (kg CO₂ per day)</div>
+<div class="legend"><span><i class="sw" style="background:var(--s1)"></i>Settled</span><span><i class="sw" style="background:var(--s2)"></i>Forecast at 00:00 UTC ({{best_model}} + {{grid_rule}})</span></div>
+<div class="multi"><div><div class="note">External networks behind ix3{{ix_note}}</div><div id="c-ix"></div></div><div><div class="note">Customer site {{site_ex}} ({{site_ex_host}})</div><div id="c-lg"></div></div></div>
+<div class="cap">The forecast follows the settled bill's weekly rhythm. On the ten worst days, the day-to-day change of the grid factor averaged {{dI_lo}}–{{dI_hi}} g/kWh, against {{dI_all}} on a typical day.</div></div>
+
+<h3 class="col">Largest parties</h3>
+<div class="tablewrap" id="t-top"></div>
+
+<h3 class="col">When is a gigabyte cheap?</h3>
+<div class="col"><p>The backbone part per GB is the same for every party in a given hour: the pool's emissions divided by all traffic. It is lowest in the evening, when the grid is cleanest and the network still busy. It is highest around 01:00–04:00, when traffic is lowest and the grid factor near its daily high. Medians by local hour over the window:</p></div>
+<div class="fig" role="figure"><div class="multi">
+<div><div class="ttl">Grid factor (g/kWh)</div><div id="c-h1"></div></div>
+<div><div class="ttl">Traffic, all doors (Gb/s, in + out)</div><div id="c-h2"></div></div>
+<div><div class="ttl">Backbone part (mg CO₂ per GB)</div><div id="c-h3"></div></div></div>
+<div class="cap">Hour of day in Swiss local time. Medians over {{days}} days; the hourly grid series itself is not shown (licence).</div></div>
+
+<div class="col"><p>A scheduling test: each of the {{n_sched}} parties sending more than 1 GB per hour moves 1 GB of flexible traffic per day into the hour its forecast g/GB is lowest. Medians of the realized, settled g/GB:</p></div>
+<div class="fig" role="figure"><div class="ttl">Billed g/GB of a flexible gigabyte, by choice of hour</div><div id="c-sched"></div>
+<div class="cap">The forecast pick captures {{captured}} of the reduction perfect hindsight would allow. The physical cost of that gigabyte, its marginal energy ({{pj_lo}}–{{pj_hi}} pJ/bit at about {{n_path}} routers) times the grid factor, is {{marg_lo}} to {{marg_hi}} g: about {{oom}} orders of magnitude below any bar here.</div></div>
+</section>
+
+<section class="col">
+<h2>5 · What it means</h2>
+<ul>
+<li><b>Fix the grid forecast first.</b> It drives most of the day-ahead error. Electricity Maps serves a 72-hour forecast through the same API; it can't be tested on a past window, so the next step is to log it daily and score it as the days arrive. Weather-driven imports are what make the Swiss factor hard to predict.</li>
+<li><b>Traffic forecasting matters most for the big parties.</b> Small sites pay mostly for access, which is known in advance; their forecast bill is nearly exact once the grid factor is. The traffic model shows up in the bills of external networks and large customers.</li>
+<li><b>Keep accounting and steering apart.</b> The billed g/GB rewards sending when the network is busy and the grid is clean. That is a fair way to share a fixed footprint, but moving traffic does not reduce what the network emits. For green routing, the marginal signal is the right one, and inside SWITCHlan it is close to zero. The real levers are hardware: power supplies, optics, and switching off unused capacity.</li>
+<li><b>A forward bill is still useful.</b> Customers can plan with it, and SWITCH can publish both numbers per party and hour: the attributional bill that adds up to the inventory, and the marginal value that says what a change would actually save.</li>
+</ul>
+</section>
+
+<section class="col">
+<h2>6 · Limits and open data</h2>
+<ul>
+<li><b>Missing routers.</b> {{hidden_share}} of the window's bill goes to group doors behind routers missing from the export, including {{border_share}} to external networks behind ix3, ce1 and ba3. A request to SWITCH to re-export them is drafted.</li>
+<li><b>Transit through hidden routers.</b> ce1 and ez31 sit mid-path, so their group doors include bytes that only pass through. That overstates them.</li>
+<li><b>Power carried forward from 2024.</b> About {{modelled_share}} of router energy is modelled, not measured, and facility overhead is set by host type.</li>
+<li><b>One season.</b> The test window is spring and summer, when the Swiss grid is cleanest and steadiest. Winter imports will make the grid forecast harder.</li>
+<li><b>Interface roles.</b> DNS reflects today's configuration; a few ports may have been reassigned since 2025. Customer names come from site hosts and a handful of DNS labels, not from SWITCH's port descriptions.</li>
+</ul>
+</section>
+
+<section class="col">
+<h2>7 · Reproduce</h2>
+<p>The pipeline is part of the repository: the packages <code>green_routing.network</code> and <code>green_routing.carbon</code>, and the recipe <code>recipes/carbon</code>. With the year run's dense logs in place and the reference inputs in <code>$GR_REFERENCE_DIR</code>:</p>
+<ol>
+<li><code>gr-network all</code> → link ends, router tiers, interface roles, far ends from reverse DNS</li>
+<li><code>gr-carbon grid</code> → hourly grid factors (<code>--download</code> fetches them; needs <code>EM_API</code>) and the day-ahead rules</li>
+<li><code>gr-carbon inventory</code> → router models, power, service spans, optical shelves, site energy, Scope 2</li>
+<li><code>gr-carbon dependence</code> → power against traffic for every metered router</li>
+<li><code>gr-carbon allocate</code> → access and backbone pools, doors and parties</li>
+<li><code>gr-carbon bills</code> → settled and forecast bills, errors, scheduling test</li>
+<li><code>recipes/carbon/build_report.py</code> → this page; <code>recipes/carbon/verify.py</code> checks the headline numbers</li>
+</ol>
+<p><code>recipes/carbon/run.sh all</code> runs them in order. Method and data: <code>docs/carbon.md</code>.</p>
+</section>
+</div>
+<div id="tip" hidden></div>
+
+<script>
+/*DATA*/
+const tip = document.getElementById("tip");
+function showTip(e, html) { tip.innerHTML = html; tip.hidden = false; const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8); tip.style.left = x + "px"; tip.style.top = (e.clientY + 14) + "px"; }
+function hideTip() { tip.hidden = true; }
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent, text) { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (text !== undefined) n.textContent = text; if (parent) parent.appendChild(n); return n; }
+function svg(host, w, h) { const s = el("svg", { viewBox: `0 0 ${w} ${h}`, role: "img" }); document.getElementById(host).appendChild(s); return s; }
+const fmt = (v, d = 2) => Number(v).toLocaleString("en-GB", { minimumFractionDigits: d, maximumFractionDigits: d });
+function table(host, head, rows) { const t = document.createElement("table"); t.innerHTML = "<thead><tr>" + head.map(h => `<th class="${h[1] || ""}">${h[0]}</th>`).join("") + "</tr></thead><tbody>" + rows.map(r => "<tr>" + r.map((c, i) => `<td class="${head[i][1] || ""}">${c}</td>`).join("") + "</tr>").join("") + "</tbody>"; document.getElementById(host).appendChild(t); }
+
+// stacked horizontal bars: who pays
+(function () {
+  const rows = DATA.stack, W = 900, lw = 290, rh = 34, H = rows.length * rh + 30, max = Math.max(...rows.map(r => r.a + r.b)) * 1.12;
+  const s = svg("c-stack", W, H), x = v => lw + v / max * (W - lw - 70);
+  [0, 0.25, 0.5, 0.75, 1.0].filter(t => t <= max).forEach(t => { el("line", { x1: x(t), x2: x(t), y1: 4, y2: H - 22, class: "grid" }, s); el("text", { x: x(t), y: H - 6, "text-anchor": "middle" }, s, fmt(t, 2)); });
+  rows.forEach((r, i) => {
+    const y = 8 + i * rh;
+    el("text", { x: lw - 10, y: y + 15, "text-anchor": "end", class: "lab" }, s, r.t);
+    const a = el("rect", { x: x(0), y, width: Math.max(0, x(r.a) - x(0) - 1), height: 20, rx: 3, class: "k3" }, s);
+    const b = el("rect", { x: x(r.a) + 1, y, width: Math.max(0, x(r.a + r.b) - x(r.a) - 1), height: 20, rx: 3, class: "k1" }, s);
+    el("text", { x: x(r.a + r.b) + 6, y: y + 15, class: "lab" }, s, fmt(r.a + r.b, 2) + " t");
+    const h = `<b>${r.t}</b><br>${r.n} parties<br>access ${fmt(r.a, 3)} t · backbone ${fmt(r.b, 3)} t<br>forecast error (WAPE) ${Math.round(r.w * 100)} %`;
+    [a, b].forEach(m => { m.addEventListener("mousemove", e => showTip(e, h)); m.addEventListener("mouseleave", hideTip); });
+  });
+  table("t-stack", [["Party type"], ["Parties", "num"], ["Access t", "num"], ["Backbone t", "num"], ["Daily WAPE", "num"]], rows.map(r => [r.t, r.n, fmt(r.a, 3), fmt(r.b, 3), Math.round(r.w * 100) + " %"]));
+})();
+
+// dumbbell: bill error by model
+(function () {
+  const rows = DATA.dumb, W = 900, lw = 190, rh = 30, H = rows.length * rh + 34, max = 0.45;
+  const s = svg("c-dumb", W, H), x = v => lw + v / max * (W - lw - 30);
+  [0, 0.1, 0.2, 0.3, 0.4].forEach(t => { el("line", { x1: x(t), x2: x(t), y1: 4, y2: H - 24, class: "grid" }, s); el("text", { x: x(t), y: H - 8, "text-anchor": "middle" }, s, Math.round(t * 100) + " %"); });
+  el("line", { x1: x(DATA.grid_only), x2: x(DATA.grid_only), y1: 2, y2: H - 24, class: "lref", "stroke-width": 1.5, "stroke-dasharray": "5 4" }, s);
+  rows.forEach((r, i) => {
+    const y = 16 + i * rh;
+    el("text", { x: lw - 12, y: y + 4, "text-anchor": "end", class: "lab" }, s, r.m);
+    el("line", { x1: x(r.a), x2: x(r.f), y1: y, y2: y, class: "lref", "stroke-width": 2 }, s);
+    const a = el("circle", { cx: x(r.a), cy: y, r: 6, class: "k1", stroke: "var(--surface)", "stroke-width": 2 }, s);
+    const f = el("circle", { cx: x(r.f), cy: y, r: 6, class: "k2", stroke: "var(--surface)", "stroke-width": 2 }, s);
+    if (i === rows.length - 1) { el("text", { x: x(r.a), y: y - 10, "text-anchor": "middle", class: "lab" }, s, Math.round(r.a * 100) + " %"); el("text", { x: x(r.f), y: y - 10, "text-anchor": "middle", class: "lab" }, s, Math.round(r.f * 100) + " %"); }
+    const h = `<b>${r.m}</b><br>actual grid: ${(r.a * 100).toFixed(1)} %<br>grid forecast: ${(r.f * 100).toFixed(1)} %`;
+    [a, f].forEach(m => { m.addEventListener("mousemove", e => showTip(e, h)); m.addEventListener("mouseleave", hideTip); });
+  });
+  table("t-dumb", [["Traffic forecast"], ["Actual grid", "num"], ["Grid forecast", "num"]], rows.map(r => [r.m, (r.a * 100).toFixed(1) + " %", (r.f * 100).toFixed(1) + " %"]).concat([["Perfect traffic", "0 %", (DATA.grid_only * 100).toFixed(1) + " %"]]));
+})();
+
+// line charts
+function lines(host, xs, series, opts) {
+  const W = opts.w || 440, H = opts.h || 200, L = 44, R = 10, T = 10, Bm = 26;
+  const s = svg(host, W, H), all = series.flatMap(sr => sr.v), lo = opts.zero ? 0 : Math.min(...all), hi = Math.max(...all) * 1.06;
+  const x = i => L + i / (xs.length - 1) * (W - L - R), y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - Bm);
+  for (let k = 0; k <= 4; k++) { const v = lo + (hi - lo) * k / 4; el("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), class: "grid" }, s); el("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end" }, s, fmt(v, opts.dec ?? 0)); }
+  (opts.ticks || []).forEach(i => el("text", { x: x(i), y: H - 8, "text-anchor": "middle" }, s, opts.xl ? opts.xl(xs[i]) : xs[i]));
+  series.forEach(sr => el("polyline", { points: sr.v.map((v, i) => x(i) + "," + y(v)).join(" "), fill: "none", class: sr.c, "stroke-width": 2, "stroke-linejoin": "round", "stroke-dasharray": sr.dash || "" }, s));
+  const cross = el("line", { y1: T, y2: H - Bm, class: "axis", visibility: "hidden" }, s);
+  const hit = el("rect", { x: L, y: T, width: W - L - R, height: H - T - Bm, fill: "transparent" }, s);
+  hit.addEventListener("mousemove", e => { const r = s.getBoundingClientRect(), px = (e.clientX - r.left) / r.width * W, i = Math.max(0, Math.min(xs.length - 1, Math.round((px - L) / (W - L - R) * (xs.length - 1))));
+    cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("visibility", "visible");
+    showTip(e, `<b>${opts.xl ? opts.xl(xs[i], true) : xs[i]}</b><br>` + series.map(sr => `${sr.n}: ${fmt(sr.v[i], opts.dec ?? 1)} ${opts.u || ""}`).join("<br>")); });
+  hit.addEventListener("mouseleave", () => { cross.setAttribute("visibility", "hidden"); hideTip(); });
+}
+const hh = DATA.hod.h, hl = (h, long) => long ? `${String(h).padStart(2, "0")}:00 local` : String(h).padStart(2, "0");
+lines("c-h1", hh, [{ v: DATA.hod.I, c: "l1", n: "grid factor" }], { ticks: [0, 6, 12, 18, 23], xl: hl, u: "g/kWh", dec: 0, zero: true, w: 300, h: 190 });
+lines("c-h2", hh, [{ v: DATA.hod.V, c: "l1", n: "traffic" }], { ticks: [0, 6, 12, 18, 23], xl: hl, u: "Gb/s", dec: 0, zero: true, w: 300, h: 190 });
+lines("c-h3", hh, [{ v: DATA.hod.g, c: "l1", n: "backbone part" }], { ticks: [0, 6, 12, 18, 23], xl: hl, u: "mg/GB", dec: 2, zero: true, w: 300, h: 190 });
+const dd = DATA.daily.d, n = dd.length, dl = (d, long) => long ? d : d.slice(5);
+const dt = [0, Math.round(n / 4), Math.round(n / 2), Math.round(3 * n / 4), n - 1];
+lines("c-ix", dd, [{ v: DATA.daily.ix_s, c: "l1", n: "settled" }, { v: DATA.daily.ix_f, c: "l2", n: "forecast" }], { ticks: dt, xl: dl, u: "kg", dec: 1, zero: true });
+lines("c-lg", dd, [{ v: DATA.daily.lg_s, c: "l1", n: "settled" }, { v: DATA.daily.lg_f, c: "l2", n: "forecast" }], { ticks: dt, xl: dl, u: "kg", dec: 2, zero: true });
+
+// scheduling bars (mg/GB)
+(function () {
+  const rows = DATA.sched, W = 900, lw = 300, rh = 32, H = rows.length * rh + 28, max = Math.max(...rows.map(r => r.v)) * 1000 * 1.15;
+  const s = svg("c-sched", W, H), x = v => lw + v / max * (W - lw - 80);
+  rows.forEach((r, i) => { const y = 6 + i * rh, v = r.v * 1000;
+    el("text", { x: lw - 10, y: y + 15, "text-anchor": "end", class: "lab" }, s, r.k);
+    const b = el("rect", { x: x(0), y, width: x(v) - x(0), height: 20, rx: 3, class: i === 2 ? "k2" : "k1" }, s);
+    el("text", { x: x(v) + 6, y: y + 15, class: "lab" }, s, fmt(v, 1) + " mg/GB");
+    b.addEventListener("mousemove", e => showTip(e, `<b>${r.k}</b><br>median ${fmt(v, 2)} mg CO₂ per GB`)); b.addEventListener("mouseleave", hideTip); });
+})();
+
+// top parties table
+table("t-top", [["Party"], ["Type"], ["Settled kg", "num"], ["Forecast kg", "num"], ["Access share", "num"]],
+  DATA.top.map(r => [`<span class="mono">${r.p}</span>`, r.t, fmt(r.s, 0), fmt(r.f, 0), Math.round(r.acc * 100) + " %"]));
+</script>

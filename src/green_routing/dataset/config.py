@@ -169,9 +169,20 @@ IF_IN_OCTETS = "ifHCInOctets"     # bytes/sec, 5-min average
 IF_OUT_OCTETS = "ifHCOutOctets"
 BYTES_TO_MBPS = 8 / 1e6           # bytes/sec -> Mbit/s
 
-# PSU power: raw datasources are U (~12000, assumed mV) and I (assumed mA).
-# power[W] = U * I * PSU_POWER_SCALE. Default assumes mV*mA -> W (÷1e6).
-# CHANGE if you confirm different SNMP scaling for your devices.
+# PSU power. router-power/ CSVs come in four schemas (found 2026-10-29; the PSU data
+# stops on 2024-11-01); power[W] = product of the columns * scale:
+#   Pin      Cisco_PSU_Pin                  input power, W          (ASR-920, 8201)
+#   Pin_mW   Cisco_PSU_Pin_mW               input power, mW         (NCS-55A1)
+#   UI       Cisco_PSU_U * Cisco_PSU_I      12 V output, mV * mA    (ASR-9001/9000)
+#   UinIin   PSU_Uin * PSU_Iin              Arista 7280, scale 1e-4
+# UI is the PSU's DC output, so wall power is higher (carbon.inventory brackets it
+# with an 85 % PSU efficiency). The Arista scale is a plausibility fit, not documented.
+PSU_SCHEMAS = (
+    ("Pin", ("Cisco_PSU_Pin",), 1.0),
+    ("Pin_mW", ("Cisco_PSU_Pin_mW",), 1e-3),
+    ("UI", ("Cisco_PSU_U", "Cisco_PSU_I"), 1e-6),
+    ("UinIin", ("PSU_Uin", "PSU_Iin"), 1e-4),
+)
 PSU_U = "Cisco_PSU_U"
 PSU_I = "Cisco_PSU_I"
 PSU_POWER_SCALE = 1e-6

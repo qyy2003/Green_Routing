@@ -74,16 +74,25 @@ def interface_throughput(path: str | Path) -> pd.DataFrame:
     return out
 
 
-def psu_power(path: str | Path) -> pd.Series:
-    """router-power PSU CSV -> power [W] = U * I * PSU_POWER_SCALE.
+def psu_schema(columns) -> tuple[str, tuple[str, ...], float]:
+    """Which of ``config.PSU_SCHEMAS`` a router-power CSV uses: (kind, columns, scale)."""
+    for kind, cols, scale in config.PSU_SCHEMAS:
+        if all(c in columns for c in cols):
+            return kind, cols, scale
+    raise ValueError(f"unknown PSU schema: {list(columns)}")
 
-    NOTE the scaling assumption in config.PSU_POWER_SCALE (mV*mA -> W). Verify for
-    your hardware before using absolute wattage.
-    """
+
+def psu_power(path: str | Path) -> pd.Series:
+    """router-power PSU CSV -> input power [W], whichever of the four schemas it uses
+    (``config.PSU_SCHEMAS``). ``.attrs["kind"]`` names the schema."""
     df = read_series(path)
-    if config.PSU_U not in df or config.PSU_I not in df:
-        raise ValueError(f"{path}: expected {config.PSU_U}/{config.PSU_I} columns")
-    return (df[config.PSU_U] * df[config.PSU_I] * config.PSU_POWER_SCALE).rename("power_w")
+    kind, cols, scale = psu_schema(df.columns)
+    p = df[cols[0]] * scale
+    for c in cols[1:]:
+        p = p * df[c]
+    p = p.rename("power_w")
+    p.attrs["kind"] = kind
+    return p
 
 
 def eci_shelf_power(path: str | Path) -> pd.Series:

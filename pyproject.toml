@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "green-routing"
 version = "0.3.0"
-description = "Per-link traffic forecasting on the SWITCH research backbone, for carbon accounting and green routing"
+description = "Per-link traffic forecasting and per-party carbon bills on the SWITCH research backbone"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "Yuyang Qin" }]
@@ -36,6 +36,8 @@ gr-benchmark = "green_routing.prediction.run:main"
 gr-dense = "green_routing.prediction.dense:main"
 gr-zoo = "green_routing.prediction.zoo:main"
 gr-viewer = "green_routing.viewer.server:main"
+gr-network = "green_routing.network.__main__:main"
+gr-carbon = "green_routing.carbon.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

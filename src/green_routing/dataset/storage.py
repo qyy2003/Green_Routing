@@ -415,6 +415,22 @@ def read_bytes(uri: str | Path) -> bytes:
         return fh.read()
 
 
+def read_head(uri: str | Path, nbytes: int = 4096) -> bytes:
+    """The first ``nbytes`` of an object: a ranged GET on S3 unless a current cached
+    copy exists. For headers of large CSVs (``routers/`` is ~6 GB) without downloading them."""
+    uri = str(uri)
+    if not is_s3(uri):
+        with open(uri, "rb") as fh:
+            return fh.read(nbytes)
+    fp = cache_path(uri)
+    if config.S3_CACHE and _cache_is_fresh(fp, _resolve_info(uri)):
+        with open(fp, "rb") as fh:
+            return fh.read(nbytes)
+    bucket, key = split_s3(uri)
+    return s3_client().get_object(Bucket=bucket, Key=key,
+                                  Range=f"bytes=0-{nbytes - 1}")["Body"].read()
+
+
 def read_text(uri: str | Path, encoding: str = "utf-8") -> str:
     return read_bytes(uri).decode(encoding)
 

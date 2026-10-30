@@ -58,6 +58,8 @@ gr-benchmark --help            # the command-line tools are now on PATH
 | `gr-viewer` | web viewer for a run, link by link |
 | `gr-zoo` | keep good models (weights + provenance) in a model zoo |
 | `gr-build-tensor` | build node tensors + adjacency + splits for other models |
+| `gr-network` | link ends, router tiers, interface roles, reverse-DNS far ends |
+| `gr-carbon` | energy inventory, grid factors, allocation, settled and forecast carbon bills |
 
 Each is also `python -m green_routing.<package>.<module>`.
 
@@ -119,6 +121,20 @@ gr-data cache-info
 The bucket is rewritten daily (each CSV is cumulative), so the cache validates every
 object against the bucket's ETag; a changed object is downloaded again.
 
+### Carbon pipeline extras
+
+`gr-network` and `gr-carbon` ([carbon.md](carbon.md)) need a few more things:
+
+- **Reference inputs** that are not in the bucket (sites, external links, reverse-DNS
+  snapshots, the Network Power Zoo sample): copy `artifacts/reference/` from the reference
+  machine, or point `GR_REFERENCE_DIR` at a copy. Keep it out of the repository.
+- **An Electricity Maps API key** for a fresh grid download (`gr-carbon grid --download`):
+  `export EM_API=...` in `~/.bashrc` or the environment. Never commit the key or the
+  downloaded data (academic licence). Without the key the pipeline uses the raw cache in
+  `artifacts/carbon/grid/raw/` if one was copied over.
+- `dig` (package `dnsutils` / `bind9-dnsutils`) only to refresh the DNS snapshots
+  (`gr-network dns-sweep`).
+
 ## 4. Check the install
 
 ```bash
@@ -132,7 +148,9 @@ The e2e tests need no credentials: they generate a small Cricket-format mirror a
 
 ## 5. Where outputs go
 
-Runs, panel caches and the model zoo go to `artifacts/` in the checkout (gitignored).
+Runs, panel caches, the model zoo, and the network and carbon pipelines' outputs
+(`network/`, `carbon/`) go to `artifacts/` in the checkout (gitignored); the carbon
+pipeline's curated inputs are in `artifacts/reference/` (`GR_REFERENCE_DIR`).
 Point `GR_ARTIFACTS_DIR` at a bigger disk if needed:
 
 ```bash

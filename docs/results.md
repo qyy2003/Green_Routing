@@ -184,7 +184,29 @@ The learned forecasts are already far smoother than the traffic (roughness = mea
 - **Retraining on a smoothed target** gives the same smoothness at a higher price
   (+1.5 … +8 % at 8 h); the one exception is GRU at 1 day (−1.5 %, 63 % of links).
 
-## 4. Caveats
+## 4. Carbon bills from the forecasts
+
+The traffic forecasts feed per-party carbon bills ([carbon.md](carbon.md), `recipes/carbon`):
+over the same test period, 2.66 t CO₂ (location-based, combustion only) split among 306
+parties (customers and external networks), settled per hour and forecast a day ahead from
+the block logs (`day` horizon). Daily bill error, WAPE across parties:
+
+| Traffic forecast | Actual grid factor | Day-ahead grid factor (same hour yesterday) |
+|---|---|---|
+| PatchTST | **11.7 %** | **31.4 %** |
+| TCN | 11.9 % | 31.5 % |
+| GRU | 11.9 % | 31.5 % |
+| DLinear | 12.8 % | 31.8 % |
+| seasonal naive, day / week | 15.0 % / 21.0 % | 33.0 % / 37.7 % |
+| persistence | 24.5 % | 39.4 % |
+| actual traffic | 0 | 28.0 % |
+
+The ranking of the traffic models carries over from the link-level metrics, but the bill
+error is dominated by the grid-factor forecast: better grid forecasts are worth more than
+better traffic models. GBDT has no block log (it forecasts one point per horizon), so it
+is not in the table.
+
+## 5. Caveats
 
 - Single seed per model; the measured run-to-run noise is about ±1 % of the median ratio.
 - The month TCN comparison is at a matched 20-epoch budget, not to convergence.

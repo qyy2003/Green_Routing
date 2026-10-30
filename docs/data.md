@@ -25,10 +25,10 @@ shape under `GR_LOCAL_ROOT`.
 
 | Prefix | Content | Used by |
 |---|---|---|
-| `router-interfaces/<device>/<iface>.csv` | per-interface octets, errors, packets | forecasting (traffic per link) |
-| `routers/<device>.csv` | CPU, memory, temperature | topology viewer |
-| `router-power/<device>_psu<k>.csv` | PSU voltage / current | topology viewer, power |
-| `eci/apollo/<shelf>.csv` | optical shelf power | power |
+| `router-interfaces/<device>/<iface>.csv` | per-interface octets, errors, packets | forecasting (traffic per link), link roles, door volumes of the carbon bills |
+| `routers/<device>.csv` | CPU, memory, temperature | topology viewer; the column names identify the router family (carbon inventory) |
+| `router-power/<device>_psu<k>.csv` | PSU power, four schemas (below); **ends 2024-11-01** | carbon inventory, topology viewer |
+| `eci/apollo/<shelf>.csv` | optical shelf power | carbon inventory |
 | `transceiver-monitoring/`, `cpu-usage/` | optics, CPU | not used yet |
 
 Device names drop the `swi` prefix in the path (`ag1` = `swiag1`); a link is
@@ -57,8 +57,8 @@ timestamp,ds0,ds1,ds2,ds3,ds4,ds5,ifHCInOctets,ifHCOutOctets,ifInErrors,ifOutErr
 | Module | Role |
 |---|---|
 | `config` | data source (S3 / local), every environment setting, sampling constants (`STEP_SECONDS=300`, `DAILY_STEPS=288`, `WEEKLY_STEPS=2016`), horizons, column names |
-| `storage` | one read API over `s3://` URIs and local paths; listing, ETag-validated object cache, parallel prefetch, `check()` |
-| `loaders` | `read_series` (era coalescing), `interface_throughput` (→ `in/out/total_mbps`), `psu_power`, `eci_shelf_power`, subtree iterators |
+| `storage` | one read API over `s3://` URIs and local paths; listing, ETag-validated object cache, parallel prefetch, ranged `read_head`, `check()` |
+| `loaders` | `read_series` (era coalescing), `interface_throughput` (→ `in/out/total_mbps`), `psu_power` (any of the four PSU schemas → W), `eci_shelf_power`, subtree iterators |
 | `cohort` | coverage scan over a window, cohort selection, the common 5-min grid |
 | `topology` | parse `switch-network-topology.txt` → links, nodes, adjacency with speed/cost weights |
 | `tensor`, `splits`, `build` | node tensors `X[T,N,F]` + adjacency + leak-free splits (`gr-build-tensor`) |
@@ -152,8 +152,15 @@ X_train = X[sp["split"]["train"][0]:sp["split"]["train"][1]]   # normalise with 
 
 ## Notes
 
-- **Power**: `config.PSU_POWER_SCALE` assumes `U`[mV] × `I`[mA] → W (~173 W per PSU on
-  swiag1 — plausible, unverified).
+- **Power**: `router-power/` CSVs come in four schemas (`config.PSU_SCHEMAS`):
+  `Cisco_PSU_Pin` (W; ASR-920, 8201), `Cisco_PSU_Pin_mW` (mW; NCS-55A1),
+  `Cisco_PSU_U` × `Cisco_PSU_I` (mV × mA at the 12 V output, so below wall power;
+  ASR-9001) and `PSU_Uin` × `PSU_Iin` (Arista, × 1e-4, a plausibility fit).
+  `loaders.psu_power` handles all four; the topology viewer (`web/build_frames.py`) still
+  reads U × I only. The export stopped on 2024-11-01.
+- **Device names** differ between subtrees for a few devices: `blu1` in
+  `router-interfaces/` and `routers/`, and a separate `swiblu1` (an ASR-920) in `routers/`
+  and `router-power/`.
 - **Gaps** stay NaN in the panel; models fill short gaps (≤ 1 h) for their inputs only.
 - **Interface-level graphs** would need the topology's interface names matched to the CSV
   names; the committed topology copy has none.
