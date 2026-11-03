@@ -1,0 +1,13 @@
+node,city,egrid_subregion,subregion_name,co2_lb_per_mwh,nonbaseload_co2_lb_per_mwh
+ATLA-M5,Atlanta GA,SRSO,SERC South,1490,1810
+ATLAng,Atlanta GA,SRSO,SERC South,1490,1810
+CHINng,Chicago IL,RFCW,RFC West,1556,2084
+DNVRng,Denver CO,RMPA,WECC Rockies,2036,1698
+HSTNng,Houston TX,ERCT,ERCOT All,1421,1335
+IPLSng,Indianapolis IN,RFCW,RFC West,1556,2084
+KSCYng,Kansas City MO,SPNO,SPP North,1971,2192
+LOSAng,Los Angeles CA,CAMX,WECC California,879,1279
+NYCMng,New York NY,NYCW,NPCC NYC/Westchester,922,1776
+SNVAng,Sunnyvale CA,CAMX,WECC California,879,1279
+STTLng,Seattle WA,NWPP,WECC Northwest,921,1532
+WASHng,Washington DC,RFCE,RFC East,1096,1814

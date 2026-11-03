@@ -26,6 +26,9 @@ dependencies = [
 # matches your driver from https://pytorch.org rather than the default wheel.
 deep = ["torch>=2.1"]
 dev = ["pytest>=8"]
+# recipes/flat_forecast: pretrained time-series models (Chronos-2, Chronos-Bolt, TimesFM 2.5),
+# weights from the Hugging Face hub on first use. Tested: chronos-forecasting 2.3.2, timesfm 3.0.2.
+fm = ["chronos-forecasting>=2.3", "timesfm>=3.0"]
 # tools/topology: the hero map (networkx) and the old Dash prototype (dash, plotly)
 topology = ["networkx>=3", "dash>=2.14", "plotly>=5"]
 

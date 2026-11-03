@@ -9,6 +9,7 @@
 #   recipes/carbon/run.sh dependence  power vs traffic of every metered router
 #   recipes/carbon/run.sh allocate    pools, doors, parties, annual bills
 #   recipes/carbon/run.sh bills       hourly settled + forecast bills
+#   recipes/carbon/run.sh total       total traffic: counting checks, top-down vs bottom-up forecasts
 #   recipes/carbon/run.sh report      $GR_ARTIFACTS_DIR/carbon/report/carbon-bills.html
 #   recipes/carbon/run.sh verify      compare with expected.json
 #   recipes/carbon/run.sh all         every step in this order (~3 min with a warm data cache;
@@ -33,11 +34,12 @@ step_inventory()  { log "inventory $YEAR"; gr-carbon inventory --year "$YEAR" --
 step_dependence() { log "power vs traffic"; gr-carbon dependence --workers "$WORKERS"; }
 step_allocate()   { log "allocation $YEAR"; gr-carbon allocate --year "$YEAR"; }
 step_bills()      { log "bills"; gr-carbon bills --year "$YEAR"; }
+step_total()      { log "total traffic"; gr-carbon total; }
 step_report()     { log "report"; "$PYTHON" "$RECIPES/carbon/build_report.py"; }
 step_verify()     { log "verify"; "$PYTHON" "$RECIPES/carbon/verify.py"; }
 
 case "${1:-}" in
-  network|grid|inventory|dependence|allocate|bills|report|verify) "step_$1" ;;
-  all) step_network; step_grid; step_inventory; step_dependence; step_allocate; step_bills; step_report; step_verify ;;
-  *) sed -n '2,21p' "$0"; exit 1 ;;
+  network|grid|inventory|dependence|allocate|bills|total|report|verify) "step_$1" ;;
+  all) step_network; step_grid; step_inventory; step_dependence; step_allocate; step_bills; step_total; step_report; step_verify ;;
+  *) sed -n '2,22p' "$0"; exit 1 ;;
 esac

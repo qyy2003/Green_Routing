@@ -1,0 +1,186 @@
+<title>Carbon Rate Granularity</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Public+Sans:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+/*STYLE*/
+
+<div class="wrap">
+<header class="col">
+  <div class="eyebrow">Green Routing · how to publish a carbon rate</div>
+  <h1>How fine should a carbon rate be?</h1>
+  <p class="lede">A carbon rate (grams of CO₂ per gigabyte) can be published every 5 minutes, every hour, or once a day. It can be one number per period, a curve, or a range. I tested each choice on two networks: SWITCHlan in 2026, with an hourly grid factor, and Abilene in 2004, with a constant one. Every bill is computed on the real 5-minute traffic, so the only thing that changes is the rate.</p>
+  <p class="meta">Built {{built}} by <code>recipes/carbon_granularity</code>. Flat rate (backbone emissions over bytes carried). Test windows: SWITCHlan {{sw_days}} days in spring 2026, Abilene {{ab_days}} days in August–September 2004.</p>
+</header>
+
+<section class="brief col" aria-label="The choices">
+  <div class="eyebrow">The right choices, from the data</div>
+  <ol>
+    <li><b>Publish hourly.</b> One value per hour keeps {{sw_var_1h}} of the 5-minute rate's variation on SWITCHlan ({{ab_var_1h}} on Abilene), and daily statements move by {{sw_dbe_1h}} ({{ab_dbe_1h}}). A forecast published hourly is as close to the 5-minute truth as one published every 5 minutes. From 3 hours up, real information is lost: {{sw_var_3h}} of the variation is kept at 3 hours and {{sw_var_1d}} at one day.</li>
+    <li><b>Forecast at 5 minutes and add up, or forecast hours directly: the hourly forecast comes out the same.</b> The model is not equally accurate at every resolution: on SWITCHlan's total its traffic error falls from {{sw_res_5}} on 5-minute values to {{sw_res_1h}} on hourly ones ({{ab_res_5}} → {{ab_res_1h}} on Abilene), because the wiggle within each hour cannot be forecast a day ahead and averaging removes it. So summing the best 5-minute model's forecasts into hours is about as good as a model trained directly on hours (SWITCHlan {{sw_sum_1h}} vs {{sw_dir_1h}}, Abilene {{ab_sum_1h}} vs {{ab_dir_1h}}, rate error against the 5-minute truth with the real grid factor). Models trained on 3-hour, 6-hour or daily data never do better.</li>
+    <li><b>Update during the day.</b> Re-issuing the next hours every hour cuts the rate's error from {{sw_day}} to {{sw_1h}} on SWITCHlan, mostly because the latest grid hour is a far better guess than yesterday's. On Abilene, where only traffic changes, it falls from {{ab_day}} to {{ab_1h}}.</li>
+    <li><b>Publish values, not a fitted curve.</b> A smooth daily curve with {{fourier_k}} Fourier harmonics ({{fourier_p}} numbers a day) is as accurate as 288 five-minute values, but no more accurate than 24 hourly ones. It is a compact encoding, not a better forecast.</li>
+    <li><b>Publish a range with every value.</b> Quantiles built from the last {{q_window}} days' traffic and grid errors are well calibrated on SWITCHlan: the 80 % band holds {{sw_cov80}} of outcomes and the 90 % band {{sw_cov90}}. As a forecast they beat the single value by {{sw_crps}} (CRPS). The range must include the grid's uncertainty: traffic uncertainty alone covers only {{sw_cov80_traffic}}.</li>
+  </ol>
+</section>
+
+<section>
+<h2>1 · The test</h2>
+<div class="col">
+<p>The truth is the 5-minute rate: the network's emissions in 5 minutes divided by the bytes it carried in them. A rate published at a coarser grain is the same ratio over the whole block, so every grain bills exactly the same total; only who pays what changes. A forecast rate is published at 00:00 UTC for the next day (or every hour, in section 5) and then applied to the real traffic.</p>
+<p>Four measures, all computed on real 5-minute traffic:</p>
+<ul>
+<li><b>Variation kept</b>: the share of the 5-minute rate's variance a block value still shows (traffic-weighted).</li>
+<li><b>Error against the 5-minute truth</b>: grams misbilled if all traffic paid the published rate instead of the 5-minute one, over the grams it should pay.</li>
+<li><b>Daily statement error</b>: the sum over days and parties of each daily bill's error, over the total ({{sw_parties}} parties on SWITCHlan, {{ab_parties}} routers on Abilene).</li>
+<li><b>Scheduling value</b>: send one unit of flexible traffic a day in the block the rate marks cheapest; the share of the best possible saving (the cheapest 5 minutes in hindsight) that this captures.</li>
+</ul>
+</div>
+</section>
+
+<section>
+<h2>2 · Settlement: what each grain loses</h2>
+<div class="col"><p>First with the true rate, no forecast. A coarse rate smooths over the hours when the network is quiet (and a gigabyte costs more) or busy (and costs less).</p></div>
+<div class="fig" role="figure"><div class="ttl">Publishing the true rate at each grain</div>
+<div class="legend"><span><i class="sw" style="background:var(--s1)"></i>SWITCHlan</span><span><i class="sw" style="background:var(--s2)"></i>Abilene</span></div>
+<div class="multi"><div><div class="note">Variation of the 5-minute rate kept (%)</div><div id="c-var"></div></div><div><div class="note">Daily statement error (%)</div><div id="c-dbe"></div></div></div>
+<div class="cap">The cost of a coarser grain stays small up to an hour, then grows fast. At one hour, {{sw_share_1pct}} of SWITCHlan's bill value sits with parties whose bill moves by more than 1 %; at 3 hours, {{sw_share_1pct_3h}}.</div>
+<details><summary>Show as table</summary><div class="tablewrap" id="t-settle"></div></details></div>
+</section>
+
+<section>
+<h2>3 · Forecasting: does a coarser grain buy accuracy?</h2>
+<div class="col"><p>A coarse block is easier to forecast than a 5-minute one, but further from the truth inside the block. Measured against the 5-minute truth, the two effects cancel up to an hour, and the loss of detail wins after that. The SWITCHlan line with today's grid forecast is flat because that forecast misses by about half and swamps everything else; with the real grid factor (what a better grid forecast would approach) it has the same shape as Abilene.</p></div>
+<div class="fig" role="figure"><div class="ttl">Day-ahead rate, error against the 5-minute truth (%)</div>
+<div class="legend"><span><i class="sw" style="background:var(--s1)"></i>SWITCHlan, grid factor forecast</span><span><i class="sw" style="background:var(--s3)"></i>SWITCHlan, real grid factor</span><span><i class="sw" style="background:var(--s2)"></i>Abilene</span></div>
+<div id="c-fc"></div>
+<div class="cap">Best 5-minute model summed to each grain ({{sw_model}} on SWITCHlan, {{ab_model}} on Abilene). Daily statements: SWITCHlan {{sw_dbe_fc_1h}} at 1 hour and {{sw_dbe_fc_1d}} at a day with the grid forecast; Abilene {{ab_dbe_fc_1h}} and {{ab_dbe_fc_1d}}.</div>
+<details><summary>Show as table</summary><div class="tablewrap" id="t-fc"></div></details></div>
+
+<h3 class="col">Is the model as accurate on 5 minutes as on hours?</h3>
+<div class="col"><p>No. The same traffic forecast, scored against the truth at each resolution, gets better as the blocks get longer. A 5-minute value is the hour's mean plus a wiggle within the hour. The wiggle is {{sw_wh}} of the 5-minute variance of SWITCHlan's total ({{ab_wh}} on Abilene), and a day-ahead model predicts little of it: the learned models' 5-minute shape explains {{sw_sk_lo}} to {{sw_sk_hi}} of it on SWITCHlan, and copying last week's wiggle explains {{sw_snw_sk}} (it adds error). Scored at 5 minutes, every forecast carries this unforecastable part; scored on hours, it averages out. For the same reason, dropping a 5-minute forecast's own shape costs nothing, and a model trained on hours learns the same hourly profile.</p></div>
+<div class="tablewrap" id="t-res"></div>
+<p class="note col">Traffic error (WAPE) of the day-ahead forecast, scored against the truth at each resolution. Daily totals are better still because hourly errors partly cancel within a day.</p>
+
+<h3 class="col">At what grain should the model work?</h3>
+<div class="col"><p>Every 5-minute model of the ladder (summed to the grain) against a GBDT trained directly on each grain's data, with the real grid factor so that only the traffic forecast is compared.</p></div>
+<div class="tablewrap" id="t-grain"></div>
+<p class="note col">Error against the 5-minute truth (%), day-ahead. A model trained on 5-minute data and summed is at least as good as one trained on blocks; the direct hourly GBDT is the cheap alternative (it trains in seconds).</p>
+</section>
+
+<section>
+<h2>4 · A curve instead of values</h2>
+<div class="col"><p>Instead of a staircase, fit each day's forecast with a smooth function and publish its few coefficients: Fourier terms of the daily cycle, or a line through hourly or 3-hourly points.</p></div>
+<div class="tablewrap" id="t-curves"></div>
+<p class="note col">Error against the 5-minute truth, day-ahead, with each network's own grid forecast. Below about four harmonics the curve misses the daily shape; above it, nothing changes. Curves neither help nor hurt. Hourly values are simpler to audit and to bill against.</p>
+</section>
+
+<section>
+<h2>5 · How often to update</h2>
+<div class="col"><p>The same forecast issued 15 minutes, 1 hour, 8 hours or a day ahead, published hourly. For the grid factor, two rules: the last hour already known, and the same hour yesterday.</p></div>
+<div class="tablewrap" id="t-cadence"></div>
+<p class="note col">Error against the 5-minute truth (%), hourly values. The last known grid hour beats yesterday's within a few hours; from 8 hours ahead, yesterday's pattern is better. With the real grid factor, the traffic part alone goes from {{sw_trafday}} a day ahead to {{sw_traf1h}} an hour ahead.</p>
+</section>
+
+<section>
+<h2>6 · A range instead of one value</h2>
+<div class="col">
+<p>Each forecast hour gets a distribution: the point forecast multiplied by the errors the forecast made over the last W days, at the same hour and up to 3 hours either side. On SWITCHlan the traffic error and the grid error are taken from the same past day and hour, so that their joint behaviour is kept. Nothing is fitted: the method is a rolling empirical (conformal-style) calibration that adapts as errors change.</p>
+</div>
+<div class="fig" role="figure"><div class="ttl">Is the range honest? Share of outcomes below each forecast quantile</div>
+<div class="legend"><span><i class="sw" style="background:var(--s1)"></i>SWITCHlan ({{q_window}} days)</span><span><i class="sw" style="background:var(--s2)"></i>Abilene ({{q_window_ab}} days)</span><span><i class="sw" style="background:var(--ref)"></i>Perfect calibration</span></div>
+<div id="c-rel"></div>
+<div class="cap">On the diagonal, P10 is exceeded downward 10 % of the time, P90 upward 10 %. SWITCHlan is close to it at every level. Abilene's test is only {{ab_days}} days long and its calibration window short; its lower tail is too narrow.</div></div>
+<div class="tablewrap" id="t-cov"></div>
+<p class="note col">Coverage: share of hours inside the 80 % and 90 % bands. CRPS skill: how much better the distribution scores than the single value (CRPS of a single value is its absolute error). Width: the 80 % band relative to the median.</p>
+<div class="col"><p><b>What a range changes for decisions.</b> Picking tomorrow's cheapest hour by the P90 instead of the point forecast lowers the realised rate by {{dec_sw}} on SWITCHlan and {{dec_ab}} on Abilene: hours whose rate is uncertain are avoided. A customer who budgets at the P90 is exceeded in {{p90_exc}} of hours on SWITCHlan (10 % would be exact), but budgets on average {{p90_prem}} more than it ends up paying: the grid's uncertainty makes the upper band wide.</p></div>
+<div class="tablewrap" id="t-dec"></div>
+</section>
+
+<section>
+<h2>7 · What a grain is worth for moving traffic</h2>
+<div class="fig" role="figure"><div class="ttl">Share of the best possible saving captured by moving flexible traffic</div>
+<div class="legend"><span><i class="sw" style="background:var(--s1)"></i>SWITCHlan, perfect rate</span><span><i class="sw" style="background:var(--s3)"></i>SWITCHlan, forecast rate</span><span><i class="sw" style="background:var(--s2)"></i>Abilene, perfect rate</span><span><i class="sw" style="background:var(--ref)"></i>Abilene, forecast rate</span></div>
+<div id="c-sched"></div>
+<div class="cap">With a perfect rate, hourly values capture {{sw_sched_1h}} of what 5-minute values allow on SWITCHlan and {{ab_sched_1h}} on Abilene. With forecasts, 5-minute, 15-minute and hourly rates all land near {{sw_sched_fc}} on SWITCHlan: forecast error, not the grain, is the limit.</div>
+<details><summary>Show as table</summary><div class="tablewrap" id="t-sched"></div></details></div>
+</section>
+
+<section class="col">
+<h2>8 · Limits</h2>
+<ul>
+<li><b>The grid factor is hourly</b> on SWITCHlan and annual on Abilene, so nothing finer than an hour can follow the grid. A 15-minute grid series would make 15-minute rates worth testing again.</li>
+<li><b>Abilene's test is short</b> ({{ab_days}} days after removing a gap), too short to calibrate distributions well.</li>
+<li><b>One season per network</b>, and a flat rate only; path-based rates were not tested at each grain.</li>
+<li><b>Scheduling moves the bill, not the emissions</b>: the physical effect of shifting traffic inside a network is about zero (see the carbon-rates report).</li>
+</ul>
+</section>
+
+<section class="col">
+<h2>9 · Reproduce</h2>
+<p><code>python recipes/carbon_granularity/run.py</code> (after <code>recipes/carbon_rates</code> and <code>recipes/abilene</code>), then <code>python recipes/carbon_granularity/build_report.py</code>. The functions are in <code>green_routing.carbon.granularity</code>.</p>
+</section>
+</div>
+<div id="tip" hidden></div>
+
+<script>
+/*DATA*/
+const tip = document.getElementById("tip");
+function showTip(e, html) { tip.innerHTML = html; tip.hidden = false; const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8); tip.style.left = x + "px"; tip.style.top = (e.clientY + 14) + "px"; }
+function hideTip() { tip.hidden = true; }
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent, text) { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (text !== undefined) n.textContent = text; if (parent) parent.appendChild(n); return n; }
+function svg(host, w, h) { const s = el("svg", { viewBox: `0 0 ${w} ${h}`, role: "img" }); document.getElementById(host).appendChild(s); return s; }
+const pct = (v, d = 1) => (v * 100).toFixed(d) + " %";
+const fmt = (v, d = 2) => Number(v).toLocaleString("en-GB", { minimumFractionDigits: d, maximumFractionDigits: d });
+function table(host, head, rows) { const t = document.createElement("table"); t.innerHTML = "<thead><tr>" + head.map(h => `<th class="${h[1] || ""}">${h[0]}</th>`).join("") + "</tr></thead><tbody>" + rows.map(r => "<tr>" + r.map((c, j) => `<td class="${head[j][1] || ""}">${c}</td>`).join("") + "</tr>").join("") + "</tbody>"; document.getElementById(host).appendChild(t); }
+function hover(m, h) { m.addEventListener("mousemove", e => showTip(e, h)); m.addEventListener("mouseleave", hideTip); }
+
+// category line chart: xs = grain labels, series [{n, c, v (fractions, null allowed)}]
+function lines(host, xs, series, opts) {
+  const W = opts.w || 440, H = opts.h || 220, L = 44, R = 12, T = 12, B = 26;
+  const s = svg(host, W, H), all = series.flatMap(sr => sr.v).filter(v => v !== null);
+  const lo = opts.lo ?? 0, hi = opts.hi ?? Math.max(...all) * 1.08;
+  const x = i => L + i / (xs.length - 1) * (W - L - R), y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+  for (let k = 0; k <= 4; k++) { const v = lo + (hi - lo) * k / 4; el("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), class: "grid" }, s); el("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end" }, s, Math.round(v * 100) + "%"); }
+  xs.forEach((g, i) => el("text", { x: x(i), y: H - 8, "text-anchor": "middle" }, s, g));
+  series.forEach(sr => {
+    const pts = sr.v.map((v, i) => v === null ? null : [x(i), y(v)]).filter(p => p);
+    el("polyline", { points: pts.map(p => p.join(",")).join(" "), fill: "none", class: sr.c, "stroke-width": 2, "stroke-linejoin": "round", "stroke-dasharray": sr.dash || "" }, s);
+    sr.v.forEach((v, i) => { if (v === null) return; const c = el("circle", { cx: x(i), cy: y(v), r: 4.5, class: sr.c.replace("l", "k"), stroke: "var(--surface)", "stroke-width": 1.5 }, s); hover(c, `<b>${sr.n}</b><br>${xs[i]}: ${pct(v)}`); });
+  });
+}
+const GR = DATA.grains;
+lines("c-var", GR, [{ n: "SWITCHlan", c: "l1", v: DATA.settle.sw_var }, { n: "Abilene", c: "l2", v: DATA.settle.ab_var }], { lo: 0.4, hi: 1.0, w: 420, h: 210 });
+lines("c-dbe", GR, [{ n: "SWITCHlan", c: "l1", v: DATA.settle.sw_dbe }, { n: "Abilene", c: "l2", v: DATA.settle.ab_dbe }], { lo: 0, w: 420, h: 210 });
+table("t-settle", [["Grain"], ["SWITCHlan: variation kept", "num"], ["daily statements", "num"], ["Abilene: variation kept", "num"], ["daily statements", "num"]],
+  GR.map((g, i) => [g, pct(DATA.settle.sw_var[i]), pct(DATA.settle.sw_dbe[i], 2), pct(DATA.settle.ab_var[i]), pct(DATA.settle.ab_dbe[i], 2)]));
+lines("c-fc", GR, [{ n: "SWITCHlan, grid forecast", c: "l1", v: DATA.fc.sw_fc }, { n: "SWITCHlan, real grid", c: "l3", v: DATA.fc.sw_act }, { n: "Abilene", c: "l2", v: DATA.fc.ab }], { lo: 0, w: 900, h: 240 });
+table("t-fc", [["Grain"], ["SWITCHlan, grid forecast", "num"], ["SWITCHlan, real grid", "num"], ["Abilene", "num"]], GR.map((g, i) => [g, pct(DATA.fc.sw_fc[i]), pct(DATA.fc.sw_act[i]), pct(DATA.fc.ab[i])]));
+table("t-grain", [["Forecast"], ["SWITCHlan 1 h", "num"], ["SWITCHlan 3 h", "num"], ["Abilene 1 h", "num"], ["Abilene 3 h", "num"]],
+  DATA.grain.map(r => [r.s].concat([r.sw1, r.sw3, r.ab1, r.ab3].map(v => v === null ? "—" : pct(v)))));
+table("t-res", [["Forecast"]].concat(GR.map(g => [g, "num"])), DATA.res.map(r => [r.s].concat(r.v.map(v => v === null ? "—" : pct(v)))));
+table("t-curves", [["Published as"], ["Numbers per day", "num"], ["SWITCHlan", "num"], ["Abilene", "num"]], DATA.curves.map(r => [r.c, r.p, pct(r.sw), pct(r.ab)]));
+table("t-cadence", [["Issued"], ["SWITCHlan, last known grid hour", "num"], ["SWITCHlan, same hour yesterday", "num"], ["SWITCHlan, real grid", "num"], ["Abilene", "num"]],
+  DATA.cadence.map(r => [r.l, r.last === null ? "—" : pct(r.last), pct(r.yest), pct(r.act), pct(r.ab)]));
+// reliability
+(function () {
+  const W = 440, H = 300, L = 44, R = 14, T = 12, B = 34, s = svg("c-rel", W, H);
+  const x = v => L + v * (W - L - R), y = v => T + (1 - v) * (H - T - B);
+  [0, 0.25, 0.5, 0.75, 1].forEach(v => { el("line", { x1: x(0), x2: x(1), y1: y(v), y2: y(v), class: "grid" }, s); el("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end" }, s, Math.round(v * 100) + "%"); el("text", { x: x(v), y: H - 16, "text-anchor": "middle" }, s, "P" + Math.round(v * 100)); });
+  el("text", { x: L + (W - L - R) / 2, y: H - 2, "text-anchor": "middle" }, s, "forecast quantile");
+  el("line", { x1: x(0), y1: y(0), x2: x(1), y2: y(1), class: "lref", "stroke-dasharray": "5 4", "stroke-width": 1.5 }, s);
+  [["sw", "l1", "SWITCHlan"], ["ab", "l2", "Abilene"]].forEach(([k, c, n]) => {
+    const d = DATA.rel[k];
+    el("polyline", { points: d.level.map((l, i) => x(l) + "," + y(d.obs[i])).join(" "), fill: "none", class: c, "stroke-width": 2 }, s);
+    d.level.forEach((l, i) => { const m = el("circle", { cx: x(l), cy: y(d.obs[i]), r: 4, class: c.replace("l", "k"), stroke: "var(--surface)", "stroke-width": 1.5 }, s); hover(m, `<b>${n}</b><br>P${Math.round(l * 100)}: ${pct(d.obs[i])} of outcomes below`); });
+  });
+})();
+table("t-cov", [["Network, uncertainty"], ["Window", "num"], ["80 % band", "num"], ["90 % band", "num"], ["Width (80 %)", "num"], ["CRPS skill", "num"]],
+  DATA.cov.map(r => [r.k, r.w + " d, " + r.h + " h", pct(r.c80), pct(r.c90), "±" + pct(r.wd / 2, 0), pct(r.sk)]));
+table("t-dec", [["Pick tomorrow's cheapest hour by"], ["SWITCHlan g/GB", "num"], ["Abilene g/GB", "num"]], DATA.dec.map(r => [r.c, fmt(r.sw, 5), fmt(r.ab, 2)]));
+// scheduling
+lines("c-sched", DATA.sched.grains, [{ n: "SWITCHlan, perfect", c: "l1", v: DATA.sched.sw_p }, { n: "SWITCHlan, forecast", c: "l3", v: DATA.sched.sw_f },
+  { n: "Abilene, perfect", c: "l2", v: DATA.sched.ab_p }, { n: "Abilene, forecast", c: "lref", v: DATA.sched.ab_f }], { lo: 0, hi: 1.0, w: 900, h: 240 });
+table("t-sched", [["Grain"], ["SWITCHlan perfect", "num"], ["SWITCHlan forecast", "num"], ["Abilene perfect", "num"], ["Abilene forecast", "num"]],
+  DATA.sched.grains.map((g, i) => [g, pct(DATA.sched.sw_p[i]), pct(DATA.sched.sw_f[i]), pct(DATA.sched.ab_p[i]), pct(DATA.sched.ab_f[i])]));
+</script>

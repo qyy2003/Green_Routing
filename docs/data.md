@@ -150,6 +150,30 @@ sp = json.load(open("artifacts/traffic2024/splits.json"))
 X_train = X[sp["split"]["train"][0]:sp["split"]["train"][1]]   # normalise with train stats only
 ```
 
+## Second dataset: Abilene (NetFlow, 2004)
+
+`green_routing.dataset.abilene` loads the Abilene traffic-matrix archive
+([Zhang et al.](https://www.cs.utexas.edu/~yzhang/research/AbileneTM/)): Internet2's US
+backbone in 2004, 12 routers, 15 links (all OC-192 but one OC-48), 24 weeks of 5-minute
+origin-destination matrices from sampled NetFlow (1 in 100 packets, scaled back), the
+OSPF routing matrix and the topology with capacities and OSPF weights. Unlike SWITCHlan,
+the traffic matrix is measured, so link loads and router totals are exact sums of it.
+
+| | |
+|---|---|
+| Files | `$GR_REFERENCE_DIR/abilene/` (`abilene.download`, ~170 MB, public) |
+| Used | weeks X06–X24, 2004-05-01 → 09-10 (the contiguous run; X01–X05 have gaps between them) |
+| Cleaning | X21 repeats X20's last day (dropped); 2004-08-20 is missing; one corrupt hour in X24 (70 Gbit/s on a 10 Gbit/s router) is removed by `abilene.clean` (snapshots above 5x the day's median) |
+| Times | taken as UTC (the archive does not say) |
+| Units | the archive's 100 bytes / 5 min → Mbit/s (`UNIT_TO_MBPS`) |
+| Topology file | a `router` section (name city lat lon) and a `link` section (x y kbps OSPF), both four fields per line: parse by section |
+
+`abilene.write_mirror(ds, root, "links" | "total")` writes the 15 links (both directions),
+the 12 routers' edge traffic, or the network total as CSVs in the export's format, so
+`GR_DATA_SOURCE=local GR_LOCAL_ROOT=<root>` runs `gr-benchmark` / `gr-dense` on Abilene
+unchanged (`recipes/abilene`). Run it without `--calendar`: the holiday table is Swiss,
+2025-26, and refuses other dates.
+
 ## Notes
 
 - **Power**: `router-power/` CSVs come in four schemas (`config.PSU_SCHEMAS`):

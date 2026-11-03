@@ -160,7 +160,7 @@ identical decimals.
 ## The carbon bills
 
 ```bash
-recipes/carbon/run.sh all        # network grid inventory dependence allocate bills report verify
+recipes/carbon/run.sh all        # network grid inventory dependence allocate bills total report verify
 ```
 
 Needs the year run's dense logs (`artifacts/pred_year/merged/dense`, block layout), the
@@ -186,6 +186,19 @@ A failure usually means the inputs moved, not the code: the bucket is rewritten 
 Maps revises its estimates. A changed count of routers, doors or parties points at the
 first two; a shifted WAPE with unchanged counts at the grid data. `python
 recipes/carbon/verify.py --snapshot` rewrites `expected.json`, only from a run you trust.
+
+## The second dataset (Abilene)
+
+```bash
+recipes/abilene/run.sh all       # data train merge dense carbon
+```
+
+Downloads the public Abilene archive (~170 MB) into `$GR_REFERENCE_DIR/abilene`, writes
+two one-file-per-series mirrors (links + routers, and the network total), trains every
+tier on both with the year recipe's settings except `--calendar` (the holiday table is
+Swiss), and computes Abilene's carbon rates from its measured flows with the energy and
+grid inputs in `recipes/abilene/` (public sources, committed). The runs keep their own
+panel caches under `$GR_ARTIFACTS_DIR/abilene/cache_*`.
 
 ## Moving results between machines
 

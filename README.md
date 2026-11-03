@@ -39,7 +39,7 @@ one global model per tier cuts the typical link's error against "repeat the last
 ([results](docs/results.md)).
 
 Fed into the carbon bills of the same 111 days (2.66 t CO₂ over 306 parties), the best
-traffic model misses the daily bill by **12 %**, half of persistence's 25 %; with a
+traffic model misses the daily bill by **12 %**, half of persistence's 24 %; with a
 day-ahead forecast of the grid's carbon intensity the miss grows to **31 %**, most of it
 from the grid forecast ([carbon.md](docs/carbon.md)).
 
@@ -57,6 +57,9 @@ from the grid forecast ([carbon.md](docs/carbon.md)).
 | Build tensors + graph + splits for your own models | `gr-build-tensor` | [data.md](docs/data.md#node-tensors-for-other-models-gr-build-tensor) |
 | Find link ends, router tiers and interface roles (traffic matching + reverse DNS) | `gr-network all` | [carbon.md](docs/carbon.md#the-pipeline) |
 | Energy inventory, grid factors, per-party carbon bills settled and a day ahead | `gr-carbon …` · `recipes/carbon/run.sh all` | [carbon.md](docs/carbon.md) |
+| Compare a flat and a path-based carbon rate; forecast the total traffic with every model | `recipes/carbon_rates/run.sh all` | [carbon.md](docs/carbon.md#carbon-rates-flat-or-by-path) |
+| Forecast the total traffic a day ahead as well as possible (pretrained models, calendars, ensembles) | `recipes/flat_forecast/run.sh all` · `green_routing.carbon.dayahead` | [carbon.md](docs/carbon.md#forecasting-the-total-for-the-flat-rate) |
+| Rerun everything on a second network with measured traffic matrices (Abilene, NetFlow 2004) | `recipes/abilene/run.sh all` · `green_routing.dataset.abilene` | [data.md](docs/data.md#second-dataset-abilene-netflow-2004) |
 
 ## Quickstart
 

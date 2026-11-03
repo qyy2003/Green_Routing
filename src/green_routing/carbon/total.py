@@ -94,6 +94,60 @@ def turnaround(traffic: dict, interfaces: pd.DataFrame, doors: pd.DataFrame, H) 
     return pd.DataFrame(rows).sort_values("local_lb_gbps", ascending=False)
 
 
+# --- the total as a one-series dataset for the forecasting ladder ---------------------------
+
+def _door_5min(item):
+    link, uri, G = item
+    from ..dataset import loaders
+    try:
+        df = loaders.interface_throughput(uri)
+    except Exception:          # noqa: BLE001 -- a door without data adds nothing
+        return link, None, None
+    df = df[~df.index.duplicated()].reindex(G)
+    return link, df.get("in_mbps"), df.get("out_mbps")
+
+
+def door_5min(doors: pd.DataFrame, start: str, end: str, workers: int = 16):
+    """Every door's in and out traffic on the 5-minute grid of [start, end) (Mbit/s, gaps up
+    to 1 h interpolated, else 0), and the traffic-weighted share of live doors reporting."""
+    import multiprocessing as mp
+    from ..dataset import loaders
+    G = pd.date_range(pd.Timestamp(start, tz="UTC"), pd.Timestamp(end, tz="UTC"), freq="5min", inclusive="left")
+    uri = {f"{d}/{i}": u for d, i, u in loaders.iter_interface_files()}
+    items = [(x, uri[x], G) for x in doors.link if x in uri]
+    with mp.get_context("fork").Pool(workers) as pool:
+        res = pool.map(_door_5min, items, chunksize=4)
+    din = pd.DataFrame({k: v for k, v, _ in res if v is not None}, index=G).astype("float32")
+    dout = pd.DataFrame({k: v for k, _, v in res if v is not None}, index=G).astype("float32")
+    raw = din + dout
+    w = raw.mean() / raw.mean().sum()
+    first, last = raw.notna().idxmax(), raw[::-1].notna().idxmax()
+    alive = pd.DataFrame({x: (G >= first[x]) & (G <= last[x]) for x in raw}, index=G)
+    cov = (raw.notna() * w).sum(axis=1) / (alive * w).sum(axis=1)
+    fill = lambda X: X.interpolate(limit=12, limit_area="inside").fillna(0)   # noqa: E731
+    return fill(din), fill(dout), cov
+
+
+def total_5min(doors: pd.DataFrame, start: str, end: str, workers: int = 16, min_coverage: float = 0.95):
+    """Sum of every door's in and out traffic on the 5-minute grid of [start, end) (Mbit/s).
+    Gaps up to 1 h are interpolated per door; steps where the doors reporting carry less
+    than ``min_coverage`` of the traffic (a data outage) are NaN."""
+    din, dout, cov = door_5min(doors, start, end, workers)
+    bad = cov < min_coverage
+    return din.sum(axis=1).where(~bad), dout.sum(axis=1).where(~bad), cov
+
+
+def write_total_mirror(tin: pd.Series, tout: pd.Series, root: str | Path) -> Path:
+    """Write the total as ``<root>/router-interfaces/total/all.csv`` in the export's format
+    (bytes/s, named columns), so ``GR_DATA_SOURCE=local GR_LOCAL_ROOT=<root>`` makes the
+    whole forecasting ladder (gr-benchmark, gr-dense) run on it unchanged."""
+    f = Path(root) / "router-interfaces" / "total" / "all.csv"
+    f.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame({"timestamp": tin.index.astype("int64") // 10**9,
+                  "ifHCInOctets": tin.values * 1e6 / 8, "ifHCOutOctets": tout.values * 1e6 / 8}).to_csv(f, index=False)
+    return f
+
+
 # --- top-down forecasts ----------------------------------------------------------------
 
 def _week_mean(s, k):
@@ -206,9 +260,12 @@ def run(run_dir, network_dir, alloc_dir, inv_dir, grid_dir, sites: pd.DataFrame,
     gb = lambda t: t * 1e3 * A.GB_PER_MBPS_HOUR                         # noqa: E731  GB per hour
     sig = B(IA) / gb(y)
     rows = []
-    for k in ["same hour last week", "GBDT on the total (top-down)", "sum of patchtst door forecasts (bottom-up)"]:
+    for k in ["actual traffic", "same hour last week", "GBDT on the total (top-down)",
+              "sum of patchtst door forecasts (bottom-up)"]:
         for gname, I_ in (("actual grid", IA), ("grid forecast", IF)):
-            f = B(I_) / gb(F[k])
+            if k == "actual traffic" and gname == "actual grid":
+                continue
+            f = B(I_) / gb(y if k == "actual traffic" else F[k])
             rows.append(dict(traffic=k, grid=gname, signal_WAPE=float((f - sig).abs().sum() / sig.sum())))
     S = pd.DataFrame(rows)
     S.to_csv(out / "signal_errors.csv", index=False)

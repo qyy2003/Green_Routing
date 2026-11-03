@@ -1,0 +1,11 @@
+source,g_per_kWh,note
+coal,1043,EIA FAQ (CO2 per kWh by fuel): 2.30 lb/kWh [check value and year]
+gas,440,EIA FAQ: 0.97 lb/kWh [check]
+oil,1080,EIA FAQ: 2.38 lb/kWh [check]
+nuclear,0,no combustion
+hydro,0,no combustion
+solar,0,no combustion
+wind,0,no combustion
+geothermal,0,combustion-only basis
+other,0,mostly biomass and waste; biogenic CO2 is reported separately under the GHG Protocol
+unknown,440,assumed gas-like

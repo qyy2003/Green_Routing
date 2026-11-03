@@ -13,14 +13,18 @@
 # Output: $GR_ARTIFACTS_DIR/pred_year/{part_*, merged}. Every step can be re-run: a
 # finished part is skipped, an interrupted one resumes from its last epoch.
 # PARALLEL (default 5) = parts trained at once; on a GPU under ~16 GB use PARALLEL=2.
+# LOSS=symmetric trains the torch tiers with a symmetric loss into pred_year_sym instead
+# (flags.sh); the baselines and GBDT parts are copied from pred_year when it has them.
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 source "$RECIPES/year/flags.sh"
 need gr-benchmark
 
-YEAR="$GR_ARTIFACTS_DIR/pred_year"
+YEAR="$GR_ARTIFACTS_DIR/$YEAR_RUN"
 MERGED="$YEAR/merged"
 : "${PARALLEL:=5}"
+# Parts the loss does not reach: identical under every LOSS, so reused from the reference.
+LOSS_FREE_PARTS=(baselines gbdt)
 
 step_check() {
   # The fingerprint is the gate: with a pinned (copied) panel the bucket isn't needed.
@@ -36,6 +40,12 @@ step_train() {
     name="${part%%:*}"; only="${part#*:}"
     if [[ -f "$YEAR/part_$name/aggregate.csv" ]]; then
       log "part_$name already complete — skipping"; continue
+    fi
+    local ref="$GR_ARTIFACTS_DIR/pred_year/part_$name"
+    if [[ "$YEAR_RUN" != pred_year && " ${LOSS_FREE_PARTS[*]} " == *" $name "* \
+          && -f "$ref/aggregate.csv" ]]; then
+      log "part_$name does not use the loss — copying it from pred_year"
+      mkdir -p "$YEAR"; cp -a "$ref" "$YEAR/part_$name"; continue
     fi
     args+=("part_$name" "gr-benchmark $YEAR_FLAGS --only $only --out '$YEAR/part_$name'")
   done
@@ -83,7 +93,11 @@ step_dense() {
   done
 }
 
-step_verify() { "$PYTHON" "$RECIPES/year/verify.py" --run "$MERGED"; }
+step_verify() {
+  [[ "$LOSS" == peak ]] || log "NOTE: expected.json is the peak-aware reference; with LOSS=$LOSS" \
+    "only the data and baseline checks are meant to pass, the learned models will differ"
+  "$PYTHON" "$RECIPES/year/verify.py" --run "$MERGED"
+}
 step_viewer() { gr-viewer "$MERGED" "$@"; }
 
 cmd="${1:-}"; shift || true

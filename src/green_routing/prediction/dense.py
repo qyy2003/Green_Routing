@@ -337,6 +337,67 @@ def _predict_torch(rc: RunCtx, m, batch: int, tag: str = "", smooth=(),
             _finish(arr, tmp)
 
 
+def _predict_foundation(rc: RunCtx, name: str, batch: int, tag: str = "", context: int = 8064,
+                        step: str = "5min", horizons=("8h", "day", "week"), device: str = "cuda"):
+    """A pretrained model, zero-shot, block layout only (no training, no rolling log): at
+    every window start of horizon H, each link's last ``context`` steps -> the next H steps
+    (median). ``step="1h"`` feeds hourly means (>= 6 of 12 steps, else missing; ``context``
+    is then in hours) and repeats each hourly forecast over its 12 steps, so hourly and daily
+    WAPE are exact and 5-minute scores are not comparable. Missing values go in as NaN.
+    ``name``: "timestral" (Mistral's Timestral-209M) or "timestral-28M" etc."""
+    import torch
+    from timestral import TimestralForecaster
+    size = name.split("-", 1)[1] if "-" in name else "209M"
+    fm = TimestralForecaster.from_pretrained(f"mistralai/Timestral-{size}", device=device)
+    V = rc.values_raw.astype(np.float32)                         # [T, L]
+    per = {"5min": 1, "1h": 3600 // config.STEP_SECONDS}[step]
+    ts = rc.panel.timestamps
+    if per > 1:
+        off = int(np.flatnonzero(ts % 3600 == 0)[0])
+        nh = (rc.T - off) // per
+        blk = V[off:off + nh * per].reshape(nh, per, rc.L)
+        cnt = np.isfinite(blk).sum(axis=1)
+        with np.errstate(invalid="ignore"):
+            src = np.where(cnt >= per // 2, np.nanmean(blk, axis=1), np.nan).astype(np.float32)
+    else:
+        off, src = 0, V
+    vname = name + tag
+    arr, tmp = _alloc(rc, "block", vname)
+    t0 = time.time()
+    for hi, (hn, H) in enumerate(zip(rc.hnames, rc.hsteps)):
+        if hn not in horizons:
+            continue
+        if H % per:
+            raise SystemExit(f"{vname}: horizon {hn} is not a whole number of input steps")
+        starts = np.arange(rc.lo, rc.T, H)
+        if per > 1 and ((starts - off) % per).any():
+            raise SystemExit(f"{vname}: window starts of {hn} are not on the hour")
+        so = (starts - off) // per                                 # origins in input steps
+        hlen = H // per
+        jobs = [(j, k) for j in range(rc.L) for k in range(len(starts))]
+        out = np.full((rc.L, rc.n_t), np.nan, np.float32)
+        for b0 in range(0, len(jobs), batch):
+            jb = jobs[b0:b0 + batch]
+            X = np.full((len(jb), 1, context), np.nan, np.float32)
+            for r, (j, k) in enumerate(jb):
+                a = max(0, so[k] - context)
+                X[r, 0, context - (so[k] - a):] = src[a:so[k], j]
+            with torch.inference_mode():
+                f = fm.forecast(X, prediction_length=hlen)
+            med = f.median[:, 0, :].float().cpu().numpy()             # [B, hlen]
+            for r, (j, k) in enumerate(jb):
+                if not np.isfinite(X[r, 0, -max(1, 288 // per):]).any():
+                    continue                                        # nothing seen in the last day
+                path = np.repeat(med[r], per) if per > 1 else med[r]
+                tg = starts[k] - rc.lo + np.arange(H)
+                keep = tg < rc.n_t
+                out[j, tg[keep]] = path[keep]
+        arr[:, hi, :] = out
+        print(f"  [{vname}] {hn}: {len(jobs)} forecasts, {time.time() - t0:.0f}s", flush=True)
+    _finish(arr, tmp)
+    del fm
+
+
 def _write_meta(rc: RunCtx):
     done = sorted({p.stem.split("_", 2)[2] for p in rc.out.glob("pred_*_*.npy")
                    if not p.name.endswith(".tmp.npy")})
@@ -365,6 +426,9 @@ def cmd_predict(args):
         if name in BASELINE_NAMES:
             eng = eng or _BaselineEngine(rc)
             _predict_baseline(rc, name, eng)
+        elif name.startswith("timestral"):
+            _predict_foundation(rc, name, args.batch, tag=args.tag, context=args.fm_context,
+                                step=args.fm_step, horizons=tuple(args.fm_horizons.split(",")))
         else:
             (m,) = rc.models({name})
             smooth = [int(w) for w in args.smooth.split(",")] if args.smooth else []
@@ -600,7 +664,7 @@ def _print_summary(mode, od: Path, hnames):
     w = pd.read_csv(od / "wape.csv")
     print(f"\n===== dense [{mode}] per-link median MAE ratio vs persistence =====")
     print(r.pivot_table(index="model", columns="horizon_name", values="median_ratio")
-          [hnames].round(3).to_string())
+          .reindex(columns=hnames).round(3).to_string())     # horizons with no common target: NaN
     print(f"\n===== dense [{mode}] WAPE % pooled / median per-link =====")
     pw = w.pivot_table(index="model", columns="horizon_name",
                        values=["pooled_wape", "median_wape"])
@@ -637,6 +701,12 @@ def main():
             s.add_argument("--origin-stride", type=int, default=1,
                            help="forecast from every s-th origin (block logs exact "
                                 "when s divides every horizon; rolling every s-th target)")
+            s.add_argument("--fm-context", type=int, default=8064,
+                           help="pretrained models (timestral*): context in input steps")
+            s.add_argument("--fm-step", default="5min", choices=("5min", "1h"),
+                           help="pretrained models: feed 5-minute values or hourly means")
+            s.add_argument("--fm-horizons", default="8h,day,week",
+                           help="pretrained models: horizons to forecast (block log only)")
         if name == "metrics":
             s.add_argument("--common", action="store_true",
                            help="score every model of a mode on the points ALL of them "

@@ -193,12 +193,12 @@ the block logs (`day` horizon). Daily bill error, WAPE across parties:
 
 | Traffic forecast | Actual grid factor | Day-ahead grid factor (same hour yesterday) |
 |---|---|---|
-| PatchTST | **11.7 %** | **31.4 %** |
-| TCN | 11.9 % | 31.5 % |
-| GRU | 11.9 % | 31.5 % |
-| DLinear | 12.8 % | 31.8 % |
-| seasonal naive, day / week | 15.0 % / 21.0 % | 33.0 % / 37.7 % |
-| persistence | 24.5 % | 39.4 % |
+| PatchTST | **11.5 %** | **31.1 %** |
+| TCN | 11.7 % | 31.2 % |
+| GRU | 11.7 % | 31.3 % |
+| DLinear | 12.6 % | 31.5 % |
+| seasonal naive, day / week | 14.8 % / 20.8 % | 32.9 % / 37.5 % |
+| persistence | 24.0 % | 38.9 % |
 | actual traffic | 0 | 28.0 % |
 
 The ranking of the traffic models carries over from the link-level metrics, but the bill
@@ -206,7 +206,62 @@ error is dominated by the grid-factor forecast: better grid forecasts are worth 
 better traffic models. GBDT has no block log (it forecasts one point per horizon), so it
 is not in the table.
 
-## 5. Caveats
+The total traffic (bytes counted once at the doors, mean 261 Gb/s) forecast a day ahead:
+a GBDT trained on the total alone reaches 11.1 % hourly WAPE, the same as the sum of the
+TCN door forecasts (11.1 %; daily 7.9 % vs 7.2 %), against 16.7 % for the same hour last
+week and 26.5 % for persistence. It does not replace the door forecasts in the bill,
+which depends only on each party's share ([carbon.md](carbon.md#total-network-traffic)).
+
+## 5. Carbon rates: one model for the total traffic
+
+For the flat carbon rate (backbone emissions / bytes carried) only the total traffic needs
+forecasting. Trained on that single series with the year flags, day-ahead hourly WAPE:
+TCN 12.0 %, GRU 13.0 %, PatchTST 13.9 %, DLinear 13.9 %, historical average 14.3 %, same
+time last week 16.7 %, persistence 29.2 % (a GBDT on the hourly total 11.1 %; the sum of
+the per-door forecasts 11.1 %). Every-origin WAPE by horizon is in
+`artifacts/carbon_rates/flat/traffic_by_horizon.csv`; the path-based alternative and the
+flow-vs-counters check are in [carbon.md](carbon.md#carbon-rates-flat-or-by-path).
+
+## 6. Second dataset: Abilene (NetFlow, 2004)
+
+The same ladder on Abilene (`recipes/abilene`; 27 link and router series, and the network
+total; train to 2004-07-24, validation 2 weeks, test 2004-08-14 → 09-10, no calendar
+features). Per-link median MAE ratio vs persistence, 112 sampled origins:
+
+| Horizon | 15 min | 1 h | 8 h | 1 day | 1 week |
+|---|---|---|---|---|---|
+| best model | Holt-Winters **0.921** | DLinear **0.931** | PatchTST **0.555** | PatchTST **0.677** | GRU **0.798** |
+
+The shape matches SWITCHlan's (0.787 / 0.538 / 0.748 / 0.849 at 1 h / 8 h / 1 day / 1 week):
+little to gain at 15 minutes, the most at 8 hours. Holt-Winters and SARIMA, which refit per
+link and origin, help only at 15 minutes and fall far behind persistence at a week
+(1.52 and 1.74). One model on the network total,
+day-ahead hourly WAPE: PatchTST 11.9 %, DLinear 13.2 %, TCN 13.7 %, GRU 16.2 %,
+historical average 18.7 %, same time last week 20.6 %, persistence 21.4 %. Carbon rates
+on Abilene: [carbon.md](carbon.md#second-dataset-abilene-netflow-2004).
+
+## 7. How fine to publish and forecast the rate
+
+From `recipes/carbon_granularity` ([carbon.md](carbon.md#granularity-and-uncertainty-of-the-rate)):
+publish hourly (98.8 % of the 5-minute rate's variance kept, daily statements within 0.4 %),
+forecast at 5 minutes and sum or directly at hours (the same hourly forecast; the model
+itself is more accurate on hours, 13.6 % → 12.0 % traffic WAPE, because the within-hour
+wiggle is unforecastable a day ahead), update hourly (52 % → 38 %
+error on SWITCHlan), publish calibrated quantiles (80 % band covers 78.5 %, CRPS −18 %);
+fitted curves add nothing over hourly values.
+
+## 8. Forecasting the total for the flat rate
+
+From `recipes/flat_forecast` ([carbon.md](carbon.md#forecasting-the-total-for-the-flat-rate)),
+day-ahead hourly WAPE of the total on the test block (choices made on Nov 2025 – Mar 2026):
+GBDT as used so far 11.0 %, TCN 12.0 %; Chronos-2 zero-shot 10.7 % (10.7 % on the
+development period, where the best GBDT is 11.6 %); final forecast 0.8 × Chronos-2 +
+0.2 × GBDT with the GBDT alone on holidays: **10.0 %** (−1.1 points, 95 % interval
+0.5–1.8). Chronos-2 on 5-minute input 15.4 %; fine-tuned 11.7 %; TCN with a symmetric loss
+11.3 % (12.1 % with the peak-aware loss, three seeds each); with the TCN as a third member 9.8 %
+(test only). Abilene: Chronos-2 12.2 % vs 15.4–15.6 % for trained models.
+
+## 9. Caveats
 
 - Single seed per model; the measured run-to-run noise is about ±1 % of the median ratio.
 - The month TCN comparison is at a matched 20-epoch budget, not to convergence.

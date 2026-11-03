@@ -76,15 +76,15 @@
   "tol": 0
  },
  "bills.WAPE_daily[patchtst + grid actual]": {
-  "value": 0.1174954532040471,
+  "value": 0.115242593517344,
   "tol": "abs:0.005"
  },
  "bills.WAPE_daily[persistence + grid actual]": {
-  "value": 0.24509892565311,
+  "value": 0.2400857318491905,
   "tol": "abs:0.005"
  },
  "bills.WAPE_daily[patchtst + grid fc]": {
-  "value": 0.3141510111496907,
+  "value": 0.3113799518032597,
   "tol": "abs:0.005"
  },
  "bills.WAPE_daily[traffic actual + grid fc]": {

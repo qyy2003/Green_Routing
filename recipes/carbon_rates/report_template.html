@@ -1,0 +1,327 @@
+<title>SWITCHlan Carbon Rates</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Public+Sans:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (~70ch) with figures allowed to run wider; a technical report in the same family as the bills report. */
+:root {
+  --bg: #f5f7f6; --surface: #ffffff; --ink: #17201c; --muted: #56635d; --rule: #d6ddd9; --accent: #1b6a50; --accent-soft: #e3efe9;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --ref: #8a948f;
+  --f-display: "Newsreader", Georgia, "Times New Roman", serif;
+  --f-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121614; --surface: #1a201d; --ink: #e6ebe8; --muted: #a2ada8; --rule: #2d3632; --accent: #5cc29b; --accent-soft: #1d2c25;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --ref: #7d8783; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #121614; --surface: #1a201d; --ink: #e6ebe8; --muted: #a2ada8; --rule: #2d3632; --accent: #5cc29b; --accent-soft: #1d2c25;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --ref: #7d8783; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font: 16px/1.6 var(--f-body); }
+.wrap { max-width: 980px; margin: 0 auto; padding-block: 40px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.col { max-width: 70ch; }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 600; line-height: 1.2; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2rem, 4.5vw, 2.8rem); }
+h2 { font-size: 1.6rem; margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--rule); }
+h3 { font-size: 1.2rem; margin-top: 28px; }
+p, ul, ol { margin: 12px 0 0; }
+li + li { margin-top: 6px; }
+a { color: var(--accent); }
+code, .mono { font-family: var(--f-mono); font-size: 0.86em; }
+.eyebrow { font: 500 0.78rem/1.4 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: 1.12rem; margin-top: 16px; }
+.meta { color: var(--muted); font-size: 0.9rem; margin-top: 10px; }
+.brief { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 18px 22px; margin-top: 28px; }
+.brief ol { padding-left: 1.2em; margin-top: 8px; }
+.brief b { font-variant-numeric: tabular-nums; }
+.tablewrap { overflow-x: auto; margin-top: 16px; }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--rule); }
+th { font: 600 0.78rem/1.3 var(--f-body); color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr.best td { font-weight: 600; }
+.plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 18px; }
+.plan { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px 16px; min-width: 0; }
+.plan h3 { margin: 0 0 4px; font-size: 1.15rem; }
+.plan .rule { font-family: var(--f-mono); font-size: 0.84rem; background: var(--accent-soft); border-radius: 4px; padding: 8px 10px; margin-top: 8px; overflow-x: auto; white-space: pre; }
+.steps { counter-reset: s; list-style: none; padding: 0; }
+.steps li { counter-increment: s; padding-left: 2.2em; position: relative; }
+.steps li::before { content: counter(s); position: absolute; left: 0; top: 0.05em; width: 1.5em; height: 1.5em; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font: 600 0.82rem/1.5em var(--f-mono); text-align: center; }
+.fig { margin-top: 22px; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 16px 12px; }
+.fig .cap { font-size: 0.88rem; color: var(--muted); margin-top: 8px; }
+.fig .ttl { font-weight: 600; font-size: 0.98rem; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.84rem; color: var(--muted); margin-top: 6px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+svg text { font-family: var(--f-body); font-size: 11px; fill: var(--muted); }
+svg .lab { fill: var(--ink); font-size: 11.5px; }
+svg .grid { stroke: var(--rule); stroke-width: 1; stroke-dasharray: 2 3; }
+svg .axis { stroke: var(--rule); stroke-width: 1; }
+.k1 { fill: var(--s1); } .k2 { fill: var(--s2); } .k3 { fill: var(--s3); } .kr { fill: var(--ref); }
+.l1 { stroke: var(--s1); } .l2 { stroke: var(--s2); } .l3 { stroke: var(--s3); } .lref { stroke: var(--ref); }
+#tip { position: fixed; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--rule); border-radius: 5px; padding: 6px 9px; font-size: 0.82rem; box-shadow: 0 2px 10px rgb(0 0 0 / 0.12); z-index: 20; max-width: 300px; font-variant-numeric: tabular-nums; }
+.note { font-size: 0.9rem; color: var(--muted); }
+.callout { border-left: 3px solid var(--accent); padding: 4px 0 4px 14px; margin-top: 16px; }
+details { margin-top: 10px; } summary { cursor: pointer; color: var(--accent); font-size: 0.9rem; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+<header class="col">
+  <div class="eyebrow">Green Routing · what a byte on SWITCHlan should cost in CO₂</div>
+  <h1>SWITCHlan carbon rates</h1>
+  <p class="lede">Bills are settled with the traffic that really happened. The open question is the rate: how many grams of CO₂ a gigabyte carries in a given hour. I compared two ways to set it on the same {{days}} days ({{window_text}}): one flat rate for every byte, or a rate that follows the equipment each byte crosses. For the flat rate I forecast the total traffic with one model and tried every model in the ladder. For the path rate I estimated who talks to whom from the counters and checked that method against real flow data from another research network.</p>
+  <p class="meta">Built {{built}} by <code>recipes/carbon_rates</code>. Backbone emissions only (the access part of a bill is the same in both plans). Location-based, combustion-only grid factors. A screening study.</p>
+</header>
+
+<section class="brief col" aria-label="In brief">
+  <div class="eyebrow">In brief</div>
+  <ol>
+    <li><b>Flat rate.</b> The backbone emitted {{bb_t}} t over {{tb_bytes}} PB carried, an average of <b>{{flat_rate}} g/GB</b>. Hour by hour it ranges {{rate_p10}}–{{rate_p90}} g/GB (10th–90th percentile), because emissions follow the grid and the rate divides them by the traffic.</li>
+    <li><b>One model for the total traffic works.</b> Trained on the total alone, <b>{{best_model}}</b> forecasts tomorrow's hourly traffic with {{best_wape}} error, against {{pers_wape}} for persistence. Summing the per-link models' forecasts for all 414 doors does slightly better ({{bu_wape}}), and so does a small GBDT trained on the hourly total ({{gbdt_wape}}).</li>
+    <li><b>The grid factor decides the rate forecast.</b> With the real grid factor the day-ahead rate is off by {{rate_err_a}}; with tomorrow's grid factor guessed, every model lands near {{rate_err_f}} hour by hour ({{rate_err_fd}} on daily averages). Perfect traffic would still leave {{rate_err_grid}}.</li>
+    <li><b>Path rates split the network.</b> Charging each byte for the routers and fibre it crosses, in proportion to use, moves {{usage_moved}} of the backbone emissions from one party to another. But backup links that carry almost nothing then bill their whole power to a handful of bytes: parties with {{usage_tiny_traffic}} of the traffic pay {{usage_tiny_share}} of the path bill.</li>
+    <li><b>Charged by capacity instead, the path part nearly vanishes.</b> SWITCHlan runs at about {{util}} of its capacity, weighted by emissions. If a byte pays only for the capacity it occupies, {{cap_share}} of the backbone emissions follow paths; the remaining {{cap_idle}} pay for idle headroom and are shared like the flat rate.</li>
+    <li><b>Counters can stand in for flow data, where routing is known.</b> On Abilene, where real NetFlow matrices exist, matrices estimated from counters give path bills within {{ab_em_total}} of the flow-based ones over {{ab_weeks}} weeks; the flat rate would be {{ab_flat}} off. On SWITCHlan the routing has to be inferred, and two plausible matrices still disagree by {{sw_sens}} on usage-priced bills.</li>
+    <li><b>The second dataset tells the same story at 2004 scale.</b> Rebuilt with its own equipment (Juniper T640 routers, leased Qwest wavelengths) and EPA's 2004 grid factors, Abilene's flat rate comes out at <b>{{ab_flat_rate}} g/GB</b>, about {{ab_vs_sw}} times SWITCHlan's: older routers, a coal-heavy grid ({{ab_gkwh}} g/kWh) and little traffic. One model forecasts its total with {{ab_best_wape}} error ({{ab_best_model}}); with a grid factor that does not change by the hour, all of the rate forecast's error ({{ab_best_rate}}) comes from the traffic.</li>
+  </ol>
+</section>
+
+<section>
+<h2>1 · Two ways to set the rate</h2>
+<div class="col"><p>Both plans split the same backbone emissions: the backbone share of every router and the whole optical layer, each multiplied by its site's hourly grid factor. They differ only in who pays which gram.</p></div>
+<div class="plans">
+  <div class="plan"><h3>Flat rate</h3>
+    <p class="note">Every byte carried in hour <i>h</i> pays the same.</p>
+    <div class="rule">rate(h) = B(h) / T(h)
+B = backbone emissions
+T = bytes carried, counted once</div>
+    <p class="note">Needs one number per hour: the total traffic. Forecast it, and the rate follows.</p></div>
+  <div class="plan"><h3>Path rate</h3>
+    <p class="note">A byte pays the rate of each router and fibre span on its route.</p>
+    <div class="rule">rate(s→t, h) = Σ on the path  E_r(h) / X_r(h)
+E_r = emissions of resource r
+X_r = its traffic (usage) or capacity</div>
+    <p class="note">Needs the routes and, for the bills, who sends how much to whom.</p></div>
+</div>
+</section>
+
+<section>
+<h2>2 · Plan A: one model for the total traffic</h2>
+<div class="col">
+<p>The total is the bytes SWITCHlan carries, counted once at the doors where traffic enters or leaves (customer ports, customer sites, links to other networks). Bytes in and bytes out agree to within {{cons}} over the window, so nothing is lost or counted twice. I wrote the total as a single 5-minute series ({{steps}} steps, July 2025 to July 2026) and ran the whole forecasting ladder on it, unchanged: the same split, calendar features and training budget as the 534-link benchmark.</p>
+<p>The rate forecast is issued at 00:00 UTC for the next 24 hours, like a day-ahead price: the backbone emissions come from static power times the forecast grid factor (same hour yesterday), the traffic from the model.</p>
+</div>
+<div class="fig" role="figure"><div class="ttl">Day-ahead forecast of the total traffic, hourly error by model</div>
+<div class="legend"><span><i class="sw" style="background:var(--s1)"></i>Traffic error</span><span><i class="sw" style="background:var(--s2)"></i>Rate error, grid factor forecast too</span><span><i class="sw" style="background:var(--ref)"></i>Rate error with perfect traffic</span></div>
+<div id="c-models"></div>
+<div class="cap">WAPE = sum of absolute hourly errors over the sum of actual values, test window. Models forecast the 24 hours of each day at 00:00 UTC. The orange dots barely move: the grid forecast dominates.</div>
+<details><summary>Show as table</summary><div class="tablewrap" id="t-models"></div></details></div>
+
+<h3 class="col">Every horizon</h3>
+<div class="col"><p>The same models forecasting from every 5-minute point of the test window (WAPE, %). At 15 minutes the last value is close behind the best models; from 1 hour on the learned models pull clearly ahead. Holt-Winters and SARIMA refit at every origin, so they were scored only on the benchmark's 160 sampled origins: {{hw_note}}.</p></div>
+<div class="tablewrap" id="t-horizon"></div>
+
+<div class="callout col"><p><b>Feedback on the models.</b> {{model_feedback}}</p></div>
+</section>
+
+<section>
+<h2>3 · Plan B: a rate that follows the path</h2>
+<h3 class="col">How it is built</h3>
+<ol class="steps col">
+  <li><b>The network as a graph.</b> {{routers}} routers and {{links}} directed links, from traffic matching and SWITCH's reverse DNS, with each link's hourly load from the counters. The {{hidden}} routers missing from the export are endpoints that stand for everything behind them.</li>
+  <li><b>Routes.</b> Shortest paths with equal-cost splitting, as OSPF does. SWITCH does not publish its link costs, so I let the counters choose: I hid a fifth of the links from the estimator and predicted their loads. Costs by link capacity predicted them best (table below), so the routes use those.</li>
+  <li><b>Resources.</b> Each router's backbone power, and each site's optical shelves spread over the fibre spans that end there. Routers carry {{router_share}} of the backbone power, fibre spans the rest.</li>
+  <li><b>Who talks to whom.</b> A traffic matrix for every hour, estimated from the counters: start from a gravity guess (big senders talk to big receivers) and adjust it until it reproduces the measured link loads and door totals, keeping every flow non-negative. {{unseen}} of the traffic enters through ports the export does not show; it is kept as a separate unseen flow and its cost is shared flat.</li>
+  <li><b>Bills.</b> Each resource's hourly emissions are split over the bytes that cross it; each flow's cost goes half to the door where it enters and half to the door where it leaves. The bills add up to exactly the same {{bb_t}} t as the flat plan.</li>
+</ol>
+<div class="tablewrap" id="t-routing"></div>
+<p class="note col">Fit: error on the link loads the estimator saw. Hidden links: error predicting loads it did not see (mean of 3 random fifths). Gravity only: the same prediction without adjusting the guess.</p>
+
+<h3 class="col">Two ways to price a resource</h3>
+<div class="col">
+<p><b>By usage</b> (emissions ÷ bytes that cross it) is the textbook path allocation. It makes rates swing with load: a backup fibre span carrying almost nothing charges its whole power to the few bytes on it. The worst span on SWITCHlan, {{worst_span}}, works out at about {{worst_span_rate}} g/GB in a typical hour, {{worst_span_x}} the flat rate.</p>
+<p><b>By capacity</b> (emissions ÷ capacity) charges a byte for the share of the equipment it occupies. What nobody uses, the idle headroom, is shared by all bytes like the flat rate. Rates are then stable and only reflect how much equipment, and how efficient, a route crosses.</p>
+</div>
+<div class="fig" role="figure"><div class="ttl">Backbone emissions by party type in the window (t CO₂)</div>
+<div class="legend"><span><i class="sw" style="background:var(--ref)"></i>Flat rate</span><span><i class="sw" style="background:var(--s1)"></i>Path, priced by usage</span><span><i class="sw" style="background:var(--s3)"></i>Path, priced by capacity</span></div>
+<div id="c-types"></div>
+<div class="cap">Same total in all three. Usage pricing shifts emissions from the border routers, whose traffic runs on busy, efficient trunks, to customer sites at the edge of the network.</div>
+<details><summary>Show as table</summary><div class="tablewrap" id="t-types"></div></details></div>
+
+<div class="fig" role="figure"><div class="ttl">Each party's path bill relative to its flat bill</div>
+<div class="legend"><span><i class="sw" style="background:var(--s1)"></i>Priced by usage</span><span><i class="sw" style="background:var(--s3)"></i>Priced by capacity</span></div>
+<div id="c-ratio"></div>
+<div class="cap">Number of parties in each band ({{n_parties}} parties with traffic). A ratio of 1 means the same bill as the flat rate; the scale is logarithmic.</div></div>
+
+<div class="col">
+<p>Between pairs of routers, usage-priced path rates (weighted by the bytes sent) range {{p_usage_p10}}–{{p_usage_p90}} g/GB (10th–90th percentile), median {{p_usage_p50}}, against the flat average of {{flat_rate}}. Priced by capacity, the path part is {{p_cap_p50}} g/GB at the median and the flat idle share carries the rest.</p>
+</div>
+</section>
+
+<section>
+<h2>4 · Flow data or counters?</h2>
+<div class="col">
+<p><b>SWITCHlan has no flow data we can read.</b> The bucket holds SNMP counters, power, optics and CPU, nothing from NetFlow or IPFIX, and the research checkout is not on this machine. So the flow method was tested on a network where both exist: Abilene, the US research backbone, whose real traffic matrices from NetFlow are public (Zhang et al., 2004) together with its routing. I rebuilt the counters those matrices would produce (link loads and router totals), estimated the matrices back from the counters alone, and compared the path bills over {{ab_weeks}} weeks ({{ab_hours}} hours, {{ab_nodes}} routers), with Abilene's own equipment and grid factors (section 5).</p>
+</div>
+<div class="tablewrap" id="t-abilene"></div>
+<p class="note col">Matrix error: distance from the real matrix (relative L2, median hour). Bill error: path bills per router against the flow-based ones, summed over the period; worst router in brackets.</p>
+<div class="col">
+<p>Three things follow. Counters recover the path bills to within {{ab_em_total}} in total over {{ab_weeks}} weeks (the worst router is {{ab_em_max}} off), much closer than the {{ab_flat}} gap between flat and path. Priced by capacity, the matrix hardly matters at all ({{ab_cap}} error), because Abilene too ran mostly empty ({{ab_util}} utilisation). And Abilene is the easy case: its routes are known and its counters exact. On SWITCHlan the estimator misses hidden links by {{sw_holdout}} instead of {{ab_holdout}}, and swapping the estimated matrix for the plain gravity guess moves usage-priced bills by {{sw_sens}}, but capacity-priced bills by only {{sw_sens_cap}}.</p>
+</div>
+</section>
+
+<section>
+<h2>5 · Second dataset: Abilene, with measured flows</h2>
+<div class="col">
+<p>Abilene was the US research backbone (Internet2). Its 12 routers in 11 cities were joined by 15 links, all leased OC-192 (10 Gbit/s) wavelengths on Qwest's network except one OC-48. The archive holds who-sent-what-to-whom every 5 minutes from NetFlow (1 in 100 packets, scaled back up), with the real OSPF routing. I used the {{ab_weeks}} contiguous weeks from {{ab_period}}: {{ab_gbps}} Gbit/s on average. One day is repeated in the archive (dropped), one day is missing, and one corrupt hour (70 Gbit/s through a 10 Gbit/s router) was removed. The same ladder of models, the same flat and path rates and the same bills ran on it unchanged, through the same code.</p>
+</div>
+<h3 class="col">Electricity and CO₂ inputs</h3>
+<div class="col"><p>The archive has traffic only, so the energy had to be rebuilt from vendor documents, and the grid factors from EPA records for 2004.</p></div>
+<div class="tablewrap" id="t-ab-inputs"></div>
+<div class="tablewrap" id="t-ab-egrid"></div>
+<div class="col"><p>That adds up to {{ab_it}} kW of equipment (routers {{ab_rt}} kW, optics {{ab_opt}} kW), {{ab_site}} kW at the sites with overhead ({{ab_site_lo}}–{{ab_site_hi}} kW across the low and high cases), and about {{ab_tyr}} t CO₂ a year at a power-weighted {{ab_gkwh}} g/kWh. eGRID gives one rate per region and year; hourly factors do not exist for 2004, so Abilene's rate varies only with its traffic.</p></div>
+
+<h3 class="col">Forecasting the total, and every link</h3>
+<div class="col"><p>Day-ahead (issued 00:00 UTC) on the last 4 weeks, after training on the 12 weeks before them (and 2 for validation). Because the grid factor is constant, the rate forecast's error comes from the traffic forecast alone (the rate divides emissions by traffic, so its percentage error differs from the traffic's). No calendar features here: the ladder's holiday table is Swiss, for 2025–26.</p></div>
+<div class="tablewrap" id="t-ab-models"></div>
+<div class="col"><p>The same models from every 5-minute point, WAPE (%): the network total, and the 27 link and router series together (pooled).</p></div>
+<div class="tablewrap" id="t-ab-horizon"></div>
+
+<h3 class="col">Rates and bills from the real flows</h3>
+<div class="col"><p>With measured flows the path plan needs no estimate: every byte's route and every router's load are known. Each router stands for the networks connected to it.</p></div>
+<div class="tablewrap" id="t-ab-nodes"></div>
+<p class="note col">g/GB of each router's traffic (in + out), over {{ab_weeks}} weeks. Path by capacity stays within {{ab_cap_vs_flat}} of flat: Abilene ran at {{ab_util}} of capacity, so almost all of its power paid for headroom.</p>
+
+<h3 class="col">SWITCHlan and Abilene side by side</h3>
+<div class="tablewrap" id="t-compare"></div>
+</section>
+
+<section class="col">
+<h2>6 · What I recommend</h2>
+<ul>
+<li><b>Publish the flat rate, forecast a day ahead with one model on the total.</b> {{best_model}} or a small GBDT on the hourly total are both fine; the traffic part is solved to about 11–12 %. Spend the next effort on the grid forecast, which causes {{rate_err_grid}} of hourly error on its own.</li>
+<li><b>Do not price paths by usage.</b> It is the most "causal" on paper, but its rates jump with backup routing and bill idle equipment to whoever happens to cross it. It also needs a far better traffic matrix than SWITCHlan's counters give.</li>
+<li><b>If path matters, price by capacity.</b> It is stable, needs only counters and routes, and tells customers something true: about {{cap_idle}} of the backbone's emissions pay for capacity nobody is using at that moment. That is the honest message for green routing too. Moving bytes between paths changes almost nothing; switching off idle capacity does.</li>
+<li><b>Ask SWITCH for flow aggregates.</b> Door-to-door byte counts per hour (NetFlow, sampled is fine) would replace the estimated matrix, settle the routing question and split the groups behind the missing routers.</li>
+</ul>
+</section>
+
+<section class="col">
+<h2>7 · Limits</h2>
+<ul>
+<li><b>Routing is inferred.</b> Link costs by capacity fit best, but SWITCH's real metrics, MPLS paths or BGP choices may differ.</li>
+<li><b>Missing routers</b> are endpoints. Traffic that transits them is counted as leaving and re-entering, which inflates their groups in both plans.</li>
+<li><b>Unseen ports.</b> {{unseen}} of the traffic enters through interfaces the export misses; under the path plan its cost ({{unseen_cost}} of emissions) is shared flat.</li>
+<li><b>Capacity</b> of a router is the sum of its port speeds, not its forwarding limit; optical power is split over spans by capacity, not by the real fibre and amplifier layout.</li>
+<li><b>Abilene's energy is rebuilt, not metered.</b> Line-card configurations per PoP, the wavelengths sharing Qwest's amplifiers and the 2004 PUE are assumptions (ranges in the inputs table); its grid factors are annual.</li>
+<li><b>One season</b>: spring and summer 2026.</li>
+</ul>
+</section>
+
+<section class="col">
+<h2>8 · Reproduce</h2>
+<p><code>recipes/carbon_rates/run.sh all</code> after <code>recipes/year</code> and <code>recipes/carbon</code>. Steps: <code>total</code> (the one-series mirror), <code>train</code> / <code>merge</code> / <code>dense</code> (every tier on it), <code>flat</code>, <code>path</code>, <code>report</code>. Abilene: <code>recipes/abilene/run.sh all</code> (data, train, merge, dense, carbon); its loader is <code>green_routing.dataset.abilene</code>, its energy and grid inputs <code>recipes/abilene/energy.csv</code> and <code>egrid2004.csv</code>. The estimator is <code>green_routing.carbon.tomography</code>, the allocation <code>green_routing.carbon.path_rate</code>.</p>
+</section>
+</div>
+<div id="tip" hidden></div>
+
+<script>
+/*DATA*/
+const tip = document.getElementById("tip");
+function showTip(e, html) { tip.innerHTML = html; tip.hidden = false; const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8); tip.style.left = x + "px"; tip.style.top = (e.clientY + 14) + "px"; }
+function hideTip() { tip.hidden = true; }
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent, text) { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (text !== undefined) n.textContent = text; if (parent) parent.appendChild(n); return n; }
+function svg(host, w, h) { const s = el("svg", { viewBox: `0 0 ${w} ${h}`, role: "img" }); document.getElementById(host).appendChild(s); return s; }
+const pct = (v, d = 1) => (v * 100).toFixed(d) + " %";
+const fmt = (v, d = 2) => Number(v).toLocaleString("en-GB", { minimumFractionDigits: d, maximumFractionDigits: d });
+function table(host, head, rows, best) { const t = document.createElement("table"); t.innerHTML = "<thead><tr>" + head.map(h => `<th class="${h[1] || ""}">${h[0]}</th>`).join("") + "</tr></thead><tbody>" + rows.map((r, i) => `<tr class="${best === i ? "best" : ""}">` + r.map((c, j) => `<td class="${head[j][1] || ""}">${c}</td>`).join("") + "</tr>").join("") + "</tbody>"; document.getElementById(host).appendChild(t); }
+function hover(m, h) { m.addEventListener("mousemove", e => showTip(e, h)); m.addEventListener("mouseleave", hideTip); }
+
+// models: traffic error (blue) and rate error with the grid forecast (orange), reference line = perfect traffic
+(function () {
+  const rows = DATA.models, W = 900, lw = 230, rh = 30, H = rows.length * rh + 34, max = 0.7;
+  const s = svg("c-models", W, H), x = v => lw + v / max * (W - lw - 30);
+  [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7].forEach(t => { el("line", { x1: x(t), x2: x(t), y1: 4, y2: H - 24, class: "grid" }, s); el("text", { x: x(t), y: H - 8, "text-anchor": "middle" }, s, Math.round(t * 100) + " %"); });
+  el("line", { x1: x(DATA.grid_only), x2: x(DATA.grid_only), y1: 2, y2: H - 24, class: "lref", "stroke-width": 1.5, "stroke-dasharray": "5 4" }, s);
+  rows.forEach((r, i) => {
+    const y = 16 + i * rh;
+    el("text", { x: lw - 12, y: y + 4, "text-anchor": "end", class: "lab" }, s, r.m);
+    el("line", { x1: x(r.t), x2: x(r.rf), y1: y, y2: y, class: "lref", "stroke-width": 1.5 }, s);
+    const a = el("circle", { cx: x(r.t), cy: y, r: 6, class: "k1", stroke: "var(--surface)", "stroke-width": 2 }, s);
+    const b = el("circle", { cx: x(r.rf), cy: y, r: 6, class: "k2", stroke: "var(--surface)", "stroke-width": 2 }, s);
+    const h = `<b>${r.m}</b><br>traffic: ${pct(r.t)} hourly, ${pct(r.td)} daily<br>rate, actual grid: ${pct(r.ra)}<br>rate, grid forecast: ${pct(r.rf)}`;
+    hover(a, h); hover(b, h);
+  });
+  table("t-models", [["Forecast of the total"], ["Traffic, hourly", "num"], ["Traffic, daily", "num"], ["Bias", "num"], ["Rate, actual grid", "num"], ["Rate, grid forecast", "num"]],
+    rows.map(r => [r.m, pct(r.t), pct(r.td), (r.b >= 0 ? "+" : "") + pct(r.b), pct(r.ra), pct(r.rf)]).concat([["Perfect traffic", "0", "0", "0", "0", pct(DATA.grid_only)]]), 0);
+})();
+
+// horizons table
+(function () {
+  const hz = ["15min", "1h", "8h", "day", "week"], lab = { "15min": "15 min", "1h": "1 h", "8h": "8 h", day: "1 day", week: "1 week" };
+  const rows = DATA.horizon, best = {};
+  hz.forEach(h => best[h] = Math.min(...rows.map(r => r[h])));
+  table("t-horizon", [["Model"]].concat(hz.map(h => [lab[h], "num"])), rows.map(r => [r.m].concat(hz.map(h => (r[h] === best[h] ? "<b>" : "") + fmt(r[h], 1) + (r[h] === best[h] ? "</b>" : "")))));
+})();
+
+// routing check
+table("t-routing", [["Link costs"], ["Fit", "num"], ["Hidden links", "num"], ["Gravity only", "num"]],
+  DATA.routing.map(r => [r.r, pct(r.fit), pct(r.ho), pct(r.gr)]), DATA.routing.findIndex(r => r.best));
+
+// by type: three bars per type
+(function () {
+  const rows = DATA.types, W = 900, lw = 290, gh = 62, H = rows.length * gh + 26, max = Math.max(...rows.flatMap(r => [r.f, r.u, r.c])) * 1.15;
+  const s = svg("c-types", W, H), x = v => lw + v / max * (W - lw - 70);
+  [0, 0.25, 0.5, 0.75, 1.0].filter(t => t <= max).forEach(t => { el("line", { x1: x(t), x2: x(t), y1: 2, y2: H - 22, class: "grid" }, s); el("text", { x: x(t), y: H - 6, "text-anchor": "middle" }, s, fmt(t, 2)); });
+  rows.forEach((r, i) => {
+    const y0 = 6 + i * gh;
+    el("text", { x: lw - 10, y: y0 + 25, "text-anchor": "end", class: "lab" }, s, r.t);
+    [["f", "kr", "flat"], ["u", "k1", "path, usage"], ["c", "k3", "path, capacity"]].forEach(([k, c, n], j) => {
+      const b = el("rect", { x: x(0), y: y0 + j * 17, width: Math.max(1, x(r[k]) - x(0)), height: 14, rx: 3, class: c }, s);
+      el("text", { x: x(r[k]) + 6, y: y0 + j * 17 + 11 }, s, fmt(r[k], 3));
+      hover(b, `<b>${r.t}</b> (${r.n} parties)<br>${n}: ${fmt(r[k], 3)} t`);
+    });
+  });
+  table("t-types", [["Party type"], ["Parties", "num"], ["Flat t", "num"], ["Path, usage t", "num"], ["Path, capacity t", "num"]], rows.map(r => [r.t, r.n, fmt(r.f, 3), fmt(r.u, 3), fmt(r.c, 3)]));
+})();
+
+// ratio distribution (log bins)
+(function () {
+  const bins = DATA.ratio.bins, W = 900, H = 230, L = 40, R = 10, T = 10, B = 46;
+  const s = svg("c-ratio", W, H), n = bins.length, bw = (W - L - R) / n;
+  const max = Math.max(...DATA.ratio.usage, ...DATA.ratio.capacity) * 1.1, y = v => T + (1 - v / max) * (H - T - B);
+  for (let k = 0; k <= 4; k++) { const v = max * k / 4; el("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), class: "grid" }, s); el("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end" }, s, Math.round(v)); }
+  bins.forEach((b, i) => {
+    const x0 = L + i * bw;
+    const u = el("rect", { x: x0 + 3, y: y(DATA.ratio.usage[i]), width: bw / 2 - 4, height: y(0) - y(DATA.ratio.usage[i]), rx: 2, class: "k1" }, s);
+    const c = el("rect", { x: x0 + bw / 2 + 1, y: y(DATA.ratio.capacity[i]), width: bw / 2 - 4, height: y(0) - y(DATA.ratio.capacity[i]), rx: 2, class: "k3" }, s);
+    el("text", { x: x0 + bw / 2, y: H - B + 16, "text-anchor": "middle" }, s, b);
+    hover(u, `<b>${b}</b> of the flat bill<br>priced by usage: ${DATA.ratio.usage[i]} parties`);
+    hover(c, `<b>${b}</b> of the flat bill<br>priced by capacity: ${DATA.ratio.capacity[i]} parties`);
+  });
+  el("text", { x: L + (W - L - R) / 2, y: H - 6, "text-anchor": "middle" }, s, "path bill ÷ flat bill");
+})();
+
+// Abilene: inputs, grid, models, horizons, nodes, comparison
+table("t-ab-inputs", [["Input"], ["Value"], ["Source"]], DATA.ab_inputs.map(r => [r.k, r.v, r.s]));
+table("t-ab-egrid", [["Router"], ["City"], ["eGRID subregion"], ["g CO₂/kWh", "num"]], DATA.ab_egrid.map(r => [`<span class="mono">${r.n}</span>`, r.c, r.r, fmt(r.g, 0)]));
+if (DATA.ab_models.length) table("t-ab-models", [["Model on the total"], ["Traffic, hourly", "num"], ["Traffic, daily", "num"], ["Bias", "num"], ["Rate, hourly", "num"]],
+  DATA.ab_models.map(r => [r.m, pct(r.t), pct(r.td), (r.b >= 0 ? "+" : "") + pct(r.b), pct(r.r)]), 0);
+(function () {
+  if (!DATA.ab_horizon.length) return;
+  const hz = ["15min", "1h", "8h", "day", "week"], lab = { "15min": "15 min", "1h": "1 h", "8h": "8 h", day: "1 day", week: "1 week" };
+  const best = {}; ["total", "links"].forEach(p => hz.forEach(h => best[p + h] = Math.min(...DATA.ab_horizon.filter(r => r.p === p && r[h] !== null).map(r => r[h]))));
+  table("t-ab-horizon", [["Series"], ["Model"]].concat(hz.map(h => [lab[h], "num"])),
+    DATA.ab_horizon.map(r => [r.p === "total" ? "Total" : "Links + routers", r.m].concat(hz.map(h => r[h] === null ? "—" : (r[h] === best[r.p + h] ? "<b>" : "") + fmt(r[h], 1) + (r[h] === best[r.p + h] ? "</b>" : "")))));
+})();
+table("t-ab-nodes", [["Router"], ["TB in + out", "num"], ["Flat g/GB", "num"], ["Path by usage", "num"], ["Path by capacity", "num"], ["Path by usage, from counters", "num"]],
+  DATA.ab_nodes.map(r => [`<span class="mono">${r.n}</span>`, fmt(r.tb, 0), fmt(r.f, 1), fmt(r.u, 1), fmt(r.c, 1), fmt(r.e, 1)]));
+table("t-compare", [[""], ["SWITCHlan 2026"], ["Abilene 2004"]], DATA.compare.map(r => [r.k, r.s, r.a]));
+
+// abilene table
+table("t-abilene", [["Traffic matrix"], ["Matrix error", "num"], ["Path bill error, usage", "num"], ["Path bill error, capacity", "num"]],
+  DATA.abilene.map(r => [r.k, r.tm === null ? "—" : pct(r.tm, 0), pct(r.b) + (r.bmax === null ? "" : ` (${pct(r.bmax, 0)})`), pct(r.bc)]));
+</script>

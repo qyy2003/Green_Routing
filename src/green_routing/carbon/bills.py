@@ -93,14 +93,15 @@ def forecast_volumes(run_dir: str | Path, model: str, doors: pd.DataFrame, membe
     return VF.where(exists.reindex(H, fill_value=False), 0).fillna(last_week).fillna(0), src
 
 
-def window_power(R: pd.DataFrame, D: pd.DataFrame, shelves: pd.DataFrame, sites: pd.DataFrame,
-                 doors: pd.DataFrame, tiers: pd.Series, H: pd.DatetimeIndex):
-    """Site power in the window: access power per (party, zone) and backbone power per zone (W).
+def window_units(R: pd.DataFrame, D: pd.DataFrame, shelves: pd.DataFrame, sites: pd.DataFrame,
+                 tiers: pd.Series, H: pd.DatetimeIndex) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Routers and optical shelves with their site power in the window (W, i.e. x PUE and
+    x the share of the window in service), access share ``f_acc`` and grid zone.
 
     ``R``: routers with W, first, last (inventory.router_power); ``D``: device pools of the
     annual allocation (their access share f_acc is reused; routers missing there get their
     tier's median); ``shelves``: ECI table (mean W of the window's year, else the year
-    before). A PoP router's access share with no door on it joins the shared pool."""
+    before)."""
     ht = sites.drop_duplicates("code").set_index("code").host_type
     R = R.copy()
     R["d"] = R.dev.str.replace(r"^swi", "", regex=True)
@@ -119,6 +120,15 @@ def window_power(R: pd.DataFrame, D: pd.DataFrame, shelves: pd.DataFrame, sites:
     E = shelves[pd.to_datetime(shelves["last"]) >= H[0].tz_localize(None)].copy()
     E["W_site"] = E[f"W{y}"].fillna(E[f"W{y - 1}"]) * E.site.map(ht).map(A.pue)
     E["zone"] = E.site.map(A.zone_of)
+    return R, E
+
+
+def window_power(R: pd.DataFrame, D: pd.DataFrame, shelves: pd.DataFrame, sites: pd.DataFrame,
+                 doors: pd.DataFrame, tiers: pd.Series, H: pd.DatetimeIndex):
+    """Site power in the window: access power per (party, zone) and backbone power per zone (W).
+    A PoP router's access share with no door on it joins the shared pool (``window_units``
+    for the inputs)."""
+    R, E = window_units(R, D, shelves, sites, tiers, H)
     zones = sorted(set(R.zone) | set(E.zone))
     Pbb = {z: (R.W_site * (1 - R.f_acc))[R.zone == z].sum() + E.W_site[E.zone == z].sum() for z in zones}
     acc = {}

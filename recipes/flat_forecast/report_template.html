@@ -1,0 +1,178 @@
+<title>Day-Ahead Traffic Forecast</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Public+Sans:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+/*STYLE*/
+
+<div class="wrap">
+<header class="col">
+  <div class="eyebrow">Green Routing · the flat rate's denominator</div>
+  <h1>Forecasting tomorrow's traffic, hour by hour</h1>
+  <p class="lede">The flat carbon rate divides the backbone's emissions by the bytes it carries. To publish tomorrow's rate at midnight, tomorrow's total traffic has to be forecast for every hour. I tried every lever on SWITCHlan's total: the model, the time resolution, prior knowledge of holidays and semesters, how the model is trained, and what is done with its forecasts afterwards. Every forecast is scored on the same hours, and the main findings are repeated on Abilene.</p>
+  <p class="meta">Built {{built}} by <code>recipes/flat_forecast</code>. Every choice was made on a development period (1 Nov 2025 – 21 Mar 2026, {{dev_days}} days) and is reported on the benchmark's test block (22 Mar – 10 Jul 2026, {{test_days}} days). Forecasts are issued at 00:00 UTC for the next 24 hours. Error = hourly WAPE: the sum of absolute errors over the sum of actual traffic.</p>
+</header>
+
+<section class="brief col" aria-label="In brief">
+  <div class="eyebrow">In brief</div>
+  <ol>
+    <li><b>The best forecast: {{final}}, at {{final_test}} error on the test.</b> The GBDT used so far scores {{cur_test}} and the TCN {{tcn0_test}}. Against the GBDT that is {{gain_cur}} points lower (95 % interval {{gain_lo}} to {{gain_hi}}, resampling whole weeks), and better on {{days_better}} of the days. Daily totals are off by {{final_daily}}. It was chosen on the development period, where it scores {{final_dev}}.</li>
+    <li><b>A pretrained model is as good as anything trained on our data, without training.</b> Chronos-2, a foundation model for time series, reads the last 24 weeks of hourly traffic and forecasts the next day. It scores {{c_dev}} on the development period, where the best GBDT reaches {{g5_dev}}, and {{c_test}} on the test, level with the GBDT ({{g5_test}}). On Abilene it scores {{ab_c}}, against {{ab_p}} for the best model trained there.</li>
+    <li><b>Feed it hours, not 5-minute values.</b> With the same 4 weeks of history, Chronos-2 scores {{c4w}} from hourly values and {{c5}} from 5-minute values. The 5-minute ladder summed into hours ({{tcn_sym}} for the TCN) stays behind the hourly models. A day ahead, the 5-minute detail is noise that averages away (see the <a href="https://claude.ai/artifact/5LojUMewPg3VyP7ncCcqbL">granularity report</a>), and at 5 minutes a context window covers 12 times less history.</li>
+    <li><b>Prior knowledge matters most on holidays.</b> On weekdays during the semester, a national holiday cuts traffic by {{hol25}} (2025) and {{hol26}} (2026). The Christmas closure cuts it by {{xmas}}, and Corpus Christi, which only the catholic cantons observe, by {{cc}}. With the same features, the GBDT scores {{g_nocal}} without a calendar, {{g_old}} with a holiday table that counts Corpus Christi as a full holiday, and {{g_new}} with holidays weighted by the share of the population that has them off. Chronos-2 knows no calendar: on the test's four weekday holidays it is off by {{c_hol}} ({{c_cov_hol}} with calendar covariates), while the GBDT, which has seen the 2025 holidays, is off by {{g_hol}}. The final forecast therefore lets the GBDT alone forecast holidays and the Christmas closure.</li>
+    <li><b>Training process.</b> The 5-minute models were trained so that under-forecasts cost twice, which made the TCN's forecasts {{tcn0_bias}} too high. A symmetric loss, matching the symmetric metric, and three seeds averaged give {{tcn_sym}} against {{tcn_uw2}} for the same three seeds with the old loss ({{tcn_gain}} points, 95 % interval {{tcn_lo}} to {{tcn_hi}}). For the GBDT, refitting every week instead of training once helps a little ({{refit_gain}} points, 95 % interval {{refit_lo}} to {{refit_hi}}); refitting daily or monthly, a longer history, recency weights, other losses or model sizes move it by less than the noise. Fine-tuning Chronos-2 on the series made it worse: {{ft_test}} against {{c12_test}} zero-shot.</li>
+    <li><b>Combining.</b> {{comb_text}}</li>
+    <li><b>Much of what is left cannot be forecast.</b> Even with the daily level known in advance, the error would be {{lvl}}. Four parties (the hidden routers ez31 and ix3, CSCS's 400G port and CERN) carry {{top4_gbps}} of the traffic but {{top4_var}} of its unpredictable variation: large research transfers that start and stop without notice. One day's error says nothing about the next day's, so correcting with recent bias does not help.</li>
+    <li><b>For the flat rate.</b> With the real grid factor, the day-ahead rate's error falls from {{rate_a_cur}} to {{rate_a_new}}. With today's day-ahead grid factor, every traffic forecast lands at {{rate_f_range}}, and even a perfect traffic forecast would leave {{rate_f_perfect}}. The grid forecast is now the main gap.</li>
+  </ol>
+</section>
+
+<section>
+<h2>1 · The test</h2>
+<div class="col">
+<p>The forecast is made at 00:00 UTC for the 24 hourly means of that day, as a rate published at midnight would be. The truth is the network's total: half the in + out traffic of every door, each byte counted once, from the SNMP counters. The history runs from February 2025: the export has a gap in December 2024 and January 2025, and before that the current doors do not cover the network. Models that learn are refitted every week on everything known by then, unless stated otherwise. The 5-minute ladder keeps the benchmark's fixed training block (to 15 February 2026).</p>
+<p>All forecasts are scored on the hours every one of them covers. A difference between two forecasts comes with a 95 % interval from resampling whole weeks, because errors on neighbouring days are not independent. Choices such as the best context length, the ensemble members and their weights were made on the development period. The test block was not used to choose anything.</p>
+</div>
+</section>
+
+<section>
+<h2>2 · Models</h2>
+<div class="fig" role="figure"><div class="ttl">Day-ahead hourly error, development period and test</div>
+<div class="legend"><span><i class="sw" style="background:var(--s1)"></i>Test (22 Mar – 10 Jul 2026)</span><span><i class="sw" style="border:2px solid var(--s1); box-sizing:border-box"></i>Development (Nov 2025 – Mar 2026)</span></div>
+<div id="c-models"></div>
+<div class="cap">The 5-minute ladder has no development-period forecasts (its dense logs cover the test only). Interval: test-period difference to the GBDT trained to 15 February, 95 %.</div>
+<details><summary>Show as table</summary><div class="tablewrap" id="t-models"></div></details></div>
+<div class="col"><p>Chronos-2 (Amazon, 2025) was trained on many thousands of public and synthetic series. It has seen enough daily and weekly cycles to read a new series' pattern from its context. TimesFM 2.5 (Google) and Chronos-Bolt are close behind. The models trained on our series alone have about 60 weeks of history to learn from (from February 2025), one of each season.</p></div>
+</section>
+
+<section>
+<h2>3 · Five minutes or hours?</h2>
+<div class="tablewrap" id="t-res"></div>
+<p class="note col">The 5-minute input fills Chronos-2's 8,192-step context with only 4 weeks and asks it for 288 steps; in hourly values the same model sees up to 48 weeks and forecasts 24 steps. From the granularity study: a GBDT trained on 15-minute data scores {{gr_15}} on hours, the same GBDT trained on hours {{gr_1h}}, the 5-minute TCN summed {{gr_tcn}}.</p>
+</section>
+
+<section>
+<h2>4 · Prior knowledge</h2>
+<div class="col"><p>A university network follows the academic calendar: weekdays carry about 225 Gbit/s in the summer break and 280–290 Gbit/s in the lecture weeks. Holidays matter only where people have the day off, and only as much as a holiday during the semester cuts traffic. The table shows the cut on each weekday holiday (traffic over the same weekday in the three weeks around it), before the test (2025) and in it (2026).</p></div>
+<div class="tablewrap" id="t-hol"></div>
+<p class="note col">Weight: share of the Swiss population whose canton has the day off (the prior used by the models, set from the cantonal lists). Corpus Christi is a holiday only in the catholic cantons and leaves the traffic unchanged in both years. The old table counted it as a full holiday.</p>
+<div class="tablewrap" id="t-cal"></div>
+<p class="note col">Full calendar = weighted holidays, lecture weeks, the Christmas closure, and whether the week before contained any of them. Cleaned history = holidays in the input replaced by the same weekday a week earlier, so that a holiday does not echo into the next week's forecast.</p>
+<h3 class="col">Error by kind of day (test)</h3>
+<div class="tablewrap" id="t-daykind"></div>
+</section>
+
+<section>
+<h2>5 · Training process</h2>
+<div class="col"><p>One lever at a time, each pair on the same test hours. A negative difference means the change helps; an interval that includes zero means it cannot be told apart from noise over {{test_days}} days.</p></div>
+<div class="tablewrap" id="t-levers"></div>
+<h3 class="col">Every training variant</h3>
+<div class="tablewrap" id="t-train"></div>
+<p class="note col">Difference: test error minus that of the GBDT trained to 15 February, with its 95 % interval. A difference whose interval includes zero is noise. The holiday rule changes only the holidays, hence its few "days better".</p>
+</section>
+
+<section>
+<h2>6 · Combining and correcting</h2>
+<div class="tablewrap" id="t-comb"></div>
+<p class="note col">Bias correction: each day's forecast is multiplied by actual over forecast for the previous 7, 14 or 28 days. The ensemble weight of Chronos-2 against the GBDT ({{w_dev}}) was chosen on the development period.</p>
+</section>
+
+<section>
+<h2>7 · Where the rest of the error is</h2>
+<div class="fig" role="figure"><div class="ttl">Two weeks in May 2026: actual traffic and day-ahead forecasts (Gbit/s, one way)</div>
+<div class="legend"><span><i class="sw" style="background:var(--ref)"></i>Actual</span><span><i class="sw" style="background:var(--s1)"></i>{{final}}</span><span><i class="sw" style="background:var(--s2)"></i>GBDT trained to 15 Feb</span></div>
+<div id="c-ex"></div>
+<div class="cap">On 7 May a transfer through CSCS's port, CERN and the hidden routers ez31 and ix3 lifted the total to 369 Gbit/s for a day; on the next three days ez31 and ix3 ran at half their usual level. 14 May is Ascension.</div></div>
+<div class="tablewrap" id="t-diag"></div>
+<p class="note col">Perfect daily level: the forecast's shape scaled to the real daily mean (what is left is shape error). Level only: the real shape scaled to the forecast's daily mean. Persistence: correlation of one day's bias with the next day's (near zero: yesterday's error says little about today's).</p>
+</section>
+
+<section>
+<h2>8 · Abilene</h2>
+<div class="col"><p>The same choices, unchanged, on Abilene's total (Internet2, 2004, NetFlow; test 14 Aug – 10 Sep with the gap removed). There is no development period: 19 weeks are too few. US holidays are given as a weight-1 table.</p></div>
+<div class="tablewrap" id="t-ab"></div>
+<p class="note col">Every model under-forecasts Abilene's test by 5–9 %: the US autumn semester starts inside it, and no model had an academic calendar for 2004.</p>
+</section>
+
+<section>
+<h2>9 · What it means for the flat rate</h2>
+<div class="tablewrap" id="t-rate"></div>
+<p class="note col">Day-ahead flat rate B̂ / T̂ against the realised rate B / T, hourly WAPE on the test. "Grid forecast" is the bills' day-ahead grid rule (yesterday's hourly factors).</p>
+</section>
+
+<section class="col">
+<h2>10 · Limits</h2>
+<ul>
+<li><b>One test season.</b> Spring to early summer 2026, with five holidays during lectures and the end of the semester. The development period covers autumn, Christmas and the start of the spring semester. A winter test needs a newer data window.</li>
+<li><b>Single runs for the hourly models</b> (the GBDT's seed matters little; Chronos-2 is deterministic in median mode). The 5-minute ladder has three seeds per setting.</li>
+<li><b>Holiday weights are population shares</b>, not traffic shares. A university-weighted table might do better; it was not tested, to avoid tuning on the test.</li>
+<li><b>No exogenous signals.</b> Scheduled transfers (LHC data challenges, CSCS campaigns) would be the only way to forecast the bursts; none are logged.</li>
+<li><b>Fine-tuning was tried once</b> (all weights, 1,000 steps, two cut-offs); LoRA was not available in the environment.</li>
+</ul>
+</section>
+
+<section class="col">
+<h2>11 · Reproduce</h2>
+<p><code>recipes/flat_forecast/run.sh all</code> (after <code>recipes/carbon</code> and <code>recipes/carbon_rates</code>; the pretrained models need <code>pip install -e ".[fm]"</code> and download from Hugging Face on first use). The functions are in <code>green_routing.carbon.dayahead</code>.</p>
+</section>
+</div>
+<div id="tip" hidden></div>
+
+<script>
+/*DATA*/
+const tip = document.getElementById("tip");
+function showTip(e, html) { tip.innerHTML = html; tip.hidden = false; const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8); tip.style.left = x + "px"; tip.style.top = (e.clientY + 14) + "px"; }
+function hideTip() { tip.hidden = true; }
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent, text) { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (text !== undefined) n.textContent = text; if (parent) parent.appendChild(n); return n; }
+function svg(host, w, h) { const s = el("svg", { viewBox: `0 0 ${w} ${h}`, role: "img" }); document.getElementById(host).appendChild(s); return s; }
+const pct = (v, d = 1) => v === null || v === undefined ? "—" : (v * 100).toFixed(d) + " %";
+const pp = (v, d = 1) => v === null || v === undefined ? "—" : ((v >= 0 ? "+" : "−") + Math.abs(v * 100).toFixed(d)) + " pp";
+const ci = r => r.diff === null ? "—" : `${pp(r.diff)} <span class="note">[${(r.lo * 100).toFixed(1)}, ${(r.hi * 100).toFixed(1)}]</span>`;
+function table(host, head, rows, cls) { const t = document.createElement("table"); t.innerHTML = "<thead><tr>" + head.map(h => `<th class="${h[1] || ""}">${h[0]}</th>`).join("") + "</tr></thead><tbody>" + rows.map((r, i) => `<tr class="${cls ? cls(i) : ""}">` + r.map((c, j) => `<td class="${head[j][1] || ""}">${c}</td>`).join("") + "</tr>").join("") + "</tbody>"; document.getElementById(host).appendChild(t); }
+function hover(m, h) { m.addEventListener("mousemove", e => showTip(e, h)); m.addEventListener("mouseleave", hideTip); }
+const fin = k => k === DATA.final;
+
+// models: dev (hollow) and test (filled) per row
+(function () {
+  const rows = DATA.models, W = 900, rh = 30, L = 330, R = 30, T = 8, B = 30, H = T + B + rows.length * rh, s = svg("c-models", W, H);
+  const vals = rows.flatMap(r => [r.dev, r.test]).filter(v => v !== null), lo = 0.09, hi = Math.max(...vals) * 1.03;
+  const x = v => L + (v - lo) / (hi - lo) * (W - L - R);
+  for (let v = 0.10; v <= hi; v += 0.02) { el("line", { x1: x(v), x2: x(v), y1: T, y2: H - B, class: "grid" }, s); el("text", { x: x(v), y: H - B + 16, "text-anchor": "middle" }, s, Math.round(v * 100) + " %"); }
+  rows.forEach((r, i) => {
+    const y = T + i * rh + rh / 2;
+    el("text", { x: L - 10, y: y + 4, "text-anchor": "end", class: "lab", "font-weight": fin(r.k) ? 600 : 400 }, s, r.k.length > 52 ? r.k.slice(0, 50) + "…" : r.k);
+    if (r.dev !== null && r.test !== null) el("line", { x1: x(r.dev), x2: x(r.test), y1: y, y2: y, class: "l1", "stroke-width": 1.5, opacity: 0.5 }, s);
+    if (r.dev !== null) { const c = el("circle", { cx: x(r.dev), cy: y, r: 5, fill: "var(--surface)", class: "l1", "stroke-width": 2 }, s); hover(c, `<b>${r.k}</b><br>development: ${pct(r.dev)}`); }
+    if (r.test !== null) { const c = el("circle", { cx: x(r.test), cy: y, r: 5.5, class: "k1", stroke: "var(--surface)", "stroke-width": 1.5 }, s); hover(c, `<b>${r.k}</b><br>test: ${pct(r.test)}<br>vs GBDT trained to 15 Feb: ${r.diff === null ? "—" : pp(r.diff)}`); }
+  });
+})();
+const mrow = r => [r.k, pct(r.dev), pct(r.test), pct(r.daily), pct(r.bias), ci(r)];
+const mhead = [["Forecast"], ["Development", "num"], ["Test", "num"], ["Test, daily", "num"], ["Test bias", "num"], ["Difference [95 %]", "num"]];
+table("t-models", mhead, DATA.everything.map(mrow), i => fin(DATA.everything[i].k) ? "final" : "");
+table("t-res", [["Forecast"], ["How"], ["Development", "num"], ["Test", "num"]], DATA.res.map(r => [r.k, r.note, pct(r.dev), pct(r.test)]));
+table("t-hol", [["Date"], ["Holiday"], ["Weight", "num"], ["Traffic vs same weekday", "num"]], DATA.hol.map(h => [h.date, h.name, h.weight.toFixed(2), pct(h.ratio, 0)]));
+table("t-cal", mhead, DATA.calendar.map(mrow));
+table("t-daykind", [["Forecast"]].concat(DATA.kinds.map(k => [k, "num"])), DATA.daykind.map(r => [r.k].concat(r.v.map(v => pct(v)))));
+table("t-train", [["Forecast"], ["Note"], ["Development", "num"], ["Test", "num"], ["Test bias", "num"], ["Difference [95 %]", "num"]],
+  DATA.training.map(r => [r.k, r.note, pct(r.dev), pct(r.test), pct(r.bias), ci(r)]));
+table("t-levers", [["Without"], ["With"], ["Test error", "num"], ["Difference [95 %]", "num"], ["Days better", "num"]],
+  DATA.levers.map(r => [r.a, r.b, pct(r.ea) + " → " + pct(r.eb), ci(r), pct(r.days, 0)]));
+table("t-comb", mhead, DATA.combining.map(mrow), i => fin(DATA.combining[i].k) ? "final" : "");
+table("t-diag", [["Forecast"], ["Error", "num"], ["Perfect daily level", "num"], ["Level only", "num"], ["Worst tenth of days", "num"], ["Persistence", "num"]],
+  DATA.diag.map(r => [r.k, pct(r.w), pct(r.lvl), pct(r.lo), pct(r.worst, 0), r.ac.toFixed(2)]));
+table("t-ab", [["Forecast"], ["Test", "num"], ["Daily", "num"], ["Bias", "num"]], DATA.ab.map(r => [r.k, pct(r.test), pct(r.daily), pct(r.bias)]));
+table("t-rate", [["Traffic forecast"], ["Real grid factor", "num"], ["Day-ahead grid factor", "num"], ["Daily, day-ahead grid", "num"]],
+  DATA.rate.map(r => [r.k, pct(r.a), pct(r.f), pct(r.fd)]));
+// example fortnight
+(function () {
+  const E = DATA.ex, n = E.t.length, W = 900, H = 280, L = 44, R = 12, T = 12, B = 28, s = svg("c-ex", W, H);
+  const all = E.y.concat(E.final, E.cur).filter(v => v !== null), lo = Math.floor(Math.min(...all) / 50) * 50, hi = Math.ceil(Math.max(...all) / 50) * 50;
+  const x = i => L + i / (n - 1) * (W - L - R), y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+  for (let v = lo; v <= hi; v += 50) { el("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), class: "grid" }, s); el("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end" }, s, v); }
+  for (let i = 0; i < n; i += 24) { const d = new Date(E.t[i]); el("line", { x1: x(i), x2: x(i), y1: T, y2: H - B, class: "axis" }, s); el("text", { x: x(i) + 3, y: H - 10 }, s, d.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" })); }
+  const line = (v, c, w) => el("polyline", { points: v.map((u, i) => u === null ? null : x(i) + "," + y(u)).filter(p => p).join(" "), fill: "none", class: c, "stroke-width": w, "stroke-linejoin": "round" }, s);
+  line(E.y, "lref", 2); line(E.cur, "l2", 1.5); line(E.final, "l1", 2);
+  const hitW = (W - L - R) / n;
+  E.t.forEach((t, i) => { const r = el("rect", { x: x(i) - hitW / 2, y: T, width: hitW, height: H - T - B, fill: "transparent" }, s); hover(r, `<b>${new Date(t).toUTCString().slice(0, 22)} UTC</b><br>actual ${E.y[i] ?? "—"}<br>${DATA.final}: ${E.final[i]}<br>GBDT: ${E.cur[i]}`); });
+})();
+</script>
