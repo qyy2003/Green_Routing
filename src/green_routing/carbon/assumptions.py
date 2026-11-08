@@ -73,3 +73,12 @@ MARGINAL_J_PER_BIT = (3e-12, 22e-12)
 ROUTERS_PER_PATH = 3
 
 GB_PER_MBPS_HOUR = 3600 / 8 / 1000     # a mean of 1 Mbit/s over an hour = 0.45 GB
+
+# --- Idle-link cap for usage-priced resource rates (the paper's rule, 2026-11-06). A resource's
+# rate E / U explodes as its load U goes to zero; no resource charges more than a multiple of the
+# hour's flat rate, the multiple being median + IDLE_CAP_K robust sigmas (1.4826 x MAD) of the
+# pooled log rates (as multiples of the flat rate) of all resources over the previous
+# IDLE_CAP_DAYS days. The emissions above the cap are spread like the flat rate.
+IDLE_CAP_K = 2.0
+IDLE_CAP_DAYS = 28
+IDLE_CAP_MIN_MBPS = 1e-3               # resource-hours below 1 kbit/s are idle: left out of the statistics

@@ -1,0 +1,1 @@
+--ds switch --model gru --ctx 4032 --norm mean --loss l1 --hist ext --lr 1e-3 --bs 128 --samples 100000 --epochs 12 --patience 4 --tag H_gru_c4032 --eval-bs 256

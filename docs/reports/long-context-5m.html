@@ -1,0 +1,354 @@
+<title>Long Context at 5 Minutes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: one reading column (~68ch) for the argument; the figure and the tables break out
+   to the wider track. Same tokens as the ladder-diagnosis report in docs/reports/. */
+:root{
+  --bg:#f4f6f3; --surface:#ffffff; --ink:#15201a; --ink-2:#47554d; --muted:#6f7c75;
+  --line:#dce3dd; --line-2:#c6d0c8; --accent:#0d6a49; --accent-soft:#e2efe8;
+  --better:#2a78d6; --worse:#c93b3a;
+  --s1:#2a78d6; --s2:#eb6834; --ref:#47554d;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --cond:"IBM Plex Sans Condensed","IBM Plex Sans",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1311; --surface:#151c18; --ink:#e7eee9; --ink-2:#a9b6ae; --muted:#8a978f;
+  --line:#253029; --line-2:#334037; --accent:#46c18c; --accent-soft:#16271f;
+  --better:#3987e5; --worse:#e66767;
+  --s1:#3987e5; --s2:#d95926; --ref:#a9b6ae; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0e1311; --surface:#151c18; --ink:#e7eee9; --ink-2:#a9b6ae; --muted:#8a978f;
+  --line:#253029; --line-2:#334037; --accent:#46c18c; --accent-soft:#16271f;
+  --better:#3987e5; --worse:#e66767;
+  --s1:#3987e5; --s2:#d95926; --ref:#a9b6ae; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.6 var(--sans);margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:0 64px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto}
+.col{max-width:68ch}
+header{padding-block:48px 8px;border-bottom:1px solid var(--line);margin-bottom:8px}
+.eyebrow{font:500 12px/1.4 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 12px}
+h1{font:600 clamp(30px,5vw,46px)/1.08 var(--cond);letter-spacing:-.01em;margin:0 0 18px;text-wrap:balance}
+h2{font:600 26px/1.2 var(--cond);margin:56px 0 6px;text-wrap:balance}
+h3{font:600 18px/1.3 var(--sans);margin:28px 0 4px;text-wrap:balance}
+p{margin:10px 0;color:var(--ink-2)}
+p strong,li strong,td strong{color:var(--ink);font-weight:600}
+li{color:var(--ink-2);margin:6px 0}
+.lead{font-size:18.5px;line-height:1.55;color:var(--ink)}
+.meta{font:13px/1.5 var(--mono);color:var(--muted);margin:14px 0 26px}
+a{color:var(--accent)}
+code,.mono{font-family:var(--mono);font-size:.88em}
+.answers{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin:26px 0 8px}
+.ans{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;min-width:0}
+.ans h3{margin:0 0 6px;font:600 16px/1.35 var(--sans);color:var(--ink)}
+.ans p{margin:6px 0 0;font-size:15px}
+.ans .big{font:600 30px/1.1 var(--cond);color:var(--ink);font-variant-numeric:tabular-nums;margin:8px 0 2px}
+.ans .big small{font:500 14px/1.2 var(--mono);color:var(--muted)}
+figure{margin:28px 0 8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 18px 12px}
+figcaption{font-size:14.5px;color:var(--ink-2);margin-top:10px;max-width:90ch}
+figcaption strong{color:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 20px;font:13px/1.4 var(--sans);color:var(--ink-2);margin:0 0 6px}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+.panel{min-width:0;position:relative}
+.panel h4{font:600 14px/1.3 var(--sans);margin:4px 0 0;color:var(--ink)}
+.panel svg{width:100%;height:auto;display:block;overflow:visible}
+.axis text{fill:var(--muted);font:11px var(--mono)}
+.grid line{stroke:var(--line);stroke-width:1}
+.lbl{font:12px var(--sans);fill:var(--ink-2)}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--line-2);border-radius:8px;
+  padding:8px 10px;font:12.5px/1.45 var(--sans);color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.12);min-width:210px;z-index:2}
+.tip b{font-weight:600}
+.tip .row{display:flex;justify-content:space-between;gap:14px;font-variant-numeric:tabular-nums}
+.tbl{overflow-x:auto;margin:16px 0 6px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+th,td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;white-space:normal;min-width:240px}
+thead th{font:600 12px/1.3 var(--mono);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);background:var(--bg)}
+thead tr.grp th{text-align:center;border-bottom:1px solid var(--line)}
+tbody tr:last-child td{border-bottom:none}
+td.t{text-align:left;white-space:normal;min-width:220px;color:var(--ink-2)}
+td.g{color:var(--better);font-weight:600}
+td.b{color:var(--worse);font-weight:600}
+td.n{color:var(--muted)}
+tr.ref td{background:var(--accent-soft)}
+tr.sep td{border-top:2px solid var(--line-2)}
+.note{font-size:14px;color:var(--muted)}
+.steps{counter-reset:s;list-style:none;padding:0;margin:14px 0}
+.steps li{counter-increment:s;padding-left:34px;position:relative;margin:12px 0}
+.steps li::before{content:counter(s);position:absolute;left:0;top:1px;width:22px;height:22px;border-radius:50%;
+  background:var(--accent-soft);color:var(--accent);font:600 12px/22px var(--mono);text-align:center}
+footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);font:13px/1.6 var(--mono);color:var(--muted)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <p class="eyebrow">Green Routing · per-link traffic forecasting · 4 Nov 2026</p>
+  <h1>Trained models on 24 weeks of 5-minute history</h1>
+  <p class="lead col">Trained models can read 24 weeks of 5-minute values (48,384 steps per link). The ladder's models cannot because their cost grows with every input step. Patches, multi-resolution tokens, folding by week or weekly profiles make 24 weeks cost 4 to 370 ms per training step. With 5-minute input and output kept, going from <strong>1 to 4 weeks</strong> of context lowers day-ahead error by about 1.5 points and week-ahead error by about 2 to 2.5. <strong>Going further to 24 weeks adds nothing</strong>, for every method tried, across three seeds. Timestral, given the same 5-minute input, still leads by 1.0 (I2) to 1.7 points (Switch LAN) at a day.</p>
+  <p class="meta">Day-ahead (and week-ahead) block forecasts issued at 00:00 UTC · 5-minute input, 5-minute output path of one week · median over links of per-link hourly WAPE (and 5-minute WAPE) · test blocks: I2 2026-07-19 → 11-01 (113 links), Switch LAN 2026-03-22 → 07-11 (534 links)</p>
+</header>
+
+<div class="answers">
+  <div class="ans">
+    <h3>24 weeks fit</h3>
+    <div class="big">48,384 <small>steps</small></div>
+    <p>Every model here trains on 24 weeks of 5-minute input on one GPU: 4 to 370 ms per batch of 128, at most 7 GB.</p>
+  </div>
+  <div class="ans">
+    <h3>4 weeks help</h3>
+    <div class="big">−1.3 <small>/</small> −1.6 <small>points</small></div>
+    <p>Day ahead, 4 vs 1 week of context (I2 / Switch LAN, 3-seed ensembles). At a week: −1.9 / −2.6. All significant.</p>
+  </div>
+  <div class="ans">
+    <h3>24 weeks add nothing</h3>
+    <div class="big">+0.4 <small>/</small> +0.2 <small>points</small></div>
+    <p>24 vs 4 weeks, day ahead. Not significant on either network; at a week I2 is 0.9 points worse.</p>
+  </div>
+  <div class="ans">
+    <h3>Best trained at 5 minutes</h3>
+    <div class="big">17.5 <small>/</small> 30.7 <small>%</small></div>
+    <p>Ensemble of every method (I2 / Switch LAN), from the ladder's 19.2 / 35.4. Timestral with 16 weeks of 5-minute input: 16.5 / 29.1.</p>
+  </div>
+</div>
+
+<h2>Error against context length</h2>
+<p class="col">All trained models here take 5-minute values in and give a 5-minute path out. Each point is a full test-block score. The trained curve falls from 1 to 4 weeks and is flat after that. The transformer that reads every hour of 24 weeks directly is worse than the same model at 4 weeks.</p>
+<figure>
+  <div class="legend" aria-hidden="true">
+    <span><svg width="22" height="12" viewBox="0 0 22 12"><line x1="0" y1="6" x2="22" y2="6" stroke="var(--s2)" stroke-width="2"/><circle cx="11" cy="6" r="3.5" fill="var(--s2)"/></svg>Trained, multi-resolution transformer (mean of 3 seeds; dots are seeds)</span>
+    <span><svg width="22" height="12" viewBox="0 0 22 12"><line x1="0" y1="6" x2="22" y2="6" stroke="var(--s2)" stroke-width="2" stroke-dasharray="5 3"/><rect x="7.5" y="2.5" width="7" height="7" fill="var(--s2)"/></svg>Trained, full-resolution transformer (one token per hour)</span>
+    <span><svg width="22" height="12" viewBox="0 0 22 12"><line x1="0" y1="6" x2="22" y2="6" stroke="var(--s1)" stroke-width="2"/><circle cx="11" cy="6" r="3.5" fill="var(--s1)"/></svg>Timestral, 5-minute input</span>
+    <span><svg width="22" height="12" viewBox="0 0 22 12"><line x1="0" y1="6" x2="22" y2="6" stroke="var(--s1)" stroke-width="2" stroke-dasharray="5 3"/><rect x="7.5" y="2.5" width="7" height="7" fill="var(--s1)"/></svg>Timestral, hourly input (earlier report)</span>
+    <span><svg width="22" height="12" viewBox="0 0 22 12"><line x1="0" y1="6" x2="22" y2="6" stroke="var(--ref)" stroke-width="1.5" stroke-dasharray="4 3"/><path d="M11 1 L16 6 L11 11 L6 6 Z" fill="var(--ref)"/></svg>Ladder PatchTST (1 week), as a reference level</span>
+  </div>
+  <div class="panels" id="panels"></div>
+  <figcaption><strong>Day-ahead median link hourly WAPE by input context (weeks, log scale).</strong> The 12-week trained point is a single seed. The full-resolution transformer at 24 weeks: on I2 a 20-epoch budget (early-stopped at epoch 15, 2.6 hours); on Switch LAN 10 epochs (3 hours).</figcaption>
+</figure>
+
+<h2>How each model reads 24 weeks</h2>
+<div class="col">
+<p>The ladder's models scale with the input length. DLinear needs a weight per input step and horizon, which is 97 million at 24 weeks. The GRU steps through 48,384 values one by one, the TCN needs another dilation level for every doubling, and PatchTST flattens every token into its output head. The models below keep the input at 5 minutes and cap the cost. All are global models trained on every link, with inputs scaled by the mean of the last week and an L1 loss on the 5-minute targets.</p>
+</div>
+<div class="tbl"><table>
+<thead><tr><th>Model</th><th style="text-align:left">What it sees at 24 weeks</th><th>Tokens / inputs</th><th>Parameters</th><th>Step, batch 128</th></tr></thead>
+<tbody>
+<tr><td><strong>Full-resolution transformer</strong></td><td class="t">One token per hour (12 five-minute values) over all 24 weeks, then 168 query tokens, one per target hour, each read out as 12 five-minute values</td><td>4,032 + 168</td><td>4.5 M</td><td>367 ms · 7.1 GB</td></tr>
+<tr><td><strong>Coarse patches</strong></td><td class="t">168 tokens whatever the context: one per day at 24 weeks, one per hour at 1 week</td><td>168 + 168</td><td>4.6 M</td><td class="n">not timed</td></tr>
+<tr><td><strong>Multi-resolution</strong></td><td class="t">The last week in hourly tokens, older weeks in daily tokens of 288 five-minute values</td><td>168 + 161 + 168</td><td>4.6 M</td><td>19 ms · 1.1 GB<sup>a</sup></td></tr>
+<tr><td>Multi-resolution, hourly summaries</td><td class="t">As above, but an older day enters as its 24 hourly means</td><td>168 + 161 + 168</td><td>4.5 M</td><td class="n">not timed</td></tr>
+<tr><td>Last week + profile queries</td><td class="t">Hourly tokens of the last week; each query token carries the median over all weeks and over the last 4 of its 12 five-minute slots</td><td>168 + 168</td><td>4.5 M</td><td class="n">not timed</td></tr>
+<tr><td><strong>Fold</strong> (SparseTSF-like)</td><td class="t">One small MLP shared by all 2,016 target steps; for step k it sees the hour-smoothed value at the same time of week in each past week (±1 h), plus recent level</td><td>2,016 × 227</td><td>0.2 M</td><td>11 ms · 1.4 GB</td></tr>
+<tr><td><strong>Profile MLP</strong></td><td class="t">The last week, the per-5-minute-of-week median over all weeks and over the last 4, and the weekly means</td><td>8,088</td><td>23.6 M</td><td>4 ms · 0.6 GB</td></tr>
+</tbody></table></div>
+<p class="note"><sup>a</sup> Timed with profile queries. Training ran 100,000 windows per epoch, at most 20 epochs, with early stopping on validation hourly WAPE at a day. Origins were hourly, from 2024-01 (Switch LAN) or 2024-11 (I2). Before 2025-11-15 only hourly data exist for I2; there the model sees each hourly mean repeated over its 12 steps, flagged in the mask.</p>
+
+<h2>Every model, every context</h2>
+<p class="col">Day-ahead median link hourly WAPE, single seeds. The best result in each column is in bold. <span class="mono">†</span> marks a run without the bounded input described in the next section, where no bounded run exists.</p>
+<div class="tbl"><table>
+<thead>
+<tr class="grp"><th></th><th colspan="4">I2</th><th colspan="4">Switch LAN</th></tr>
+<tr><th>Model</th><th>1 w</th><th>4 w</th><th>12 w</th><th>24 w</th><th>1 w</th><th>4 w</th><th>12 w</th><th>24 w</th></tr>
+</thead>
+<tbody>
+<tr><td>Full-resolution transformer</td><td><strong>19.16</strong></td><td>18.06</td><td class="n">–</td><td class="b" id="full24i2">19.56</td><td><strong>32.88</strong></td><td><strong>31.44</strong></td><td class="n">–</td><td class="b">33.10</td></tr>
+<tr><td>Coarse patches</td><td class="n">= full</td><td>18.46<span class="mono">†</span></td><td class="n">–</td><td>18.65</td><td class="n">= full</td><td>31.90<span class="mono">†</span></td><td class="n">–</td><td>31.64</td></tr>
+<tr><td>Multi-resolution</td><td class="n">= full</td><td><strong>17.99</strong></td><td>19.18</td><td>18.66</td><td class="n">= full</td><td>31.50</td><td><strong>31.26</strong></td><td><strong>31.57</strong></td></tr>
+<tr><td>Multi-resolution, hourly summaries</td><td class="n">= full</td><td class="n">–</td><td class="n">–</td><td><strong>18.54</strong></td><td class="n">= full</td><td class="n">–</td><td class="n">–</td><td>31.94</td></tr>
+<tr><td>Multi-resolution, random context truncation</td><td class="n">–</td><td class="n">–</td><td class="n">–</td><td>19.72</td><td class="n">–</td><td class="n">–</td><td class="n">–</td><td>31.73</td></tr>
+<tr><td>Last week + profile queries</td><td class="n">–</td><td>18.55<span class="mono">†</span></td><td class="n">–</td><td>18.98</td><td class="n">–</td><td>32.84<span class="mono">†</span></td><td class="n">–</td><td>31.91</td></tr>
+<tr><td>Fold</td><td>20.33<span class="mono">†</span></td><td>19.55<span class="mono">†</span></td><td class="n">–</td><td>19.22</td><td>35.98<span class="mono">†</span></td><td>33.76<span class="mono">†</span></td><td class="n">–</td><td>33.35</td></tr>
+<tr><td>Profile MLP</td><td>21.21<span class="mono">†</span></td><td>18.91</td><td class="n">–</td><td>18.63</td><td>33.98<span class="mono">†</span></td><td>32.30</td><td class="n">–</td><td>32.42</td></tr>
+<tr class="ref"><td>Ladder PatchTST (1 week, log1p + RevIN + Huber)</td><td>19.15</td><td class="n"></td><td class="n"></td><td class="n"></td><td>35.41</td><td class="n"></td><td class="n"></td><td class="n"></td></tr>
+</tbody></table></div>
+<p class="note">Week-ahead and 5-minute scores of every run are in <code>artifacts/ladder_diagnosis/long5m_runs.csv</code>. Single-seed differences under about 0.5 points are noise (see the seed table below). The I2 full-resolution 24-week value is the 20-epoch run; with 10 epochs it scored 20.31. Without bounded inputs, 4-week coarse, multi-resolution and full-resolution runs scored 18.46 / 18.28 / 18.24 on I2 and 31.90 / 31.82 / 31.01 on Switch LAN.</p>
+
+<h2>A scaling problem that grows with context</h2>
+<div class="col">
+<p>Each window is divided by the mean of its last week. That keeps the recent level near 1, but old weeks are unbounded. On a link that is nearly idle now and was busy months ago, old values reach millions. The longer the context, the more windows contain such weeks. The profile MLP, which has no normalisation layer, diverged: its training loss went into the thousands and it scored 27.5 % on I2 at 24 weeks.</p>
+<p>Bounding the input fixes this. Values up to 10 times the recent mean pass unchanged; above that, the input grows only with the logarithm (Timestral uses a similar squash). The profile MLP at 24 weeks drops from 27.48 to 18.63 % (I2) and from 36.76 to 32.42 % (Switch LAN). The transformers, whose layer norms already absorbed most of it, move by about half a point or less.</p>
+</div>
+<div class="tbl"><table>
+<thead><tr><th>Largest input in a training window, after scaling</th><th>Median</th><th>p99</th><th>Max</th><th>Windows with an input &gt; 20</th></tr></thead>
+<tbody>
+<tr><td>I2, 1 week</td><td>2.5</td><td>46</td><td>1,118</td><td>2 %</td></tr>
+<tr><td>I2, 4 weeks</td><td>3.3</td><td>4,932</td><td>6.1 million</td><td>6 %</td></tr>
+<tr><td>I2, 24 weeks</td><td>4.9</td><td>739,439</td><td>65 million</td><td>13 %</td></tr>
+<tr class="sep"><td>Switch LAN, 1 week</td><td>6.7</td><td>202</td><td>1,904</td><td>19 %</td></tr>
+<tr><td>Switch LAN, 4 weeks</td><td>10.1</td><td>3,477</td><td>4.1 million</td><td>31 %</td></tr>
+<tr><td>Switch LAN, 24 weeks</td><td>15.3</td><td>423,209</td><td>5.8 million</td><td>43 %</td></tr>
+</tbody></table></div>
+<p class="note">4,096 random training windows per row. Targets above 20 times the recent mean: 2.5 % of windows on I2 and 20 % on Switch LAN, the same at every context.</p>
+
+<h2>Four weeks help, twenty-four do not</h2>
+<p class="col">Three seeds of the multi-resolution transformer at each context (at 1 week it is the full-resolution model), averaged into one forecast per context and compared paired per link. The 95 % intervals come from a bootstrap over test days.</p>
+<div class="tbl"><table>
+<thead>
+<tr class="grp"><th></th><th colspan="2">I2</th><th colspan="2">Switch LAN</th></tr>
+<tr><th>Seeds, day ahead</th><th>Seeds</th><th>Ensemble</th><th>Seeds</th><th>Ensemble</th></tr>
+</thead>
+<tbody>
+<tr><td>1 week</td><td>19.16 · 19.72 · 19.62</td><td>19.20</td><td>32.88 · 33.22 · 32.52</td><td>32.50</td></tr>
+<tr><td>4 weeks</td><td>17.99 · 17.96 · 18.51</td><td><strong>17.86</strong></td><td>31.50 · 31.13 · 31.33</td><td><strong>30.90</strong></td></tr>
+<tr><td>24 weeks</td><td>18.66 · 18.73 · 18.42</td><td>18.29</td><td>31.57 · 31.46 · 31.31</td><td>31.08</td></tr>
+</tbody></table></div>
+<div class="tbl"><table>
+<thead><tr><th>Paired difference (points)</th><th>I2 day</th><th>I2 week</th><th>Switch day</th><th>Switch week</th></tr></thead>
+<tbody>
+<tr><td><strong>4 weeks vs 1 week</strong></td><td class="g">−1.34 [−2.03, −0.75]</td><td class="g">−1.93 [−2.53, −0.86]</td><td class="g">−1.61 [−3.15, −1.10]</td><td class="g">−2.64 [−3.90, −1.50]</td></tr>
+<tr><td><strong>24 weeks vs 4 weeks</strong></td><td class="n">+0.43 [−0.29, +0.84]</td><td class="b">+0.86 [+0.30, +2.09]</td><td class="n">+0.18 [−0.65, +0.29]</td><td class="n">+0.08 [−0.68, +0.55]</td></tr>
+<tr><td>4 and 24 weeks averaged vs 4 weeks</td><td class="n">−0.07 [−0.44, +0.24]</td><td class="n">+0.17 [−0.46, +0.95]</td><td class="n">−0.01 [−0.63, +0.03]</td><td class="n">−0.17 [−0.65, +0.14]</td></tr>
+<tr><td>1-week ensemble vs ladder PatchTST</td><td class="n">+0.06 [−0.62, +1.08]</td><td class="n">−0.62 [−1.48, +0.57]</td><td class="g">−2.91 [−3.65, −1.43]</td><td class="g">−2.82 [−3.73, −1.61]</td></tr>
+</tbody></table></div>
+<p class="note">On 5-minute WAPE: 4 vs 1 week −1.40 [−2.05, −0.67] (I2) and −0.43 [−2.88, −0.34] (Switch LAN); 24 vs 4 weeks +0.04 [−0.40, +0.76] and −0.59 [−1.12, +0.41]. On Switch LAN the 1-week ensemble beats the ladder because of mean scaling and the L1 loss, with the input unchanged.</p>
+
+<h2>Why the gain stops at four weeks</h2>
+<div class="col">
+<ul>
+  <li><strong>Plain weekly profiles stop improving at 4 weeks too.</strong> The per-5-minute-of-week median over K weeks, rescaled to the last week's level, scores 22.43 / 22.41 / 22.59 % on I2 for K = 4 / 12 / 24. On Switch LAN it worsens: 37.47 / 39.18 / 41.65 %, because links change level and shape over months. The extra weeks hold little that simple statistics can use.</li>
+  <li><strong>Timestral gains little beyond 4 weeks at 5 minutes, too.</strong> 16 weeks of 5-minute input vs 4 weeks: I2 16.48 vs 16.77 %, −0.29 [−0.71, +0.11], not significant; Switch LAN 29.07 vs 29.79 %, −0.72 [−1.29, −0.25] at a day and +0.26 (not significant) at a week. With hourly input its gain from 4 to 24 weeks is 0.75 (I2) and 1.44 points (Switch LAN). That gain comes from a prior learned on a large corpus. A model trained on 113 to 534 links and one to two years does not have it.</li>
+  <li><strong>Validation said 24 weeks would help; the test said no.</strong> On the validation block, 24-week runs tie or beat 4-week ones (I2 24.03 to 24.72 vs 24.48 to 24.80). On the later test block they do not, which suggests that what the extra weeks teach is specific to the training period.</li>
+  <li><strong>Neither fix helps.</strong> Summarising old weeks as hourly means gives 18.54 / 31.94 %. That removes the gap between I2's hourly-filled training history and its real 5-minute test history. Training on randomly truncated contexts gives 19.14 to 19.72 / 31.73 to 32.28 %.</li>
+  <li><strong>The direct route is the hardest to train.</strong> Attention over 4,200 tokens costs 20 times more per step than the multi-resolution model. With 20 epochs allowed on I2, validation was best at epoch 10 (25.0, against 24.0 to 24.7 for the cheaper models) and training stopped at epoch 15. On test it scores 19.56, 1.50 [+0.84, +2.35] points worse than the same model at 4 weeks and no better than at 1 week.</li>
+</ul>
+</div>
+
+<h2>Against the ladder and Timestral</h2>
+<div class="tbl"><table>
+<thead>
+<tr class="grp"><th></th><th colspan="3">I2</th><th colspan="3">Switch LAN</th></tr>
+<tr><th>Model</th><th>Day</th><th>Week</th><th>Day, 5-min</th><th>Day</th><th>Week</th><th>Day, 5-min</th></tr>
+</thead>
+<tbody>
+<tr><td>Ladder PatchTST (1 week)</td><td>19.15</td><td>25.01</td><td>21.62</td><td>35.41</td><td>40.81</td><td>43.49</td></tr>
+<tr><td>Trained here, 1 week (3 seeds)</td><td>19.20</td><td>24.39</td><td>21.74</td><td>32.50</td><td>37.99</td><td>41.89</td></tr>
+<tr><td>Trained here, 4 weeks (3 seeds)</td><td>17.86</td><td>22.46</td><td>20.33</td><td>30.90</td><td>35.34</td><td>41.46</td></tr>
+<tr><td>Trained here, 24 weeks (3 seeds)</td><td>18.29</td><td>23.32</td><td>20.37</td><td>31.08</td><td>35.43</td><td>40.86</td></tr>
+<tr><td><strong>Trained here, every method</strong> (11 runs, 4 and 24 weeks)</td><td><strong>17.50</strong></td><td><strong>22.37</strong></td><td><strong>19.93</strong></td><td><strong>30.72</strong></td><td><strong>34.83</strong></td><td><strong>40.54</strong></td></tr>
+<tr class="sep"><td>Timestral, 5-minute input, 4 weeks</td><td>16.77</td><td>22.01</td><td>19.28</td><td>29.79</td><td>34.27</td><td>37.83</td></tr>
+<tr><td>Timestral, 5-minute input, 16 weeks</td><td>16.48</td><td>21.36</td><td>18.91</td><td id="ts16d">29.07</td><td id="ts16w">34.53</td><td id="ts16d5">37.27</td></tr>
+<tr class="ref"><td>Timestral, hourly input, 24 weeks</td><td>16.22</td><td>20.55</td><td>19.19</td><td>28.05</td><td>32.54</td><td>41.14</td></tr>
+</tbody></table></div>
+<p class="note">Paired on common hours. All-method ensemble vs Timestral with 16 weeks of 5-minute input: I2 +1.02 [+0.44, +1.93], Switch LAN +1.65 [+0.76, +2.68] at a day; at a week Switch LAN +0.31 [−0.19, +1.68], not significant. Vs Timestral with hourly input: +1.28 [+0.64, +2.05] and +2.67 [+1.62, +3.46]. Timestral with hourly input repeats each hourly value over 12 steps, which costs it on 5-minute WAPE on Switch LAN (41.1 vs 37.8 % with 5-minute input). Trained models are biased low (median link −3 to −8 % on I2, −9 to −14 % on Switch LAN at a day), as the L1 loss on skewed 5-minute values predicts.</p>
+
+<h2>Recommendations</h2>
+<ol class="steps col">
+  <li><strong>For a trained 5-minute model, use 4 weeks of context.</strong> The multi-resolution transformer with bounded inputs, mean scaling, an L1 loss and all available history trains in about 7 minutes on one GPU. It beats the ladder by 1.3 (I2) and 4.5 points (Switch LAN) at a day.</li>
+  <li><strong>Bound the scaled input whenever context is long.</strong> Recent-mean scaling leaves old weeks unbounded, and the problem grows with context length.</li>
+  <li><strong>Do not expect 24 weeks to help a model trained from scratch on this data.</strong> Every approach tried tied 4 weeks at best. For day and week forecasts, Timestral with hourly input over 24 weeks remains the best per-link model; with 5-minute input it is still 1.0 to 1.7 points ahead of the best trained ensemble at a day.</li>
+</ol>
+
+<h2>Method and limits</h2>
+<div class="col">
+<ul>
+  <li>Code: <code>recipes/ladder_diagnosis/long5m.py</code> (models, training, scoring), <code>refs5m.py</code> (reference scores, untrained profiles), <code>compare.py</code> (paired tests, now also on 5-minute WAPE), grids <code>grids/l5*.txt</code>. Scoring matches <code>gr-dense metrics</code> wape_1h, as in the earlier report.</li>
+  <li>History before the panels: Switch LAN 5-minute values from 2024-01 from the frozen S3 cache (hourly means identical to the earlier hourly file); I2 only hourly before 2025-11-15, so 64 % of I2's 24-week training contexts are hourly-filled while test contexts are all 5-minute. The hourly-summary variant controls for this and did not help.</li>
+  <li>Most runs are single seeds. Seeds exist for the 1, 4 and 24-week multi-resolution transformer. Two sets of runs were stopped early to free the GPU: the first full-resolution 24-week runs, which lacked bounded inputs, and the original grid's 12-week runs.</li>
+  <li>Timestral with 16 weeks of 5-minute input: 32,256 steps, near its 32,768 limit; 47 minutes on I2 and 2.7 hours on Switch LAN while sharing the GPU.</li>
+  <li>I2's test block is public and reaches Timestral's release date, so overlap with its training data cannot be ruled out. Switch LAN is private.</li>
+</ul>
+</div>
+
+<footer>Code: recipes/ladder_diagnosis/long5m.py · Log: docs/worklog/2026-11-04-long-context-5m.md · Results: artifacts/ladder_diagnosis/long5m_runs.csv · Earlier report: Ladder vs Timestral (docs/reports/ladder-diagnosis.html)</footer>
+</div>
+
+<script>
+const DATA = {
+  i2: {title: "I2 (113 links)",
+    trained: [[1,19.50],[4,18.15],[12,19.18],[24,18.60]],
+    seeds: {1:[19.16,19.72,19.62],4:[17.99,17.96,18.51],24:[18.66,18.73,18.42]},
+    full: [[1,19.16],[4,18.06],[24,19.56]],
+    ts5: [[4,16.77],[16,16.48]],
+    ts1h: [[1,19.73],[2,17.90],[4,16.97],[12,16.71],[24,16.22]],
+    ladder: 19.15},
+  sw: {title: "Switch LAN (534 links)",
+    trained: [[1,32.87],[4,31.32],[12,31.26],[24,31.45]],
+    seeds: {1:[32.88,33.22,32.52],4:[31.50,31.13,31.33],24:[31.57,31.46,31.31]},
+    full: [[1,32.88],[4,31.44],[24,33.10]],
+    ts5: [[4,29.79],[16,29.07]],
+    ts1h: [[1,35.04],[2,31.11],[4,29.49],[12,28.27],[24,28.05]],
+    ladder: 35.41}
+};
+const XS = [1,2,4,12,16,24];
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent){ const e=document.createElementNS(NS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); if(parent) parent.appendChild(e); return e; }
+function draw(key){
+  const d = DATA[key];
+  const W=480, H=310, m={l:44,r:132,t:14,b:36};
+  const seedv=Object.values(d.seeds).flat();
+  const all=[...d.trained,...d.full,...d.ts5,...d.ts1h].map(p=>p[1]).concat(seedv,[d.ladder]);
+  const lo=Math.floor(Math.min(...all)-0.5), hi=Math.ceil(Math.max(...all)+0.5);
+  const x=v=>m.l+(Math.log(v)/Math.log(24))*(W-m.l-m.r);
+  const y=v=>m.t+(hi-v)/(hi-lo)*(H-m.t-m.b);
+  const wrap=document.createElement("div"); wrap.className="panel";
+  const h=document.createElement("h4"); h.textContent=d.title; wrap.appendChild(h);
+  const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":`${d.title}: day-ahead error by context length`});
+  wrap.appendChild(svg);
+  const g=el("g",{class:"grid"},svg), ax=el("g",{class:"axis"},svg);
+  const step=(hi-lo)>8?2:1;
+  for(let v=Math.ceil(lo/step)*step; v<=hi; v+=step){
+    el("line",{x1:m.l,x2:W-m.r,y1:y(v),y2:y(v)},g);
+    const t=el("text",{x:m.l-8,y:y(v)+4,"text-anchor":"end"},ax); t.textContent=v+"%";
+  }
+  XS.forEach(v=>{ const t=el("text",{x:x(v),y:H-m.b+18,"text-anchor":"middle"},ax); t.textContent=v+" w"; });
+  const xl=el("text",{x:(m.l+W-m.r)/2,y:H-4,"text-anchor":"middle"},ax); xl.textContent="context (weeks, log scale)";
+  const path=(pts,color,dash)=>el("path",{d:pts.map((p,i)=>(i?"L":"M")+x(p[0]).toFixed(1)+" "+y(p[1]).toFixed(1)).join(" "),fill:"none",stroke:color,"stroke-width":2,"stroke-linejoin":"round","stroke-linecap":"round","stroke-dasharray":dash||"none"},svg);
+  const dots=(pts,color,shape)=>pts.forEach(p=>{
+    if(shape==="sq") el("rect",{x:x(p[0])-4,y:y(p[1])-4,width:8,height:8,fill:color,stroke:"var(--surface)","stroke-width":2},svg);
+    else el("circle",{cx:x(p[0]),cy:y(p[1]),r:4,fill:color,stroke:"var(--surface)","stroke-width":2},svg);
+  });
+  // reference level: the ladder (1 week)
+  const ly=y(d.ladder);
+  el("line",{x1:m.l,x2:W-m.r,y1:ly,y2:ly,stroke:"var(--ref)","stroke-width":1.5,"stroke-dasharray":"4 3"},svg);
+  el("path",{d:`M${x(1)} ${ly-6} L${x(1)+6} ${ly} L${x(1)} ${ly+6} L${x(1)-6} ${ly} Z`,fill:"var(--ref)",stroke:"var(--surface)","stroke-width":1.5},svg);
+  path(d.ts1h,"var(--s1)","5 3"); dots(d.ts1h,"var(--s1)","sq");
+  if(d.ts5.length>1) path(d.ts5,"var(--s1)"); dots(d.ts5,"var(--s1)");
+  path(d.full,"var(--s2)","5 3"); dots(d.full,"var(--s2)","sq");
+  // seeds: small hollow dots behind the mean line
+  Object.entries(d.seeds).forEach(([w,vs])=>vs.forEach(v=>el("circle",{cx:x(+w),cy:y(v),r:2.6,fill:"var(--surface)",stroke:"var(--s2)","stroke-width":1.2},svg)));
+  path(d.trained,"var(--s2)"); dots(d.trained,"var(--s2)");
+  // right-edge direct labels, at least 14 px apart
+  const last=a=>a[a.length-1];
+  const labs=[{v:last(d.ts1h)[1],t:"Timestral 1 h "+last(d.ts1h)[1].toFixed(1)},
+              {v:last(d.ts5)[1],t:"Timestral 5 min "+last(d.ts5)[1].toFixed(1)},
+              {v:last(d.trained)[1],t:"trained "+last(d.trained)[1].toFixed(1)},
+              {v:last(d.full)[1],t:"full-res "+last(d.full)[1].toFixed(1)},
+              {v:d.ladder,t:"ladder "+d.ladder.toFixed(1)}]
+    .map(o=>({...o,py:y(o.v)})).sort((p,q)=>p.py-q.py);
+  for(let i=1;i<labs.length;i++) if(labs[i].py-labs[i-1].py<14) labs[i].py=labs[i-1].py+14;
+  labs.forEach(o=>{ const t=el("text",{x:x(24)+10,y:o.py+4,class:"lbl"},svg); t.textContent=o.t; });
+  // hover layer: nearest context column
+  const cross=el("line",{y1:m.t,y2:H-m.b,stroke:"var(--line-2)","stroke-width":1,visibility:"hidden"},svg);
+  const hit=el("rect",{x:m.l-10,y:m.t,width:W-m.l-m.r+20,height:H-m.t-m.b,fill:"transparent"},svg);
+  const tip=document.createElement("div"); tip.className="tip"; tip.hidden=true; wrap.appendChild(tip);
+  const find=(arr,v)=>{ const p=arr.find(q=>q[0]===v); return p?p[1]:null; };
+  const fmt=v=>v==null?"–":v.toFixed(2)+" %";
+  hit.addEventListener("pointermove",ev=>{
+    const r=svg.getBoundingClientRect(); const px=(ev.clientX-r.left)*W/r.width;
+    let best=XS[0]; XS.forEach(v=>{ if(Math.abs(x(v)-px)<Math.abs(x(best)-px)) best=v; });
+    cross.setAttribute("x1",x(best)); cross.setAttribute("x2",x(best)); cross.setAttribute("visibility","visible");
+    let html=`<b>${best} week${best>1?"s":""} of context</b>`;
+    const sd=d.seeds[best];
+    html+=`<div class="row"><span>Trained, multi-resolution${sd?" (mean)":""}</span><span>${fmt(find(d.trained,best))}</span></div>`;
+    if(sd) html+=`<div class="row"><span>seeds</span><span>${sd.map(v=>v.toFixed(2)).join(" · ")}</span></div>`;
+    html+=`<div class="row"><span>Trained, full resolution</span><span>${fmt(find(d.full,best))}</span></div>`;
+    html+=`<div class="row"><span>Timestral, 5-minute input</span><span>${fmt(find(d.ts5,best))}</span></div>`;
+    html+=`<div class="row"><span>Timestral, hourly input</span><span>${fmt(find(d.ts1h,best))}</span></div>`;
+    if(best===1) html+=`<div class="row"><span>Ladder PatchTST</span><span>${fmt(d.ladder)}</span></div>`;
+    tip.innerHTML=html; tip.hidden=false;
+    const wr=wrap.getBoundingClientRect(); let left=ev.clientX-wr.left+14; if(left>wr.width-230) left=ev.clientX-wr.left-230;
+    tip.style.left=Math.max(0,left)+"px"; tip.style.top=(ev.clientY-wr.top+10)+"px";
+  });
+  hit.addEventListener("pointerleave",()=>{ tip.hidden=true; cross.setAttribute("visibility","hidden"); });
+  document.getElementById("panels").appendChild(wrap);
+}
+draw("i2"); draw("sw");
+</script>

@@ -12,6 +12,8 @@ with the environment active (`conda activate green`; `pip install -e ".[dev]"` d
 | [`carbon_granularity/`](carbon_granularity/) | at what grain to publish and forecast the carbon rate, how often to update it, curves vs values, calibrated distributions; report | [docs/carbon.md](../docs/carbon.md#granularity-and-uncertainty-of-the-rate) |
 | [`flat_forecast/`](flat_forecast/) | how best to forecast the total traffic a day ahead for the flat rate: models (incl. pretrained Chronos-2 / TimesFM), 5-minute vs hourly, holidays and semesters, training process, ensembles; Abilene check; report | [docs/carbon.md](../docs/carbon.md#forecasting-the-total-for-the-flat-rate) |
 | [`internet2/`](internet2/) | the second current network from public data: Internet2's port counters, port labels and PoP power (GlobalNOC TSDS), hourly US grid factors (EIA-930), the 2021 MPLS tunnel mesh as a measured matrix; forecasting ladder on its backbone links, carbon rates and bills | [docs/worklog/2026-11-02-internet2.md](../docs/worklog/2026-11-02-internet2.md) |
+| [`green_paths/`](green_paths/) | exploratory: greenest-path routing on Internet2, one party alone vs everyone (empty links, lock-in, overloads, resilience) | `simulate.py` docstring, AGENTS.md §6 |
+| [`paper/`](paper/) | the IMC paper's evaluation: idle-link cap, day-ahead bill by accounting period, entity bills and city-pair rates, CIRo-style path choice and decentralized link sleeping on day-ahead rates, all six plots | [paper/README.md](paper/README.md) |
 | [`carbon/`](carbon/) | link roles, energy inventory, grid factors, allocation, settled and day-ahead forecast carbon bills, their report and a check against `expected.json` | [docs/carbon.md](../docs/carbon.md), [docs/reproduce.md](../docs/reproduce.md#the-carbon-bills) |
 
 ```bash
@@ -22,6 +24,7 @@ recipes/abilene/run.sh all               # the second dataset; downloads 170 MB 
 recipes/carbon_rates/run.sh all          # needs recipes/year, carbon, abilene  (~30 min)
 recipes/flat_forecast/run.sh all         # needs carbon, carbon_rates; pip install -e ".[fm]"  (~3 h)
 recipes/internet2/run.sh all             # public data only; ~3 h download cold, then ~2.5 h
+recipes/paper/run.sh                     # needs carbon, carbon_rates, flat_forecast, internet2  (~30 min)
 ```
 
 Every step can be run on its own and re-run: finished parts are skipped, interrupted

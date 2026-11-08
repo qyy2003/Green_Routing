@@ -1,0 +1,3 @@
+# Switch: PatchTST with extended history (1 and 4 weeks)
+--ds switch --hist ext --model patchtst --ctx 168 --norm mean --loss l1 --lr 3e-4 --tag B_pt_c168_mean_l1
+--ds switch --hist ext --model patchtst --ctx 672 --norm mean --loss l1 --lr 3e-4 --tag B_pt_c672_mean_l1

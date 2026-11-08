@@ -1,0 +1,19 @@
+# Switch LAN: preprocessing x context x history
+--ds switch --model linear --ctx 168 --norm log_revin --loss huber --tag A_lin_c168_log_huber
+--ds switch --model linear --ctx 168 --norm mean --loss l1 --tag A_lin_c168_mean_l1
+--ds switch --model mlp --ctx 168 --norm log_revin --loss huber --tag A_mlp_c168_log_huber
+--ds switch --model mlp --ctx 168 --norm mean --loss l1 --tag A_mlp_c168_mean_l1
+--ds switch --model mlp --ctx 672 --norm mean --loss l1 --tag A_mlp_c672_mean_l1
+--ds switch --model patchtst --ctx 168 --norm log_revin --loss huber --lr 3e-4 --tag A_pt_c168_log_huber
+--ds switch --model patchtst --ctx 168 --norm mean --loss l1 --lr 3e-4 --tag A_pt_c168_mean_l1
+--ds switch --model patchtst --ctx 672 --norm mean --loss l1 --lr 3e-4 --tag A_pt_c672_mean_l1
+--ds switch --hist ext --model linear --ctx 168 --norm mean --loss l1 --tag B_lin_c168_mean_l1
+--ds switch --hist ext --model mlp --ctx 168 --norm log_revin --loss huber --tag B_mlp_c168_log_huber
+--ds switch --hist ext --model mlp --ctx 168 --norm mean --loss l1 --tag B_mlp_c168_mean_l1
+--ds switch --hist ext --model mlp --ctx 672 --norm mean --loss l1 --tag B_mlp_c672_mean_l1
+--ds switch --hist ext --model mlp --ctx 2016 --norm mean --loss l1 --tag B_mlp_c2016_mean_l1
+--ds switch --hist ext --model mlp --ctx 4032 --norm mean --loss l1 --tag B_mlp_c4032_mean_l1
+# moved to sw_b2 (c168, c672) or not run (c2016, c4032): --ds switch --hist ext --model patchtst --ctx 168 --norm mean --loss l1 --lr 3e-4 --tag B_pt_c168_mean_l1
+# moved to sw_b2 (c168, c672) or not run (c2016, c4032): --ds switch --hist ext --model patchtst --ctx 672 --norm mean --loss l1 --lr 3e-4 --tag B_pt_c672_mean_l1
+# moved to sw_b2 (c168, c672) or not run (c2016, c4032): --ds switch --hist ext --model patchtst --ctx 2016 --norm mean --loss l1 --lr 3e-4 --tag B_pt_c2016_mean_l1
+# moved to sw_b2 (c168, c672) or not run (c2016, c4032): --ds switch --hist ext --model patchtst --ctx 4032 --norm mean --loss l1 --lr 3e-4 --tag B_pt_c4032_mean_l1

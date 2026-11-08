@@ -1,0 +1,10 @@
+# long5m.py, switch: hourly-summary multires, context truncation, seeds (all --squash 10)
+--ds switch --model seg --lr 5e-4 --squash 10 --ctx 48384 --seg mrh --tag L5s_seg_mrh_24w
+--ds switch --model seg --lr 5e-4 --squash 10 --ctx 48384 --seg mrh --drop-ctx 0.5 --tag L5s_seg_mrh_24w_drop
+--ds switch --model seg --lr 5e-4 --squash 10 --ctx 48384 --seg multires --drop-ctx 0.5 --tag L5s_seg_multires_24w_drop
+--ds switch --model seg --lr 5e-4 --squash 10 --ctx 2016 --seg full --seed 1 --tag L5s_seg_full_1w_s1
+--ds switch --model seg --lr 5e-4 --squash 10 --ctx 8064 --seg multires --seed 1 --tag L5s_seg_multires_4w_s1
+--ds switch --model seg --lr 5e-4 --squash 10 --ctx 48384 --seg multires --seed 1 --tag L5s_seg_multires_24w_s1
+--ds switch --model seg --lr 5e-4 --squash 10 --ctx 2016 --seg full --seed 2 --tag L5s_seg_full_1w_s2
+--ds switch --model seg --lr 5e-4 --squash 10 --ctx 8064 --seg multires --seed 2 --tag L5s_seg_multires_4w_s2
+--ds switch --model seg --lr 5e-4 --squash 10 --ctx 48384 --seg multires --seed 2 --tag L5s_seg_multires_24w_s2

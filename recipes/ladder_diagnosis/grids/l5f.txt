@@ -1,0 +1,9 @@
+# saved models for the context-ablation analysis (uses_context.py); seed 3 = an extra seed
+--ds i2 --squash 10 --seed 3 --save 1 --ctx 8064 --model seg --seg multires --lr 5e-4 --tag L5s_seg_multires_4w_s3
+--ds i2 --squash 10 --seed 3 --save 1 --ctx 48384 --model seg --seg multires --lr 5e-4 --tag L5s_seg_multires_24w_s3
+--ds i2 --squash 10 --seed 3 --save 1 --ctx 48384 --model seg --seg coarse --lr 5e-4 --tag L5s_seg_coarse_24w_s3
+--ds i2 --squash 10 --seed 3 --save 1 --ctx 48384 --model profmlp --lr 3e-4 --tag L5s_profmlp_24w_s3
+--ds switch --squash 10 --seed 3 --save 1 --ctx 8064 --model seg --seg multires --lr 5e-4 --tag L5s_seg_multires_4w_s3
+--ds switch --squash 10 --seed 3 --save 1 --ctx 48384 --model seg --seg multires --lr 5e-4 --tag L5s_seg_multires_24w_s3
+--ds switch --squash 10 --seed 3 --save 1 --ctx 48384 --model seg --seg coarse --lr 5e-4 --tag L5s_seg_coarse_24w_s3
+--ds switch --squash 10 --seed 3 --save 1 --ctx 48384 --model profmlp --lr 3e-4 --tag L5s_profmlp_24w_s3

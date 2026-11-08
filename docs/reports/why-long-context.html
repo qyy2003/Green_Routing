@@ -1,0 +1,321 @@
+<title>Why Doesn't Long Context Help?</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: one reading column (~68ch) for the argument; the figure and the tables break out
+   to the wider track. Same tokens as the other forecasting reports in docs/reports/. */
+:root{
+  --bg:#f4f6f3; --surface:#ffffff; --ink:#15201a; --ink-2:#47554d; --muted:#6f7c75;
+  --line:#dce3dd; --line-2:#c6d0c8; --accent:#0d6a49; --accent-soft:#e2efe8;
+  --better:#2a78d6; --worse:#c93b3a;
+  --s1:#2a78d6; --s2:#eb6834; --ref:#47554d;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --cond:"IBM Plex Sans Condensed","IBM Plex Sans",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1311; --surface:#151c18; --ink:#e7eee9; --ink-2:#a9b6ae; --muted:#8a978f;
+  --line:#253029; --line-2:#334037; --accent:#46c18c; --accent-soft:#16271f;
+  --better:#3987e5; --worse:#e66767;
+  --s1:#3987e5; --s2:#d95926; --ref:#a9b6ae; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0e1311; --surface:#151c18; --ink:#e7eee9; --ink-2:#a9b6ae; --muted:#8a978f;
+  --line:#253029; --line-2:#334037; --accent:#46c18c; --accent-soft:#16271f;
+  --better:#3987e5; --worse:#e66767;
+  --s1:#3987e5; --s2:#d95926; --ref:#a9b6ae; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.6 var(--sans);margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:0 64px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto}
+.col{max-width:68ch}
+header{padding-block:48px 8px;border-bottom:1px solid var(--line);margin-bottom:8px}
+.eyebrow{font:500 12px/1.4 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 12px}
+h1{font:600 clamp(30px,5vw,46px)/1.08 var(--cond);letter-spacing:-.01em;margin:0 0 18px;text-wrap:balance}
+h2{font:600 26px/1.2 var(--cond);margin:56px 0 6px;text-wrap:balance}
+h3{font:600 18px/1.3 var(--sans);margin:28px 0 4px;text-wrap:balance}
+p{margin:10px 0;color:var(--ink-2)}
+p strong,li strong,td strong{color:var(--ink);font-weight:600}
+li{color:var(--ink-2);margin:6px 0}
+.lead{font-size:18.5px;line-height:1.55;color:var(--ink)}
+.meta{font:13px/1.5 var(--mono);color:var(--muted);margin:14px 0 26px}
+a{color:var(--accent)}
+code,.mono{font-family:var(--mono);font-size:.88em}
+.answers{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin:26px 0 8px}
+.ans{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;min-width:0}
+.ans h3{margin:0 0 6px;font:600 16px/1.35 var(--sans);color:var(--ink)}
+.ans p{margin:6px 0 0;font-size:15px}
+.ans .big{font:600 30px/1.1 var(--cond);color:var(--ink);font-variant-numeric:tabular-nums;margin:8px 0 2px}
+.ans .big small{font:500 14px/1.2 var(--mono);color:var(--muted)}
+figure{margin:28px 0 8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 18px 12px}
+figcaption{font-size:14.5px;color:var(--ink-2);margin-top:10px;max-width:90ch}
+figcaption strong{color:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 20px;font:13px/1.4 var(--sans);color:var(--ink-2);margin:0 0 6px}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+.panel{min-width:0;position:relative}
+.panel h4{font:600 14px/1.3 var(--sans);margin:4px 0 0;color:var(--ink)}
+.panel svg{width:100%;height:auto;display:block;overflow:visible}
+.axis text{fill:var(--muted);font:11px var(--mono)}
+.grid line{stroke:var(--line);stroke-width:1}
+.lbl{font:12px var(--sans);fill:var(--ink-2)}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--line-2);border-radius:8px;
+  padding:8px 10px;font:12.5px/1.45 var(--sans);color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.12);min-width:210px;z-index:2}
+.tip b{font-weight:600}
+.tip .row{display:flex;justify-content:space-between;gap:14px;font-variant-numeric:tabular-nums}
+.tbl{overflow-x:auto;margin:16px 0 6px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+th,td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;white-space:normal;min-width:240px}
+thead th{font:600 12px/1.3 var(--mono);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);background:var(--bg)}
+thead tr.grp th{text-align:center;border-bottom:1px solid var(--line)}
+tbody tr:last-child td{border-bottom:none}
+td.t{text-align:left;white-space:normal;min-width:220px;color:var(--ink-2)}
+td.g{color:var(--better);font-weight:600}
+td.b{color:var(--worse);font-weight:600}
+td.n{color:var(--muted)}
+tr.ref td{background:var(--accent-soft)}
+tr.sep td{border-top:2px solid var(--line-2)}
+.note{font-size:14px;color:var(--muted)}
+.steps{counter-reset:s;list-style:none;padding:0;margin:14px 0}
+.steps li{counter-increment:s;padding-left:34px;position:relative;margin:12px 0}
+.steps li::before{content:counter(s);position:absolute;left:0;top:1px;width:22px;height:22px;border-radius:50%;
+  background:var(--accent-soft);color:var(--accent);font:600 12px/22px var(--mono);text-align:center}
+footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);font:13px/1.6 var(--mono);color:var(--muted)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+<div class="wrap">
+<header>
+  <p class="eyebrow">Green Routing · per-link traffic forecasting · 6 Nov 2026</p>
+  <h1>Why long context helps Timestral and not our models</h1>
+  <p class="lead col">Old weeks are useful for one thing: a better estimate of each link's level (its daily volume) and of its daily shape. Timestral gets that from them; blanking its weeks 5 to 24 costs it 0.75 (I2) and 1.44 points (Switch LAN). Our models also read the old weeks and fit the training period better with them, but what they learn there does not carry over to later months. Five years of I2 history and six times more series remove the damage, but no gain appears. Preprocessing is not the gap, and fine-tuning Timestral on our data changes nothing. What Timestral has and we cannot train from one network is a prior for reading long, noisy history.</p>
+  <p class="meta">Day-ahead block forecasts issued at 00:00 UTC · median over links of per-link hourly WAPE · paired comparisons with 95 % intervals from a bootstrap over test days · test blocks: I2 2026-07-19 → 11-01 (113 links), Switch LAN 2026-03-22 → 07-11 (534 links)</p>
+</header>
+
+<div class="answers">
+  <div class="ans">
+    <h3>Old weeks are worth a point to Timestral</h3>
+    <div class="big">+0.75 <small>/</small> +1.44 <small>points</small></div>
+    <p>Its test error when weeks 5 to 24 are blanked (I2 / Switch LAN). The gain is in both daily volume and daily shape.</p>
+  </div>
+  <div class="ans">
+    <h3>Ours fit the past better, the future worse</h3>
+    <div class="big">−0.64 <small>→</small> +0.30</div>
+    <p>I2, 24-week vs 4-week model: better on training-period days, worse on the test block.</p>
+  </div>
+  <div class="ans">
+    <h3>More data removes the damage, not the gap</h3>
+    <div class="big">+2.9 <small>→</small> +0.2</div>
+    <p>PatchTST's 24-week penalty, from 6 months of I2 data to 5 years plus door series. The best trained model is still 1.8 points behind Timestral.</p>
+  </div>
+  <div class="ans">
+    <h3>Not preprocessing, not fine-tuning</h3>
+    <div class="big">±0.15 <small>points</small></div>
+    <p>Timestral fine-tuned on 5 years of I2 or on Switch LAN, not significant. Its own scaler inside our model is 0.2 to 3.8 points worse than ours.</p>
+  </div>
+</div>
+
+<h2>What long context is for</h2>
+<div class="col">
+<p>Split each day-ahead error in two. The <strong>volume</strong> error is how far the forecast day's total traffic is from the real total. The <strong>shape</strong> error is the hourly error left after scaling each forecast day to the true total. Long context should help with both: many weeks give a steadier estimate of a link's level and of its usual day.</p>
+<p>With one week of history our trained models estimate the daily volume better than Timestral, because they have learned how these links usually behave. From there Timestral keeps improving as it sees more weeks, in volume and in shape. Our models stop at about 4 weeks, and at 24 weeks their shape error grows.</p>
+</div>
+<div class="tbl"><table>
+<thead>
+<tr class="grp"><th></th><th colspan="3">Volume error (%)</th><th colspan="3">Shape error (%)</th></tr>
+<tr><th>Model</th><th>1 w</th><th>4 w</th><th>24 w</th><th>1 w</th><th>4 w</th><th>24 w</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>I2</strong> · Timestral, zero-shot</td><td>14.29</td><td>12.09</td><td class="g">11.47</td><td>16.26</td><td>13.53</td><td class="g">12.91</td></tr>
+<tr><td>I2 · PatchTST, trained on 5 years</td><td class="g">12.78</td><td>12.57</td><td>12.47</td><td>15.33</td><td>14.10</td><td>14.75</td></tr>
+<tr><td>I2 · Profile MLP, 5 years + door series</td><td class="n">–</td><td>12.72</td><td>12.86</td><td class="n">–</td><td>13.78</td><td>14.20</td></tr>
+<tr class="sep"><td><strong>Switch LAN</strong> · Timestral, zero-shot</td><td>26.16</td><td>18.94</td><td class="g">17.46</td><td>27.28</td><td>24.43</td><td class="g">23.97</td></tr>
+<tr><td>Switch LAN · transformer, 5-minute input (3 seeds)</td><td class="g">22.23</td><td>20.82</td><td>20.44</td><td>27.37</td><td>25.81</td><td>25.82</td></tr>
+</tbody></table></div>
+<p class="note">Median over links, day-ahead blocks, complete days only. Timestral with hourly input at 1, 4 and 24 weeks of context. The trained Switch LAN model is the multi-resolution transformer of the 5-minute report, averaged over three seeds.</p>
+
+<h2>Our models read the old weeks but learn the wrong lessons</h2>
+<div class="col">
+<p>To see whether a model uses weeks 5 to 24, we blank them at test time and forecast again. If its forecasts do not move, it ignores them. Our 24-week models do not ignore them. When the old weeks are blanked their forecasts move by 3 to 8 % of the traffic, about as much as Timestral's (4 to 7 %), and their error rises by 0.6 to 2.5 points on I2.</p>
+<p>The question is whether what they read there generalises. We score each model on three periods: the last 13 weeks of its own training data, the validation block, and the test block. Timestral never trained on any of them, so its scores show how hard each period is. On I2 the 24-week model beats the 4-week model on its own training days by 0.64 points and loses to it later. That is over-fitting: the long input lets the model memorise how this network behaved in the training months. On Switch LAN the effect is smaller and the 24-week model keeps a slight edge.</p>
+</div>
+<div class="tbl"><table>
+<thead>
+<tr class="grp"><th></th><th colspan="3">I2</th><th colspan="3">Switch LAN</th></tr>
+<tr><th>Day-ahead hourly WAPE</th><th>Training days</th><th>Validation</th><th>Test</th><th>Training days</th><th>Validation</th><th>Test</th></tr>
+</thead>
+<tbody>
+<tr><td>Trained, 4 weeks</td><td>18.44</td><td><strong>22.86</strong></td><td><strong>18.00</strong></td><td>31.23</td><td>29.27</td><td>31.46</td></tr>
+<tr><td>Trained, 24 weeks</td><td><strong>17.80</strong></td><td>23.30</td><td>18.30</td><td><strong>30.89</strong></td><td><strong>28.25</strong></td><td><strong>31.25</strong></td></tr>
+<tr><td>Trained, 24 weeks, weeks 5–24 blanked</td><td>19.41</td><td>24.16</td><td>20.29</td><td>31.85</td><td>29.12</td><td>31.35</td></tr>
+<tr><td><strong>24 weeks minus 4 weeks</strong></td><td class="g">−0.64</td><td class="b">+0.44</td><td class="b">+0.30</td><td class="g">−0.34</td><td class="g">−1.02</td><td class="g">−0.21</td></tr>
+<tr class="sep"><td>Timestral, 24 weeks</td><td>16.60</td><td>20.29</td><td>16.22</td><td>27.99</td><td>24.46</td><td>28.05</td></tr>
+<tr><td>Timestral, weeks 5–24 blanked</td><td>17.55</td><td>22.26</td><td>16.97</td><td>29.07</td><td>25.59</td><td>29.49</td></tr>
+<tr><td><strong>What the old weeks give Timestral</strong></td><td class="g">−0.95</td><td class="g">−1.97</td><td class="g">−0.75</td><td class="g">−1.09</td><td class="g">−1.13</td><td class="g">−1.44</td></tr>
+</tbody></table></div>
+<p class="note">Trained models: the multi-resolution transformer with 5-minute input (an extra seed with saved weights). Training days are the last 13 weeks of training targets; validation is three weeks. Blanking weeks 5 to 24 is something the trained models never saw in training, so their blanked scores overstate how much they rely on old weeks. For Timestral, blanking gives exactly its 4-week score (I2 16.97). Replacing the old weeks with copies of the last four instead makes Timestral repeat that exact pattern (error 37 to 55 %), so it cannot be used as a control.</p>
+
+<h2>Is it the amount of data?</h2>
+<div class="col">
+<p>Partly. To test it we downloaded Internet2's hourly history back to the start of its current core network: <strong>2021-05 to 2026-11, 5.1 years of training data</strong> instead of 1.6 for the same 113 links. We also took every customer port's traffic in and out (567 door series) as extra training series, six times more series in all. I2 keeps 5-minute data for only about a year, so this test runs on hourly input. Switch LAN's 5-minute export starts on 2023-12-29, and we already use all of it. Then we trained the same models with 6 months to 5 years of training targets.</p>
+<p>The 24-week penalty falls fast as data grows, from 2.9 points with 6 months to 0.45 with 2 years, then slowly to 0.2 with 5 years and the doors. So data is what the long input was missing. But the curve flattens at the 4-week model's level, about 18.3 %, and the 4-week models do not improve with more data at all. Timestral sits at 16.2 %. Data from 2021 to 2023 shows no sign of closing that gap.</p>
+</div>
+<figure>
+  <div class="legend" aria-hidden="true">
+    <span><svg width="22" height="12" viewBox="0 0 22 12"><line x1="0" y1="6" x2="22" y2="6" stroke="var(--s2)" stroke-width="2"/><circle cx="11" cy="6" r="3.5" fill="var(--s2)"/></svg>4 weeks of context</span>
+    <span><svg width="22" height="12" viewBox="0 0 22 12"><line x1="0" y1="6" x2="22" y2="6" stroke="var(--s2)" stroke-width="2" stroke-dasharray="5 3"/><rect x="7.5" y="2.5" width="7" height="7" fill="var(--s2)"/></svg>24 weeks of context</span>
+    <span><svg width="22" height="12" viewBox="0 0 22 12"><line x1="0" y1="6" x2="22" y2="6" stroke="var(--ref)" stroke-width="1.5" stroke-dasharray="4 3"/></svg>Timestral, zero-shot, 24 weeks</span>
+  </div>
+  <div class="panels" id="panels"></div>
+  <figcaption><strong>I2 day-ahead median link hourly WAPE against the amount of training data</strong> (hourly input, mean of two seeds; seed spread ≤ 0.27). Labels under the axis are training windows. "+ doors" adds the 567 door series as training-only series.</figcaption>
+</figure>
+<div class="tbl"><table>
+<thead><tr><th>24 weeks minus 4 weeks, paired</th><th>6 months</th><th>1 year</th><th>2 years</th><th>5 years</th><th>5 years + doors</th></tr></thead>
+<tbody>
+<tr><td>PatchTST (2-seed ensembles)</td><td class="b">+2.94 [+1.85, +3.23]</td><td class="b">+1.26 [+0.78, +2.08]</td><td class="b">+0.45 [+0.21, +1.23]</td><td class="n">+0.37 [−0.05, +0.97]</td><td class="n">+0.19 [−0.21, +0.87]</td></tr>
+<tr><td>Profile MLP (mean of 2 seeds)</td><td>+0.53</td><td>+0.06</td><td>−0.13</td><td>+0.03</td><td class="n">−0.22 [−0.38, +0.43]</td></tr>
+</tbody></table></div>
+<p class="note">The best trained model, the profile MLP at 24 weeks with doors, is 18.00 %, 1.78 [+0.88, +2.31] points behind Timestral. Adding the doors changes it by −0.29 [−0.74, +0.14], not significant. 2021–2023 contains a different traffic mix: the 4-week models trained on all 5 years (18.43, 18.42) are no better than those trained on the last 2 (18.27, 18.38).</p>
+
+<h2>Fine-tuning Timestral</h2>
+<div class="col">
+<p>If our data held something Timestral does not know, fine-tuning on it should help. It does not. Its training loss on our windows (pinball, scaled by the context mean) stays flat at about 0.10 from the first epoch, and validation barely moves; on Switch LAN at the higher rate the best checkpoint is the original model. This is the same answer as fine-tuning on 1.6 years of I2 in the earlier report (−0.16, not significant).</p>
+</div>
+<div class="tbl"><table>
+<thead><tr><th>Fine-tuned vs zero-shot (24 weeks, hourly)</th><th>Day</th><th>Week</th><th>Validation day, zero-shot → best</th></tr></thead>
+<tbody>
+<tr><td>I2, 5 years of history, LR 1e-5</td><td class="n">−0.10 [−0.25, +0.12]</td><td class="n">0.00</td><td>20.29 → 20.28</td></tr>
+<tr><td>I2, 5 years of history, LR 3e-5</td><td class="n">−0.15 [−0.30, +0.21]</td><td class="n">+0.01 [−0.40, +0.42]</td><td>20.29 → 20.19</td></tr>
+<tr><td>Switch LAN, LR 1e-5</td><td class="n">+0.03 [−0.37, +0.18]</td><td class="n">−0.14 [−0.50, +0.13]</td><td>24.46 → 24.36</td></tr>
+<tr><td>Switch LAN, LR 3e-5</td><td class="n">0.00 (unchanged)</td><td class="n">0.00</td><td>24.46 → 24.46</td></tr>
+</tbody></table></div>
+<p class="note">Pinball loss over Timestral's 21 quantiles, scaled by the context mean (floor 1 Mbit/s, per-window cap, pitfall 38), batch 16, 300 steps per epoch, early stopping on validation. Test numbers are Timestral's median forecast.</p>
+
+<h2>Preprocessing is not the gap</h2>
+<div class="col">
+<p>The ladder's PatchTST, our transformer and Timestral each transform the data differently before and after the network. To see whether that explains the gap, we ran all three schemes inside the same transformer, with the same 5-minute data and training.</p>
+</div>
+<div class="tbl"><table>
+<thead><tr><th></th><th style="text-align:left">Ladder PatchTST</th><th style="text-align:left">Our transformer</th><th style="text-align:left">Timestral</th></tr></thead>
+<tbody>
+<tr><td>Transform</td><td class="t">log1p</td><td class="t">none (linear)</td><td class="t">asinh: linear near the mean, logarithmic for spikes</td></tr>
+<tr><td>Centre and scale</td><td class="t">mean and std of the log values over the whole input window (RevIN)</td><td class="t">divide by the mean of the last week; above 10× the mean, inputs grow only logarithmically</td><td class="t">causal mean and std per hourly patch, over everything up to that patch; the forecast is expressed in the frame of the last patch, i.e. the whole context</td></tr>
+<tr><td>Loss</td><td class="t">Huber in normalised log space</td><td class="t">L1</td><td class="t">pinball over 21 quantiles (we use the median)</td></tr>
+<tr><td>What the forecast aims at</td><td class="t">close to the mean of log values: below the median on bursty links</td><td class="t">the median</td><td class="t">the median</td></tr>
+</tbody></table></div>
+<div class="tbl"><table>
+<thead>
+<tr class="grp"><th></th><th colspan="3">I2</th><th colspan="3">Switch LAN</th></tr>
+<tr><th>Same transformer, day-ahead</th><th>1 w</th><th>4 w</th><th>24 w</th><th>1 w</th><th>4 w</th><th>24 w</th></tr>
+</thead>
+<tbody>
+<tr><td>Ladder's scheme</td><td>22.96</td><td>18.44</td><td>19.76</td><td>38.25</td><td>32.90</td><td>33.19</td></tr>
+<tr><td>Timestral's scheme (its own scaler code)</td><td>20.72</td><td>19.48</td><td>22.48</td><td>33.08</td><td>31.73</td><td>32.27</td></tr>
+<tr><td><strong>Ours</strong></td><td><strong>19.16</strong></td><td><strong>17.99</strong></td><td><strong>18.66</strong></td><td><strong>32.88</strong></td><td><strong>31.50</strong></td><td><strong>31.57</strong></td></tr>
+<tr class="sep"><td>Ladder's minus ours</td><td class="b">+3.80</td><td class="n">+0.46</td><td class="b">+1.10</td><td class="b">+5.36</td><td class="b">+1.40</td><td class="b">+1.62</td></tr>
+<tr><td>Timestral's minus ours</td><td class="b">+1.56</td><td class="b">+1.49</td><td class="b">+3.82</td><td class="n">+0.20</td><td class="n">+0.23</td><td class="b">+0.70</td></tr>
+</tbody></table></div>
+<p class="note">Single seeds; colour marks differences whose 95 % interval excludes zero. Timestral's scheme hurts most at 24 weeks on I2. It puts the forecast in the frame of the whole context's mean and spread, so the model must work out the current level from 24 compressed weeks. Timestral learned to do that in pretraining; a model trained on one network does not. The ladder's scheme in this transformer is worse than the ladder itself (19.15 / 35.41 at 1 week); its validation error stopped improving after a few epochs.</p>
+
+<h2>The ladder's architectures as context grows</h2>
+<p class="col">The four ladder models on hourly input with our preprocessing and the history used before the new download (I2 from 2024-11, Switch LAN from 2024-01), one budget each (100,000 windows per epoch, at most 12 epochs). <span id="archsum">The small models are not hurt by long context, and on I2 the GRU and the TCN gain from it: 0.43 points (significant) and 0.64 (not significant) from 4 to 24 weeks. PatchTST, whose output layer has millions of weights, gets 1.16 (I2) and 0.76 points (Switch LAN) worse, as over-fitting predicts. Even so, the best 24-week GRU and TCN only tie PatchTST at 4 weeks, and on Switch LAN no model gains significantly beyond 4 weeks. None comes near Timestral.</span></p>
+<div class="tbl"><table>
+<thead>
+<tr class="grp"><th></th><th colspan="3">I2</th><th colspan="3">Switch LAN</th></tr>
+<tr><th>Day-ahead hourly WAPE</th><th>1 w</th><th>4 w</th><th>24 w</th><th>1 w</th><th>4 w</th><th>24 w</th></tr>
+</thead>
+<tbody>
+<tr><td>DLinear (1.4 M at 24 w)</td><td>21.95</td><td>20.68</td><td><strong>20.45</strong></td><td>37.40</td><td><strong>35.93</strong></td><td>36.11</td></tr>
+<tr><td>GRU (0.17 M parameters)</td><td>19.49</td><td id="gru4i">19.23</td><td id="gru24i"><strong>18.80</strong></td><td>36.21</td><td id="gru4s">35.79</td><td id="gru24s"><strong>35.47</strong></td></tr>
+<tr><td>TCN (0.25 M)</td><td>19.99</td><td>19.48</td><td id="tcn24i"><strong>18.84</strong></td><td><strong>35.40</strong></td><td>36.28</td><td id="tcn24s">36.49</td></tr>
+<tr><td>PatchTST (flatten head)</td><td>18.85</td><td><strong>18.35</strong></td><td>19.51</td><td>32.73</td><td><strong>32.49</strong></td><td>33.25</td></tr>
+<tr class="ref"><td>Timestral, zero-shot</td><td>19.73</td><td>16.97</td><td>16.22</td><td>35.04</td><td>29.49</td><td>28.05</td></tr>
+</tbody></table></div>
+<p class="note">Bold: the best context for each model. Paired 24 vs 4 weeks: I2 GRU −0.43 [−1.06, −0.03], TCN −0.64 [−0.71, +0.13], DLinear −0.23 [−0.98, +0.25], PatchTST +1.16 [+0.84, +2.04]; Switch LAN GRU −0.33 [−0.80, +0.52], TCN +0.20 [−0.15, +0.95], DLinear +0.18 [−0.94, +0.88], PatchTST +0.76 [+0.35, +2.42]. The 24-week GRU and TCN vs PatchTST at 4 weeks on I2: +0.45 and +0.49, not significant. Single seeds. The TCN's depth grows with the input (6 levels at 1 week, 10 at 24 weeks), which makes it the slowest model by far at 24 weeks. Earlier, with 5-minute input, every one of seven long-context designs also peaked at about 4 weeks (previous report).</p>
+
+<h2>What this means</h2>
+<ol class="steps col">
+  <li><strong>The limit is the estimator, not the input.</strong> Long history carries a modest, real signal about level and shape (0.75 to 1.44 points for Timestral). A model trained from scratch on one network learns to read it, but mostly learns how the network behaved in its training months.</li>
+  <li><strong>Data helps until the damage is gone, then stops.</strong> Five years of I2 and six times more series bring the 24-week model up to the 4-week model, not past it. Reaching Timestral's prior would take many networks' worth of varied series, the kind of corpus it was pretrained on.</li>
+  <li><strong>For production:</strong> use Timestral with 24 weeks of hourly input for day and week forecasts. For a trained model, use 4 weeks of context with our preprocessing. Fine-tuning Timestral on these networks is not worth the compute.</li>
+</ol>
+
+<h2>Method and limits</h2>
+<div class="col">
+<ul>
+  <li>Code in <code>recipes/ladder_diagnosis</code>: <code>i2_history.py</code> (download and link loads, checked identical to the I2 recipe over November 2024), <code>hourly_train.py</code> (<code>--hist ext21</code>, <code>--train-months</code>, <code>--extra i2doors</code>, models <code>dlinear</code>, <code>gru</code>, <code>tcn</code>), <code>long5m.py --norm</code>, <code>uses_context.py</code>, <code>decompose.py</code>, <code>ft_timestral.py</code>, <code>compare.py</code>. Results in <code>artifacts/ladder_diagnosis</code>.</li>
+  <li>Most comparisons are single seeds or two seeds; seed spread is 0.02 to 0.27 points for the hourly models and up to 0.6 for the 5-minute transformer.</li>
+  <li>The I2 download covers the current core network only (from 2021-05); the older network (2016–2022) has different routers and links and was not used.</li>
+  <li>Timestral's pretraining data are not described in the files we have; "prior" here means whatever it learned before seeing our data.</li>
+  <li>I2's test block is public and reaches Timestral's release date (2026-10-15), so overlap with its pretraining data cannot be ruled out. Switch LAN is private and shows the same pattern.</li>
+</ul>
+</div>
+
+<footer>Code: recipes/ladder_diagnosis · Log: docs/worklog/2026-11-05-why-long-context.md · Earlier reports: Ladder vs Timestral, Long Context at 5 Minutes</footer>
+</div>
+
+<script>
+const CATS = ["6 months","1 year","2 years","5 years","5 years + doors"];
+const WIN = ["0.5 M","1.0 M","1.9 M","4.4 M","22 M"];
+const DATA = {
+  pt: {title: "PatchTST", c4: [18.73,18.45,18.27,18.43,18.36], c24: [22.00,20.10,19.04,19.02,18.66]},
+  pm: {title: "Profile MLP", c4: [18.55,18.29,18.38,18.42,18.25], c24: [19.08,18.35,18.25,18.45,18.04]}
+};
+const TS = 16.22;
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent){ const e=document.createElementNS(NS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); if(parent) parent.appendChild(e); return e; }
+function draw(key){
+  const d = DATA[key];
+  const W=480, H=300, m={l:44,r:96,t:14,b:48};
+  const lo=15.5, hi=22.5;
+  const x=i=>m.l+i*(W-m.l-m.r)/(CATS.length-1);
+  const y=v=>m.t+(hi-v)/(hi-lo)*(H-m.t-m.b);
+  const wrap=document.createElement("div"); wrap.className="panel";
+  const h=document.createElement("h4"); h.textContent=d.title; wrap.appendChild(h);
+  const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":`${d.title}: day-ahead error against training data, 4 and 24 weeks of context`});
+  wrap.appendChild(svg);
+  const g=el("g",{class:"grid"},svg), ax=el("g",{class:"axis"},svg);
+  for(let v=16; v<=22; v+=1){
+    el("line",{x1:m.l,x2:W-m.r,y1:y(v),y2:y(v)},g);
+    const t=el("text",{x:m.l-8,y:y(v)+4,"text-anchor":"end"},ax); t.textContent=v+"%";
+  }
+  CATS.forEach((c,i)=>{
+    const t=el("text",{x:x(i),y:H-m.b+16,"text-anchor":"middle"},ax); t.textContent=c.replace("5 years + doors","+ doors");
+    const u=el("text",{x:x(i),y:H-m.b+30,"text-anchor":"middle"},ax); u.textContent=WIN[i];
+  });
+  el("line",{x1:m.l,x2:W-m.r,y1:y(TS),y2:y(TS),stroke:"var(--ref)","stroke-width":1.5,"stroke-dasharray":"4 3"},svg);
+  const pts=a=>a.map((v,i)=>[x(i),y(v)]);
+  const line=(a,dash)=>el("path",{d:pts(a).map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" "),fill:"none",stroke:"var(--s2)","stroke-width":2,"stroke-linejoin":"round","stroke-dasharray":dash||"none"},svg);
+  line(d.c24,"5 3"); line(d.c4);
+  pts(d.c24).forEach(p=>el("rect",{x:p[0]-4,y:p[1]-4,width:8,height:8,fill:"var(--s2)",stroke:"var(--surface)","stroke-width":2},svg));
+  pts(d.c4).forEach(p=>el("circle",{cx:p[0],cy:p[1],r:4,fill:"var(--s2)",stroke:"var(--surface)","stroke-width":2},svg));
+  const n=CATS.length-1;
+  const labs=[{v:d.c24[n],t:"24 w "+d.c24[n].toFixed(1)},{v:d.c4[n],t:"4 w "+d.c4[n].toFixed(1)},{v:TS,t:"Timestral "+TS.toFixed(1)}]
+    .map(o=>({...o,py:y(o.v)})).sort((p,q)=>p.py-q.py);
+  for(let i=1;i<labs.length;i++) if(labs[i].py-labs[i-1].py<14) labs[i].py=labs[i-1].py+14;
+  labs.forEach(o=>{ const t=el("text",{x:x(n)+10,y:o.py+4,class:"lbl"},svg); t.textContent=o.t; });
+  const cross=el("line",{y1:m.t,y2:H-m.b,stroke:"var(--line-2)","stroke-width":1,visibility:"hidden"},svg);
+  const hit=el("rect",{x:m.l-12,y:m.t,width:W-m.l-m.r+24,height:H-m.t-m.b,fill:"transparent"},svg);
+  const tip=document.createElement("div"); tip.className="tip"; tip.hidden=true; wrap.appendChild(tip);
+  hit.addEventListener("pointermove",ev=>{
+    const r=svg.getBoundingClientRect(); const px=(ev.clientX-r.left)*W/r.width;
+    let best=0; CATS.forEach((c,i)=>{ if(Math.abs(x(i)-px)<Math.abs(x(best)-px)) best=i; });
+    cross.setAttribute("x1",x(best)); cross.setAttribute("x2",x(best)); cross.setAttribute("visibility","visible");
+    tip.innerHTML=`<b>${CATS[best]} (${WIN[best]} windows)</b>`+
+      `<div class="row"><span>4 weeks</span><span>${d.c4[best].toFixed(2)} %</span></div>`+
+      `<div class="row"><span>24 weeks</span><span>${d.c24[best].toFixed(2)} %</span></div>`+
+      `<div class="row"><span>24 w minus 4 w</span><span>${(d.c24[best]-d.c4[best]>=0?"+":"")+(d.c24[best]-d.c4[best]).toFixed(2)}</span></div>`+
+      `<div class="row"><span>Timestral, 24 w</span><span>${TS.toFixed(2)} %</span></div>`;
+    tip.hidden=false;
+    const wr=wrap.getBoundingClientRect(); let left=ev.clientX-wr.left+14; if(left>wr.width-230) left=ev.clientX-wr.left-230;
+    tip.style.left=Math.max(0,left)+"px"; tip.style.top=(ev.clientY-wr.top+10)+"px";
+  });
+  hit.addEventListener("pointerleave",()=>{ tip.hidden=true; cross.setAttribute("visibility","hidden"); });
+  document.getElementById("panels").appendChild(wrap);
+}
+draw("pt"); draw("pm");
+</script>

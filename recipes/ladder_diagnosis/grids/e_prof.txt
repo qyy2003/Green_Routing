@@ -1,0 +1,10 @@
+# Long context through robust weekly-profile summaries (ProfMLP), mean scaling + L1
+--ds i2 --hist ext --model profmlp --ctx 672 --norm mean --loss l1 --tag E_prof_c672_ext
+--ds i2 --hist ext --model profmlp --ctx 2016 --norm mean --loss l1 --tag E_prof_c2016_ext
+--ds i2 --hist ext --model profmlp --ctx 4032 --norm mean --loss l1 --tag E_prof_c4032_ext
+--ds i2 --hist panel --model profmlp --ctx 4032 --norm mean --loss l1 --tag E_prof_c4032_panel
+--ds switch --hist panel --model profmlp --ctx 672 --norm mean --loss l1 --tag E_prof_c672_panel
+--ds switch --hist panel --model profmlp --ctx 4032 --norm mean --loss l1 --tag E_prof_c4032_panel
+--ds switch --hist ext --model profmlp --ctx 672 --norm mean --loss l1 --tag E_prof_c672_ext
+--ds switch --hist ext --model profmlp --ctx 2016 --norm mean --loss l1 --tag E_prof_c2016_ext
+--ds switch --hist ext --model profmlp --ctx 4032 --norm mean --loss l1 --tag E_prof_c4032_ext

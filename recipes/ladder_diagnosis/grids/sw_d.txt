@@ -1,0 +1,7 @@
+# Switch: what costs the 5-min ladder 4 points? (PatchTST, 1 week, log1p+RevIN+Huber unless noted)
+--ds switch --model patchtst --res 5m --ctx 2016 --H 2016 --patch 16 --norm log_revin --loss huber --lr 3e-4 --tag D_pt_5m_log_huber
+--ds switch --model patchtst --res 5m --ctx 2016 --H 2016 --patch 16 --agg 12 --norm log_revin --loss huber --lr 3e-4 --tag D_pt_5m_agg12_log_huber
+--ds switch --model patchtst --res 5m --ctx 2016 --H 2016 --patch 16 --norm log_revin --loss huber --lr 3e-4 --hweight sqrt --lemb 1 --tag D_pt_5m_log_huber_sqrt_lemb
+--ds switch --model patchtst --ctx 168 --norm log_revin --loss huber --lr 3e-4 --hweight sqrt --lemb 1 --tag D_pt_1h_log_huber_sqrt_lemb
+--ds switch --model patchtst --ctx 168 --norm log_revin --loss huber --lr 3e-4 --hweight sqrt --tag D_pt_1h_log_huber_sqrt
+--ds switch --model patchtst --ctx 168 --norm log_revin --loss huber --lr 3e-4 --lemb 1 --tag D_pt_1h_log_huber_lemb

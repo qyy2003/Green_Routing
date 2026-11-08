@@ -1,0 +1,7 @@
+# reruns (OOM) + seeds of the best configurations
+--ds i2 --hist ext --model profmlp --ctx 4032 --norm mean --loss l1 --tag E_prof_c4032_ext
+--ds i2 --hist panel --model profmlp --ctx 4032 --norm mean --loss l1 --tag E_prof_c4032_panel
+--ds i2 --hist ext --model profmlp --ctx 2016 --norm mean --loss l1 --seed 1 --tag E_prof_c2016_ext_s1
+--ds i2 --hist ext --model profmlp --ctx 2016 --norm mean --loss l1 --seed 2 --tag E_prof_c2016_ext_s2
+--ds i2 --hist ext --model patchtst --ctx 168 --norm mean --loss l1 --lr 3e-4 --seed 1 --tag B_pt_c168_mean_l1_s1
+--ds i2 --hist ext --model patchtst --ctx 168 --norm mean --loss l1 --lr 3e-4 --seed 2 --tag B_pt_c168_mean_l1_s2

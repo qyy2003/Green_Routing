@@ -1,0 +1,6 @@
+# one model trained on both networks (cut at the evaluated network's training end)
+--ds switch --joint i2,switch --hist ext --model profmlp --ctx 672 --norm mean --loss l1 --tag G_joint_prof_c672
+--ds i2 --joint i2,switch --hist ext --model profmlp --ctx 2016 --norm mean --loss l1 --tag G_joint_prof_c2016
+--ds switch --joint i2,switch --hist ext --model profmlp --ctx 2016 --norm mean --loss l1 --tag G_joint_prof_c2016
+--ds i2 --joint i2,switch --hist ext --model patchtst --ctx 168 --norm mean --loss l1 --lr 3e-4 --tag G_joint_pt_c168
+--ds switch --joint i2,switch --hist ext --model patchtst --ctx 168 --norm mean --loss l1 --lr 3e-4 --tag G_joint_pt_c168

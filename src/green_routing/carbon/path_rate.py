@@ -266,9 +266,11 @@ class Allocation:
         (NaN where the counters see no throughput, e.g. routers missing from the export)."""
         return np.divide(self.E, self.X_meas, out=np.full_like(self.E, np.nan), where=self.X_meas > 0)
 
-    def bills(self, X: np.ndarray, basis: str = "usage") -> dict:
+    def bills(self, X: np.ndarray, basis: str = "usage", cap_mult=None) -> dict:
         """Backbone bills (g per party and hour) from traffic matrices X [hours, OD];
-        ``basis`` = 'usage' (E / bytes) or 'capacity' (E / capacity, idle part flat)."""
+        ``basis`` = 'usage' (E / bytes) or 'capacity' (E / capacity, idle part flat); with
+        ``cap_mult`` [hours] (usage only) each resource charges at most the idle-link cap of
+        ``capped_rates``, the rest is spread flat."""
         net, H = self.net, self.net.H
         Ee = len(net.ends)
         ni = self.net.ed_to_end
@@ -286,9 +288,12 @@ class Allocation:
                                 where=np.isfinite(self.capacity) & used)
                 per = np.where(np.isfinite(self.capacity), per, np.divide(self.E[h], U, out=np.zeros(len(U)), where=used))
                 unalloc[h] += (self.E[h] - per * U)[used].sum()
+            elif cap_mult is not None:
+                per = np.where(used, capped_rates(self.E[h], U, x.sum(), cap_mult[h])[0], 0.0)
+                unalloc[h] += (self.E[h] - per * U)[used].sum()
             else:
                 per = np.divide(self.E[h], U, out=np.zeros(len(U)), where=used)
-            c = self.A_res.T @ per                               # g per (Mbit/s . h) of each OD
+            c = self.A_res.T @ per                              # g per (Mbit/s . h) of each OD
             C = (x * c).reshape(Ee, Ee)
             od_cost += x * c
             od_bytes += x
@@ -317,16 +322,66 @@ class Allocation:
                 "od_GB": pd.Series(od_bytes * A.GB_PER_MBPS_HOUR, index=pd.MultiIndex.from_tuples(net.od))}
 
 
-def node_bills(A_res: sp.csr_matrix, E: np.ndarray, X: np.ndarray, n: int, capacity=None) -> np.ndarray:
+def idle_cap(E: np.ndarray, U: np.ndarray, hours: pd.DatetimeIndex, k: float = A.IDLE_CAP_K,
+             days: int = A.IDLE_CAP_DAYS, u_min: float = A.IDLE_CAP_MIN_MBPS) -> np.ndarray:
+    """The idle-link cap of every hour, as a multiple of that hour's flat rate [hours].
+
+    E, U: emissions (g/h) and loads (Mbit/s) of every resource [hours, resources]. A resource's
+    rate relative to the hour's reference is (E / U) / (sum E / sum U); for day d the cap is
+    10 ** (median + k * 1.4826 * MAD) of the log10 relative rates of every resource-hour with
+    U >= u_min in the ``days`` days before d (causal: it can be published with the day-ahead
+    rates). Days with less than a week of history before them use the first week of the record.
+    ``capped_rates`` applies the multiple to the same reference, sum E / sum U."""
+    hours = pd.DatetimeIndex(hours)
+    day = hours.floor("D")
+    udays = day.unique()
+    out = np.full(len(hours), np.nan)
+    for d in udays:
+        win = (day >= d - pd.Timedelta(days=days)) & (day < d)
+        if (day < d).sum() < 24 * 7:
+            win = day < udays[min(7, len(udays) - 1)]
+        out[day == d] = cap_multiple(E[win], U[win], k, u_min)
+    return out
+
+
+def cap_multiple(E: np.ndarray, U: np.ndarray, k: float = A.IDLE_CAP_K, u_min: float = A.IDLE_CAP_MIN_MBPS) -> float:
+    """10 ** (median + k * 1.4826 * MAD) of log10((E / U) / (sum E / sum U)) over the
+    resource-hours of one window [hours, resources] with U >= u_min (see ``idle_cap``)."""
+    with np.errstate(divide="ignore", invalid="ignore"):
+        rel = np.log10(E / U / (E.sum(1) / U.sum(1))[:, None])
+    v = rel[(U >= u_min) & (E > 0) & np.isfinite(rel)]
+    med = np.median(v)
+    return float(10 ** (med + k * 1.4826 * np.median(np.abs(v - med))))
+
+
+def capped_rates(E: np.ndarray, U: np.ndarray, x_total: float, mult: float):
+    """Per-resource usage rates of one hour (g per Mbit/s-h) under the idle-link cap, and the
+    flat add-on that spreads the rest: (rate [resources], add-on per Mbit/s-h of traffic).
+
+    rate_j = min(E_j / U_j, mult * sum E / sum U), idle resources (U_j = 0) at the cap; the
+    emissions the resource rates do not charge (above the cap, or on idle resources) are spread
+    over all ``x_total`` Mbit/s-h of the hour, so that sum_j rate_j U_j + add-on x_total = sum E."""
+    cap = mult * E.sum() / max(U.sum(), 1e-12)
+    per = np.where(U > 0, np.minimum(np.divide(E, U, out=np.full(len(U), np.inf), where=U > 0), cap), cap)
+    rest = E.sum() - (per * U).sum()
+    return per, rest / max(x_total, 1e-12)
+
+
+def node_bills(A_res: sp.csr_matrix, E: np.ndarray, X: np.ndarray, n: int, capacity=None,
+               cap_mult=None) -> np.ndarray:
     """Generic path-based bills when every edge node is one party: each resource's
     emissions E [hours, resources] split over the traffic matrices' use of it (or, with
-    ``capacity``, charged at E / capacity with the idle part spread over all bytes), each
-    flow's cost half to its source node and half to its destination. Returns [hours, n]."""
+    ``capacity``, charged at E / capacity with the idle part spread over all bytes; or, with
+    ``cap_mult`` [hours], at the capped usage rates of ``capped_rates``), each flow's cost half
+    to its source node and half to its destination; what is left is spread over all bytes.
+    Returns [hours, n]."""
     out = np.zeros((len(X), n))
     for h in range(len(X)):
         U = A_res @ X[h]
         den = U if capacity is None else np.maximum(capacity, U)
         per = np.divide(E[h], den, out=np.zeros(len(U)), where=den > 0)
+        if cap_mult is not None:
+            per = np.where(U > 0, capped_rates(E[h], U, X[h].sum(), cap_mult[h])[0], 0.0)
         C = (X[h] * (A_res.T @ per)).reshape(n, n)
         b = (C.sum(axis=1) + C.sum(axis=0)) / 2
         idle = E[h].sum() - b.sum()

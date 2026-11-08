@@ -26,6 +26,9 @@ SOURCES = {           # EIA-930 column stem -> our source name
     "Wind with Integrated Battery Storage": "wind", "Geothermal": "geothermal",
     "Other Fuel Sources": "other", "Unknown Fuel Sources": "unknown",
 }
+# files before mid-2024 (e.g. 2021) carry coarser stems; matched exactly, so the newer files'
+# "Solar without ..." columns are never counted twice
+OLD_SOURCES = {"Hydropower and Pumped Storage": "hydro", "Solar": "solar", "Wind": "wind"}
 
 
 def _num(s: pd.Series) -> pd.Series:
@@ -46,8 +49,15 @@ def load_balance(files) -> pd.DataFrame:
         for stem, name in SOURCES.items():
             adj = [c for c in d.columns if c.startswith(f"Net Generation (MW) from {stem}") and c.endswith("(Adjusted)")]
             raw = f"Net Generation (MW) from {stem}"
-            col = _num(d[adj[0]]) if adj else (_num(d[raw]) if raw in d.columns else np.nan)
+            if not adj and raw not in d.columns:
+                continue                    # not in this file (older files use OLD_SOURCES)
+            col = _num(d[adj[0]]) if adj else _num(d[raw])
             g[name] = g.get(name, 0) + col.fillna(0) if name in g else col
+        for stem, name in OLD_SOURCES.items():
+            adj, raw = f"Net Generation (MW) from {stem} (Adjusted)", f"Net Generation (MW) from {stem}"
+            if adj in d.columns or raw in d.columns:
+                col = _num(d[adj] if adj in d.columns else d[raw])
+                g[name] = g[name].fillna(0) + col.fillna(0) if name in g else col
         out.append(g)
     G = pd.concat(out).drop_duplicates(["ba", "time"], keep="last").set_index(["ba", "time"]).sort_index()
     return G.clip(lower=0)

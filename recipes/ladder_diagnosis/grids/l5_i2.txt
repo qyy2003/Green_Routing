@@ -1,0 +1,25 @@
+# 5-minute input, long context (long5m.py), i2: methods x context (1, 4, 12, 24 weeks)
+--ds i2 --ctx 2016 --model seg --seg full --lr 5e-4 --tag L5_seg_full_1w
+--ds i2 --ctx 2016 --model fold --lr 1e-3 --tag L5_fold_1w
+--ds i2 --ctx 2016 --model profmlp --lr 1e-3 --tag L5_profmlp_1w
+--ds i2 --ctx 8064 --model seg --seg coarse --lr 5e-4 --tag L5_seg_coarse_4w
+--ds i2 --ctx 8064 --model seg --seg multires --lr 5e-4 --tag L5_seg_multires_4w
+--ds i2 --ctx 8064 --model seg --seg recent --qprof 1 --lr 5e-4 --tag L5_seg_recent_qp_4w
+--ds i2 --ctx 8064 --model seg --seg multires --qprof 1 --lr 5e-4 --tag L5_seg_multires_qp_4w
+--ds i2 --ctx 8064 --model fold --lr 1e-3 --tag L5_fold_4w
+--ds i2 --ctx 8064 --model profmlp --lr 1e-3 --tag L5_profmlp_4w
+--ds i2 --ctx 8064 --model seg --seg full --lr 5e-4 --tag L5_seg_full_4w
+--ds i2 --ctx 48384 --model seg --seg coarse --lr 5e-4 --tag L5_seg_coarse_24w
+--ds i2 --ctx 48384 --model seg --seg multires --lr 5e-4 --tag L5_seg_multires_24w
+--ds i2 --ctx 48384 --model seg --seg recent --qprof 1 --lr 5e-4 --tag L5_seg_recent_qp_24w
+--ds i2 --ctx 48384 --model seg --seg multires --qprof 1 --lr 5e-4 --tag L5_seg_multires_qp_24w
+--ds i2 --ctx 48384 --model fold --lr 1e-3 --tag L5_fold_24w
+--ds i2 --ctx 48384 --model profmlp --lr 1e-3 --tag L5_profmlp_24w
+# stopped (superseded by l5b with --squash): --ds i2 --ctx 48384 --model seg --seg full --lr 5e-4 --epochs 12 --patience 4 --tag L5_seg_full_24w
+# stopped (superseded by l5b with --squash): --ds i2 --ctx 24192 --model seg --seg coarse --lr 5e-4 --tag L5_seg_coarse_12w
+# stopped (superseded by l5b with --squash): --ds i2 --ctx 24192 --model seg --seg multires --lr 5e-4 --tag L5_seg_multires_12w
+# stopped (superseded by l5b with --squash): --ds i2 --ctx 24192 --model seg --seg recent --qprof 1 --lr 5e-4 --tag L5_seg_recent_qp_12w
+# stopped (superseded by l5b with --squash): --ds i2 --ctx 24192 --model seg --seg multires --qprof 1 --lr 5e-4 --tag L5_seg_multires_qp_12w
+# stopped (superseded by l5b with --squash): --ds i2 --ctx 24192 --model fold --lr 1e-3 --tag L5_fold_12w
+# stopped (superseded by l5b with --squash): --ds i2 --ctx 24192 --model profmlp --lr 1e-3 --tag L5_profmlp_12w
+# stopped (superseded by l5b with --squash): --ds i2 --ctx 24192 --model seg --seg full --lr 5e-4 --epochs 12 --patience 4 --tag L5_seg_full_12w

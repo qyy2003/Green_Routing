@@ -9,8 +9,9 @@ published pages (aggregates are fine).
 Day-ahead forecast of the factor, issued at 00:00 UTC for the 24 hours of the day,
 using only data up to 23:00 the day before. ``RULES`` are simple and reproducible;
 the best of them on spring/summer 2026 was "same hour yesterday" (MAE 6.5 g/kWh on a
-mean of 13). Electricity Maps' own forecast cannot be evaluated on the past; logging it
-going forward is the next step.
+mean of 13). Electricity Maps' own forecast cannot be evaluated on the past (the API
+returns only the current one): ``log_forecast`` keeps a log, ``em_day_ahead`` reads it back
+(recipes/carbon/em_forecast.py).
 """
 from __future__ import annotations
 
@@ -135,6 +136,42 @@ def annual_means(grid_dir: str | Path, year: int, zones=("CH", "FR")) -> dict[st
     """Time-mean direct and lifecycle intensity of each zone over a calendar year."""
     return {z: {b: float(load(grid_dir, z, b).loc[str(year)].mean()) for b in ("direct", "lifecycle")}
             for z in zones}
+
+
+# --- Electricity Maps' own forecast (only the next ~24 h can be fetched: log it) ----
+
+def log_forecast(out_dir: str | Path, zones=("CH", "FR"), basis: str = "direct") -> int:
+    """Append Electricity Maps' current forecast of every zone to
+    ``<out_dir>/em_forecast_<zone>.csv`` (fetched_at, updated_at, datetime, ci). The API
+    returns only the forecast made now (a past ``datetime`` is ignored), so a backtest needs
+    a log kept going forward. One request per zone; returns the number of rows written."""
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    key = api_key()
+    now = pd.Timestamp.now(tz="UTC").floor("s")
+    n = 0
+    for z in zones:
+        b = _get(f"{API}/carbon-intensity/forecast?zone={z}&emissionFactorType={basis}", key)
+        d = pd.DataFrame(b.get("forecast", []))
+        if d.empty:
+            continue
+        d = pd.DataFrame({"fetched_at": now, "updated_at": pd.Timestamp(b.get("updatedAt")),
+                          "datetime": pd.to_datetime(d.datetime, utc=True), f"ci_{basis}": d.carbonIntensity})
+        f = out / f"em_forecast_{z}.csv"
+        d.to_csv(f, mode="a", header=not f.exists(), index=False)
+        n += len(d)
+    return n
+
+
+def em_day_ahead(out_dir: str | Path, zone: str, basis: str = "direct") -> pd.Series:
+    """Day-ahead series from the log: for every hour of day d, the value of the latest
+    forecast fetched at or before 00:00 UTC of d that covers it (NaN where none does)."""
+    f = Path(out_dir) / f"em_forecast_{zone}.csv"
+    d = pd.read_csv(f, parse_dates=["fetched_at", "updated_at", "datetime"])
+    d["issue_day"] = d.datetime.dt.floor("D")
+    d = d[d.fetched_at <= d.issue_day]
+    d = d.sort_values("fetched_at").groupby("datetime").last()
+    return d[f"ci_{basis}"].sort_index()
 
 
 # --- Day-ahead forecasts --------------------------------------------------------

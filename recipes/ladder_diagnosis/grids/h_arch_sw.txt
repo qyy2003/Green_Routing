@@ -1,0 +1,5 @@
+# reruns of h_arch.txt runs that ran out of memory next to six other jobs
+--ds switch --model gru --ctx 168 --norm mean --loss l1 --hist ext --lr 1e-3 --bs 256 --samples 100000 --epochs 12 --patience 4 --tag H_gru_c168 --eval-bs 256
+--ds switch --model gru --ctx 672 --norm mean --loss l1 --hist ext --lr 1e-3 --bs 256 --samples 100000 --epochs 12 --patience 4 --tag H_gru_c672 --eval-bs 256
+--ds switch --model gru --ctx 4032 --norm mean --loss l1 --hist ext --lr 1e-3 --bs 128 --samples 100000 --epochs 12 --patience 4 --tag H_gru_c4032 --eval-bs 256
+--ds switch --model tcn --ctx 4032 --norm mean --loss l1 --hist ext --lr 1e-3 --bs 128 --samples 100000 --epochs 12 --patience 4 --tag H_tcn_c4032 --eval-bs 256

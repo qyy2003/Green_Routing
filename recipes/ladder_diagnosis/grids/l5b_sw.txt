@@ -1,0 +1,12 @@
+# long5m.py with bounded inputs (--squash 10), switch
+--ds switch --ctx 2016 --model seg --seg full --lr 5e-4 --squash 10 --tag L5s_seg_full_1w
+--ds switch --ctx 48384 --model seg --seg multires --lr 5e-4 --squash 10 --tag L5s_seg_multires_24w
+--ds switch --ctx 48384 --model seg --seg coarse --lr 5e-4 --squash 10 --tag L5s_seg_coarse_24w
+--ds switch --ctx 48384 --model seg --seg recent --qprof 1 --lr 5e-4 --squash 10 --tag L5s_seg_recent_qp_24w
+--ds switch --ctx 48384 --model fold --lr 1e-3 --squash 10 --tag L5s_fold_24w
+--ds switch --ctx 48384 --model profmlp --lr 3e-4 --squash 10 --tag L5s_profmlp_24w
+--ds switch --ctx 8064 --model seg --seg full --lr 5e-4 --squash 10 --tag L5s_seg_full_4w
+--ds switch --ctx 8064 --model seg --seg multires --lr 5e-4 --squash 10 --tag L5s_seg_multires_4w
+--ds switch --ctx 8064 --model profmlp --lr 3e-4 --squash 10 --tag L5s_profmlp_4w
+--ds switch --ctx 24192 --model seg --seg multires --lr 5e-4 --squash 10 --tag L5s_seg_multires_12w
+--ds switch --ctx 48384 --model seg --seg full --lr 5e-4 --squash 10 --epochs 10 --patience 4 --tag L5s_seg_full_24w

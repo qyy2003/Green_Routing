@@ -295,9 +295,23 @@ def _hourly_covariates(t: pd.DatetimeIndex) -> dict:
     return {"holiday": _holiday_weights(d, "weighted"), "christmas": christmas(d), "lectures": lectures(d)}
 
 
+def _quantile_mean_weights(levels) -> np.ndarray:
+    """Weights w with mean ~= sum_q w_q Q(level_q): the integral of the quantile function over
+    [0, 1], linear between levels and flat beyond the outermost ones."""
+    lv = np.asarray(levels, float)
+    w = np.zeros(len(lv))
+    w[0] += lv[0]
+    w[-1] += 1 - lv[-1]
+    for i in range(len(lv) - 1):
+        d = lv[i + 1] - lv[i]
+        w[i] += d / 2
+        w[i + 1] += d / 2
+    return w
+
+
 def foundation(s: pd.Series, test_days: pd.DatetimeIndex, model: str = "chronos-2", context: int = 2048,
                covariates: bool = False, step: str = "1h", device: str = "cuda", batch: int = 32,
-               finetune: dict | None = None) -> pd.Series:
+               finetune: dict | None = None, point: str = "median") -> pd.Series:
     """Zero-shot day-ahead forecasts from a pretrained model: for every issue day, the last
     ``context`` steps of ``s`` (complete grid, gaps filled) before 00:00 UTC -> the next 24
     hours (median). ``step`` = 5min feeds the 5-minute series and averages the forecast
@@ -305,7 +319,9 @@ def foundation(s: pd.Series, test_days: pd.DatetimeIndex, model: str = "chronos-
     future inputs (Chronos-2 natively; TimesFM via its in-context regression), or a function
     of the timestamps returning such a dict (another country's calendar). ``finetune``
     (Chronos-2 only) = dict(cutoff, steps, lr, mode, out): fine-tune a copy on the series
-    before ``cutoff`` first."""
+    before ``cutoff`` first. ``point`` (Timestral only): "median" (default) or "mean", the
+    mean of the forecast distribution from its quantiles (what a sum such as a bill needs:
+    for a right-skewed series the median sits below the mean)."""
     test_days = pd.DatetimeIndex(test_days)
     cov_of = covariates if callable(covariates) else _hourly_covariates
     per_h = 12 if step == "5min" else 1
@@ -390,7 +406,12 @@ def foundation(s: pd.Series, test_days: pd.DatetimeIndex, model: str = "chronos-
                 kw["known_covariates"] = np.stack(rows).astype(np.float32)
             with torch.inference_mode():
                 f = fm.forecast(X, prediction_length=horizon, **kw)
-            out += list(f.median[:, 0, :].float().cpu().numpy())
+            if point == "mean":
+                w = torch.tensor(_quantile_mean_weights(f.quantile_levels), dtype=torch.float32,
+                                 device=f.quantiles.device)
+                out += list((f.quantiles[:, 0].float() * w).sum(-1).cpu().numpy())
+            else:
+                out += list(f.median[:, 0, :].float().cpu().numpy())
         del fm
     else:
         raise ValueError(model)

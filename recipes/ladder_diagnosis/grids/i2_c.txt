@@ -1,0 +1,9 @@
+# I2: week-stacked long-context model
+--ds i2 --hist ext --model wstack --ctx 168 --norm mean --loss l1 --tag C_ws_c168_mean_l1_ext
+--ds i2 --hist ext --model wstack --ctx 672 --norm mean --loss l1 --tag C_ws_c672_mean_l1_ext
+--ds i2 --hist ext --model wstack --ctx 2016 --norm mean --loss l1 --tag C_ws_c2016_mean_l1_ext
+# stopped: --ds i2 --hist ext --model wstack --ctx 4032 --norm mean --loss l1 --tag C_ws_c4032_mean_l1_ext
+# not run: --ds i2 --hist panel --model wstack --ctx 672 --norm mean --loss l1 --tag C_ws_c672_mean_l1_panel
+# not run: --ds i2 --hist panel --model wstack --ctx 4032 --norm mean --loss l1 --tag C_ws_c4032_mean_l1_panel
+# not run: --ds i2 --hist ext --model wstack --ctx 4032 --norm log_revin --loss huber --tag C_ws_c4032_log_huber_ext
+# not run: --ds i2 --hist ext --model wstack --ctx 4032 --norm revin_lin --loss l1 --tag C_ws_c4032_revlin_l1_ext

@@ -5,7 +5,7 @@ from the code: the state of the work, the facts the numbers rest on, the decisio
 and the traps already fallen into. The user-facing docs are in `docs/`; this file links to
 them rather than repeating them.
 
-Last updated: 2026-11-03.
+Last updated: 2026-11-08.
 
 ## 1. State of the project
 
@@ -57,6 +57,50 @@ Last updated: 2026-11-03.
     of links) and Chronos-2 on I2's total. `gr-dense predict --models timestral` (block logs in
     `<run>/dense_fm/`), `carbon.dayahead.foundation(model="timestral")`. Why links are hard:
     `recipes/link_difficulty`.
+  - Ladder diagnosis (2026-11-04, `recipes/ladder_diagnosis`, log
+    `docs/worklog/2026-11-04-ladder-diagnosis.md`): why the trained ladder trails Timestral. No bug;
+    the ladder sees one week of 5-minute history, and on that input every architecture (and
+    Timestral itself) lands at the same error. Timestral's lead is its 24 weeks of hourly context.
+    Fixes measured in an hourly harness that reproduces the ladder: hourly targets (Switch -2.6
+    points), mean scaling + L1 (I2 -1.0), all history instead of the panel window (I2 -0.8, and
+    what makes long context learnable), long context via weekly-profile features. Day-ahead median
+    link hourly WAPE: I2 19.15 -> 17.5, Switch 35.4 -> 30.0 (ensembles); Timestral 16.2 / 28.1 stays ahead.
+    Report https://claude.ai/artifact/1EuQg8mZQbBZAQhm6MYx2W (copy in `docs/reports/ladder-diagnosis.html`).
+  - Long context at 5 minutes (2026-11-04, `recipes/ladder_diagnosis/long5m.py`, log
+    `docs/worklog/2026-11-04-long-context-5m.md`): trained models with 5-minute input and output and up
+    to 24 weeks of context (48,384 steps): full-resolution and coarse patch transformers,
+    multi-resolution tokens, profile query tokens, week folding, profile MLP. All train at 24 weeks
+    (4-370 ms per batch of 128). 1 -> 4 weeks helps (3-seed ensembles, day: I2 -1.3, Switch -1.6
+    points; week -1.9 / -2.6); 4 -> 24 weeks adds nothing for any method. Best 5-minute ensembles
+    17.5 / 30.7 (ladder 19.15 / 35.41; Timestral, 16 weeks of 5-minute input, 16.5 / 29.1).
+    Report https://claude.ai/artifact/7vASEr8hQGbhCQv7BAqV7Z (copy in `docs/reports/long-context-5m.html`).
+  - Why long context helps Timestral and not trained models (2026-11-05/06, log
+    `docs/worklog/2026-11-05-why-long-context.md`): old weeks improve the level and daily-shape estimate
+    (blanking Timestral's weeks 5-24: +0.75 I2 / +1.44 Switch); trained 24-week models read them and fit
+    the training months better (I2 -0.64) but lose later (+0.30): over-fitting. I2 hourly history
+    downloaded back to 2021-05 (5.1 years of training data instead of 1.6, `i2_history.py`) plus 567
+    door series: the 24-week penalty falls from +2.9 to +0.2, no gain appears, best trained 18.00 vs
+    Timestral 16.22. Preprocessing is not the gap; fine-tuning Timestral on 5 years of I2 or on Switch
+    changes nothing (+-0.15, n.s.). Report https://claude.ai/artifact/GadZfe1LnWiXk6JRjBfH8h (copy in
+    `docs/reports/why-long-context.html`).
+  - Greenest-path routing on I2 (2026-11-04, `recipes/green_paths`, exploratory, owner's idea): one
+    router pair alone on its lowest usage-rate path vs today's routing, and everyone at once
+    (best-response rounds, rates re-posted from loads), on the counter-estimated matrix of the test
+    block. One pair: bill -19 % (bytes-weighted), physical change 0 (a transfer). Everyone: about
+    half the spans go dark, the lit network becomes nearly a tree, and dark spans lock in (§6).
+    Repeated on the measured 2021 tunnel matrix (`setup_2021.py`, hourly tunnel paths as today's
+    routing): same picture (a third of the spans dark, nearly a tree), and the counter estimate
+    gives the same network-level outcome as the measured matrix.
+  - IMC paper evaluation (2026-11-06, `recipes/paper`, owner's three points): what the bill looks like
+    (per GB, when vs where, entity bills), why forecasting carbon is not forecasting traffic (grid,
+    bias, division), what day-ahead per-path rates let hosts do (CIRo-style pair CDF, decentralized
+    sleeping vs a centralized controller). Idle-link cap chosen by the owner: median + 2 robust sigmas
+    of pooled log rates, previous 28 days (`carbon.path_rate.idle_cap`, `capped_rates`). Written into
+    the Overleaf checkout `6aea077f0929c9a3a1ac5660/sections/evaluation.tex` + `figures/eval_*.pdf`.
+  - Margin and fact check for the paper, now "CarbonQuote" (2026-11-08, `recipes/paper/margin.py`, `factcheck.py`;
+    report `6aea077f0929c9a3a1ac5660/REPORT.md`): posted flat rate x (1 - m) after the 7-day grid correction, m = smallest
+    on a 0.5 % grid with own share >= 0 in >= 90 % of the development period's 30-day windows: SWITCHlan 6.0 %, I2 0.5 %;
+    every main-text number checked; new Fig. 2 (`figures/power_vs_traffic.pdf`). Paper not compiled (no TeX on the box).
 - **Next expected tasks**: improve the day-ahead grid-factor forecast (it causes most of
   the bill error: log Electricity Maps' own forecast daily and score it); get the 31
   routers missing from the export back from SWITCH. The year benchmark was cross-verified
@@ -84,12 +128,15 @@ Last updated: 2026-11-03.
 | `src/green_routing/viewer/` | `gr-viewer` (server.py + static/) |
 | `src/green_routing/network/` | `gr-network`: `traffic` (one pass over every interface CSV), `matching` (link ends, bundles), `roles` (tiers, roles), `dns` (reverse-DNS sweep and far ends) |
 | `src/green_routing/carbon/` | `gr-carbon`: `assumptions` (every assumed number), `inventory`, `grid` (Electricity Maps, day-ahead rules), `allocation` (pools, doors, parties), `bills` |
-| `recipes/carbon/` | `run.sh`, `build_report.py` + `report_template.html`, `verify.py` + `expected.json` |
+| `recipes/carbon/` | `run.sh`, `build_report.py` + `report_template.html`, `verify.py` + `expected.json`; `em_forecast.py` (`log`: Electricity Maps' current forecast, CH + FR, into `carbon/grid/forecast_log/`; `score`: against the rule and Timestral once days are logged) |
 | `src/green_routing/carbon/dayahead.py` | day-ahead forecasts of the hourly total: weighted holidays, lecture weeks, features, refitted backtests, pretrained models, paired scoring |
-| `recipes/flat_forecast/` | how to forecast the total for the flat rate: `run.sh` (history, ladder seeds), `run.py` (staged, cached), report |
+| `recipes/flat_forecast/` | how to forecast the total for the flat rate: `run.sh` (history, ladder seeds), `run.py` (staged, cached), report; `bill_horizons.py` (day-ahead flat-rate bill error by day / week / month, both networks); `rate_timestral.py` (Timestral zero-shot on the grid, the traffic or the rate itself; median vs mean; capping); `bias.py` (bias and quantile calibration); `grid_forecast.py` (grid-forecast candidates, bias correction, DEV/TEST) |
 | `src/green_routing/dataset/internet2.py` | Internet2 TSDS client (cached, rate-limited) and port-label parser (`classify`, `backbone_ends`, `party_of`) |
 | `src/green_routing/carbon/us_grid.py` | hourly production-based g/kWh per US balancing authority from EIA-930 |
 | `recipes/internet2/` | `fetch.py` (download stages), `make_data.py` (ports, links, doors, power, 5-min mirror), `carbon.py`, `tunnels.py` (2021 matrix check), `run.sh`, `pops.csv` (PoP -> BA), `fuel_factors.csv`, `timestral_total.py` |
+| `recipes/ladder_diagnosis/` | ladder vs Timestral: `common.py` (block hourly-WAPE evaluator, matches `gr-dense metrics`), `hourly_train.py` (ablation harness: resolution, context, normalisation, loss, history, joint networks), `timestral_ctx.py`, `ft_timestral.py`, `compare.py` (paired, day bootstrap; `day5`/`week5` = 5-minute WAPE), `grids/*.txt` + `sweep.py`; `long5m.py` (5-minute input, up to 24 weeks: `--model seg --seg full/coarse/multires/mrh/recent --qprof`, `fold`, `profmlp`; `--squash`, `--drop-ctx`), `refs5m.py`, `switch_history.py [--res 5m]`; `i2_history.py` (I2 hourly 2021 -> 2024), `uses_context.py` (blank old weeks at test time; training / validation / test periods), `decompose.py` (daily volume vs shape error); `hourly_train.py --hist ext21 --train-months N --extra i2doors`, models `dlinear` `gru` `tcn` |
+| `recipes/green_paths/` | `simulate.py {unilateral,static,everyone} [--carry] [--cap-util 0.8] [--setup tm2021 --matrix meas/est --baseline own/ecmp]`: greenest-path routing on I2 from `internet2/carbon/test_setup.npz` (`run.sh`, ~40 min) or the 2021 tunnel matrix (`setup_2021.py`, `run_2021.sh`, ~25 min); `tables.py [tm2021]` |
+| `recipes/paper/` | the paper's Section 6: `run.sh` (`i2_pre_setup`, `i2_rates`, `switch_rates`, `bill_periods`, `facts`, `steering {unilateral,everyone,central}`, `text_numbers`, `figures [--png=DIR]`); outputs `artifacts/paper/`, PDFs into the Overleaf checkout (`6aea077f…/`, gitignored, owner's paper repo) |
 | `recipes/link_difficulty/` | why per-link traffic is hard (`analyze.py`: level vs shape, oracle profile, size, events, cross-link correlation); `fm_tables.py` (zero-shot vs ladder from `dense_fm` tables) |
 | `artifacts/reference/` | curated inputs not in the bucket (sites, external links, DNS snapshots, Zoo sample); gitignored, copy between machines |
 | `src/green_routing/paths.py` | repo root, `GR_ARTIFACTS_DIR` |
@@ -131,7 +178,7 @@ Anaconda's base env ships pandas 3; the pipeline was never validated on it, henc
 | Topology | not in the bucket; the committed `switch-network-topology.txt` is a device-level reconstruction (fine for the graph model, no interface names). The real one is in the research checkout (`GR_RESEARCH_ROOT`). |
 | Power | `router-power/` (PSU) **ends 2024-11-01**, four schemas (`config.PSU_SCHEMAS`: Pin W, Pin_mW, U×I at 12 V, Arista U×I ×1e-4); `eci/apollo/` shelves live; `routers/` headers identify the router family. Router models are not in the bucket: matched from the Network Power Zoo sample (94/114). |
 | Missing routers | 31 routers alive in reverse DNS are absent from the SNMP export (ix3 since 2024-06, ce1 2025-01, ba3 2025-05, ez31, si2, ge3, ez11, bs1, …); ix3/ce1/ba3 hold most external links. SWITCH was asked to re-export them. |
-| Internet2 | GlobalNOC TSDS `https://services.tsds.bldc.net.internet2.edu/i2/services/` (no login). 73 core routers (`core1/core2.<pop>`) at 51 PoPs, 4,265 ports (Oct 2026); doors 543 over 2024-11 -> 2026-11 (453 connector ports, 90 links to aggregation routers), 181 parties, 254 directed links. Power: 106 DC plants report (amps, A+B feeds), 6 core PoPs none. Old network `rtsw.<pop>` 2016-2022 with a full LSP mesh (1-minute, 2018-03 -> 2021-09). Raw in `artifacts/internet2/raw`, cache `artifacts/internet2/cache` (~1 GB). EIA-930 in `$GR_REFERENCE_DIR/eia930`. |
+| Internet2 | GlobalNOC TSDS `https://services.tsds.bldc.net.internet2.edu/i2/services/` (no login). 73 core routers (`core1/core2.<pop>`) at 51 PoPs, 4,265 ports (Oct 2026); doors 543 over 2024-11 -> 2026-11 (453 connector ports, 90 links to aggregation routers; hourly history of the current core network from 2021-05: `recipes/ladder_diagnosis/i2_history.py`, nodes queried by FQDN `core1.chic.net.internet2.edu`), 181 parties, 254 directed links. Power: 106 DC plants report (amps, A+B feeds), 6 core PoPs none. Old network `rtsw.<pop>` 2016-2022 with a full LSP mesh (1-minute, 2018-03 -> 2021-09). Raw in `artifacts/internet2/raw`, cache `artifacts/internet2/cache` (~1 GB). EIA-930 in `$GR_REFERENCE_DIR/eia930`. |
 | Abilene | second dataset (until 2026-11-02): `$GR_REFERENCE_DIR/abilene` (public archive), weeks X06–X24 = 2004-05-01 → 09-10; X21 repeats X20's last day, 08-20 missing, one corrupt hour in X24; NetFlow 1:100 scaled; energy and grid inputs in `recipes/abilene/*.csv` |
 | Reverse DNS | SWITCH names router ports (`swiEZ2-400GE-0-0-0-3` = `ez2/fourhundredgige0_0_0_3`); link ends share a /31, a named /30 or a /64. Snapshot 2026-10-30 in `artifacts/reference/dns/`. |
 
@@ -183,7 +230,55 @@ as used so far 11.0 %, TCN 12.0 % (peak-aware) / 11.3 % (symmetric, 3 seeds); Ch
 10.7 % (dev 10.7 %); final ensemble with the holiday rule 10.0 % (dev 10.6 %); with the TCN 9.8 %;
 Chronos-2 on 5-minute input 15.4 %, fine-tuned 11.7 %; holidays: Chronos-2 27 %, GBDT 7 %. Abilene:
 Chronos-2 12.2 % vs 15.4-15.6 % trained. Rate error with the real grid 11.5 → 10.6 %; with the
-day-ahead grid rule ~52 % whatever the traffic forecast (49.2 % with perfect traffic).
+day-ahead grid rule ~52 % whatever the traffic forecast (49.2 % with perfect traffic). Bill error by horizon
+(`bill_horizons.py`, `flat_forecast/bill_horizons.csv`; hourly rate published a day ahead = forecast emissions /
+forecast traffic, billed carbon = rate x actual traffic, WAPE against actual emissions): Switch LAN (final ensemble,
+grid "same hour yesterday") daily 30.0 %, weekly 10.7 % (7-day blocks) / 9.8 % (every window), monthly 7.5 % (3
+calendar months: +15.5 / +1.4 / +2.7 %) / 4.9 % (every 30-day window); block bias +6.1 % (grid rule +4.0 %, traffic
+-1.5 %); daily emissions vary with CV 94 %, so yesterday's grid is a poor forecast. Perfect grid: 6.8 / 2.5 / 1.7-3.1 %.
+I2 Network (Timestral 24 w): daily 4.1 %, weekly 1.3 %, monthly 0.5-0.7 % (every month within +-1.2 %), bias ~0,
+emissions CV 5.4 %. Errors shrink about as 1/sqrt(days) on both networks; a bias does not. Switch with Timestral
+(24 w + calendar, 10.2 % hourly, the same model as on I2): daily 29.0, weekly 9.1-10.1, monthly 4.1-5.9 %. Why
+Switch is worse: 94 % of its backbone power is on the Swiss grid (mean 13 g/kWh, hourly p10-p90 4-29, daily CV 97 %,
+"same hour yesterday" 50 % hourly / 28 % daily error); perfect traffic + day-ahead grid 27.5 % vs I2 3.0 %. In
+absolute terms Switch's daily error is 5 kg of 17 kg/day, I2's 71 kg of 1.7 t/day. Timestral zero-shot
+(`rate_timestral.py`, 24 w, every-window WAPE day / week / month, bias): grid (emissions) forecast hourly / daily
+Switch 48 / 27 % (rule "same hour yesterday") vs 36 / 22 % (Timestral), I2 3.6 / 3.0 vs 2.6 / 2.1 %. Bills, Switch: rule
+grid / Timestral traffic 28.8 / 8.9 / 4.0 %, +4.8 %; Timestral grid 24.6 / 12.8 / 12.2 %, -4.0 % (median below the mean
+of the skewed Swiss grid); Timestral on the rate directly 23.7 / 11.7 / 10.8 %, -4.3 %; Timestral mean instead of
+median: bias +7.8 % (rate directly +10.6 %). I2: rule 4.1 / 1.3 / 0.5 %, Timestral grid 3.5 / 1.3 / 0.5 %, rate directly
+3.65 / 1.4 / 0.5 %. Division safe for network totals: actual / forecast traffic 0.58-1.79 (Switch), 0.32-1.25 (I2);
+capping the rate history at 3x its 28-day median hurts Switch (bias -6.6 %, month 13.5 %): 10 % of its hours are real
+grid spikes. `dayahead.foundation(point="mean")` (Timestral) integrates the 21 quantiles. Bias (`bias.py`,
+test block, 95 % day bootstrap): traffic unbiased (Timestral Switch 0.0 % [-1.8, +1.8], I2 +0.2 % [-0.6, +1.1]; recipe
+ensemble -1.5 % [-3.0, +0.2]; months within +-2.5 %; busiest 10 % of days -5.4 % / -1.1 %), quantiles calibrated
+(Switch 9.8 / 50.9 / 89.8 / 99.2 % at q10 / q50 / q90 / q99). I2 grid unbiased (all within +-0.1 %, months +-0.9 %).
+Switch grid: rule +3.9 % [-3.6, +11.4] (months +6.9 / +8.2 / +0.6 / 0.0 / -9.1 %), Timestral median -4.6 % [-10.6, +1.0]
+(May / June -16 %), mean +7.7 % [+2.0, +14.0] (April +19.6 %). Timestral's Swiss-grid quantiles are calibrated in
+coverage (52 % below the median, 99.4 % below q99) but very right-skewed (q99 = 4.7x the actual on average; I2 1.1x),
+so the median is low for a sum and the mean is pulled up by the tail. Unbiased grid (`grid_forecast.py`, chosen on
+DEV 2025-03-22 -> 2026-03-21, TEST once): every model alone is biased on the Swiss grid (pretrained medians and
+log-space GBDT / ridge -2 to -9 %, Timestral mean +1 / +8 % DEV / TEST, worst months 12-23 %). A causal 7-day
+correction (x actual / forecast of the previous 7 days) fixes most: Timestral median + correction DEV bias +1.1 %,
+12 of 13 months within +-4 % (worst +8.1 %), daily 17.7 % vs the rule's 21.8 %; TEST months +2.7 / +2.7 / +3.7 %,
+bills (Timestral traffic) day / week / month 25.5 / 9.4 / 3.7 % vs rule 28.8 / 8.9 / 4.0 % and Timestral alone
+24.6 / 12.8 / 12.2 %. 28-day correction is worse. I2: corrections change nothing (bills 3.6 / 1.4 / 0.5 %).
+Where the bias comes from (`bias_sources.py`, `extremes.py`): model forecasts are right half the time (actual
+above the Timestral median in 49 % of hours) but under-forecasts are larger (16.4 vs 12.3 % of the mean); log
+error spread 0.46-0.51 on Switch vs 0.06 on I2. The rule's period bias telescopes exactly to (E day before - E last
+day) / E period. Extremes are real, not glitches: CH factor > 3x its median in 23 % of hours, in episodes (median
+6 h, longest 164 h), only 4 isolated 1-hour spikes in 3.5 years; winter median day 2-3x, summer 0.5x; without the
+top 10 % days the biases barely change (Timestral median -4.1 -> -3.9 %). Losses for the same GBDT, DEV / TEST bias:
+log squared -8.8 / -6.1 %, peak-aware (quantile 2/3) +6.3 / +12.7 % (worst test month +27.5 %), linear squared
+(mean) -0.5 / +7.3 %, log-normal fitted mean (max likelihood) +2.3 / +7.7 %; with the 7-day correction all end at
+DEV +0.6-0.9 %, TEST 30-day 4.0-4.4 %. Second held-out period 2026-07-11 -> 10-28 (`grid_forecast.py period`, grid
+only, no Switch traffic after July): Timestral median -12.0 % (months -6 to -15 %), + 7-day correction +2.5 % (months
++0.9 to +3.9 %, daily 29.4 %), rule -0.5 % (months within +-2.7 %, daily 32.0 %, 30-day 1.7 % vs 2.6 %). The corrected
+forecast runs slightly high in all three periods (+1.1 / +4.3 / +2.5 %): the ratio of 7-day sums is a little inflated.
+The rule is unbiased by construction (a shifted copy: its period sum differs only by the two end days) but worst per
+day; averaging it 50/50 with corrected Timestral is best or near-best everywhere (DEV / TEST / Jul-Oct: day 18.9 /
+23.8 / 29.6 %, 7-day 4.8 / 8.1 / 5.8 %, 30-day 1.4 / 3.0 / 1.5 %, bias +0.3 / +4.1 / +1.0 %); DEV alone would choose it
+(30-day 1.4 vs 1.9 rule, 2.1 corrected Timestral). Not yet used for bills.
 
 Internet2 (`artifacts/internet2/carbon`, `tunnels`; year 2025-11-15 -> 2026-11-01, test from
 2026-07-19): 1.39 Tbit/s mean (doors in/out 0.986); IT 123 kW at core PoPs (11 imputed) + 12.6 kW
@@ -212,6 +307,130 @@ Per-link difficulty (`artifacts/link_difficulty`, PatchTST day, I2 / Switch LAN)
 19.1 -> 15.6 / 35.4 -> 28.4 %; in-sample weekly profile + true daily volume 13.4 / 22.8 %; hours at
 < 1/3 or > 3x the usual level 4 / 9 % of hours, 8 / 14 % of the error; same-router error correlation
 +0.23 / +0.22 (no sign of traffic moving between neighbours).
+
+Ladder diagnosis (2026-11-04, `artifacts/ladder_diagnosis/all_runs.csv`; day-ahead block, median
+link hourly WAPE, I2 / Switch LAN). Same 1-week input: ladder PatchTST 19.15 / 35.41, Timestral 19.73 /
+35.04 (n.s.), hourly PatchTST with mean scaling + L1 18.58 / 31.36. Timestral by context (1, 2, 4, 12,
+24 weeks): I2 19.73, 17.90, 16.97, 16.71, 16.22; Switch 35.04, 31.11, 29.49, 28.27, 28.05. Same model 5-min
+vs hourly (Switch): 34.18 vs 31.55. Extended history (I2 hourly file from 2024-11, Switch from
+2024-01): I2 PatchTST 1 w 18.58 -> 17.80 (3 seeds 17.80 / 18.80 / 17.93, ensemble 17.67); ProfMLP
+(weekly-profile features) 12 w 17.87 (ensemble 17.94, week 21.89); 24 w 20.01 (panel) -> 18.24 (ext);
+Switch PatchTST 4 w 30.42 / week 34.97, ensemble with ProfMLP 4 + 12 w 29.98 / 34.30. Ensembles vs
+Timestral 24 w: I2 +1.24 [+0.47, +1.74], Switch +1.93 [+1.32, +2.93]. Timestral fine-tuned on I2's
+history (LR 1e-5): 16.06 / 20.52 vs 16.22 / 20.55, paired -0.16 [-0.37, +0.14] (n.s.). Joint training on both networks: no gain. Ladder bias at a day: median
+link -14..-16 % Switch, -4.6..-9.2 % I2 (within-hour geometric vs arithmetic mean: Switch 6.4 %, I2
+0.8 %); removing it does not lower WAPE.
+
+Long context at 5 minutes (2026-11-04, `artifacts/ladder_diagnosis/long5m_runs.csv`, `{i2,switch}/refs5m.csv`;
+5-minute input and output path, day-ahead block, median link hourly WAPE, I2 / Switch LAN). Multi-resolution
+transformer, bounded inputs, 3 seeds each: 1 w 19.16 / 19.72 / 19.62 and 32.88 / 33.22 / 32.52; 4 w 17.99 /
+17.96 / 18.51 and 31.50 / 31.13 / 31.33; 24 w 18.66 / 18.73 / 18.42 and 31.57 / 31.46 / 31.31; ensembles
+19.20 / 17.86 / 18.29 and 32.50 / 30.90 / 31.08. Paired 4 vs 1 w: day -1.34 [-2.03, -0.75] / -1.61 [-3.15,
+-1.10], week -1.93 / -2.64; 24 vs 4 w: day +0.43 / +0.18 (n.s.), week +0.86 [+0.30, +2.09] / +0.08 (n.s.).
+Full-resolution transformer (4,032 hourly tokens) at 24 w: I2 19.56 (20-epoch budget, early stop 15; 10
+epochs 20.31), Switch 33.10 (10 epochs); 4 w 18.06 / 31.44.
+Ensemble of 11 runs (4 and 24 w): 17.50 / 22.37 (week) and 30.72 / 34.83; 5-minute WAPE at a day 19.93 /
+40.54 (ladder 21.62 / 43.49). Timestral 5-minute input: I2 4 w 16.77, 16 w 16.48 (n.s. apart), Switch 4 w
+29.79, 16 w 29.07 (-0.72 [-1.29, -0.25]; 5-minute WAPE 37.83 / 37.27). Untrained level-rescaled 5-minute profiles over 4 / 12 / 24 weeks: I2 22.43 /
+22.41 / 22.59, Switch 37.47 / 39.18 / 41.65.
+
+Why long context (2026-11-05/06, `artifacts/ladder_diagnosis/i2/data_size_runs.csv`, `*/uses_context_*.csv`;
+day-ahead median link hourly WAPE). Old weeks blanked at test time: Timestral 24 w 16.22 -> 16.97 (I2), 28.05 ->
+29.49 (Switch); trained 5-minute multires 24 w 18.30 -> 20.29 / 31.25 -> 31.35. Last 13 training weeks vs test,
+trained 4 w / 24 w: I2 18.44 / 17.80 and 18.00 / 18.30; Switch 31.23 / 30.89 and 31.46 / 31.25. I2 hourly with history
+from 2021 (ext21), 2 seeds, PatchTST 4 w / 24 w by training months 6 / 12 / 24 / 61 / 61 + doors: 18.73 / 22.00,
+18.45 / 20.10, 18.27 / 19.04, 18.43 / 19.02, 18.36 / 18.66 (paired 24-4 w +2.94 [1.85, 3.23] ... +0.19 [-0.21, 0.87]);
+profile MLP 24 w + doors 18.00 (Timestral +1.78 [0.88, 2.31] better). Volume / shape error, I2, Timestral 4 -> 24 w
+12.09 -> 11.47 / 13.53 -> 12.91, PatchTST 12.57 -> 12.47 / 14.10 -> 14.75. Preprocessing in the same 5-minute
+transformer (1 / 4 / 24 w): ladder I2 22.96 / 18.44 / 19.76, Timestral's scaler 20.72 / 19.48 / 22.48, ours 19.16 /
+17.99 / 18.66 (Switch 38.25 / 32.90 / 33.19, 33.08 / 31.73 / 32.27, 32.88 / 31.50 / 31.57). Timestral fine-tuned: I2
+ext21 16.07-16.13 (n.s.), Switch 28.05-28.08 (n.s.). Hourly ladder architectures 1 / 4 / 24 w (I2): DLinear 21.95 /
+20.68 / 20.45, PatchTST 18.85 / 18.35 / 19.51, GRU 19.49 / 19.23 / 18.80, TCN 19.99 / 19.48 / 18.84 (Switch: DLinear
+37.40 / 35.93 / 36.11, PatchTST 32.73 / 32.49 / 33.25, GRU 36.21 / 35.79 / 35.47, TCN 35.40 / 36.28 / 36.49): the small
+models are not hurt by 24 weeks, PatchTST's flatten head over-fits (+1.16 / +0.76 vs 4 w).
+
+Greenest paths on I2 (`artifacts/internet2/green_paths`, test block, 2,512 h, EM matrix, usage rates,
+today = ECMP inverse-capacity). One router pair moving alone: 28 % of bytes have a path >= 1 % greener;
+bill -19 % bytes-weighted (median byte 0, p90 -33 %; per source router p10/50/90 -7.5/-18/-34 %); movers'
+hops x1.30; physically nothing (static power), paid by the flows that stay. Everyone (each hour from
+today's routing, ~32 rounds, all converge): directed links empty 6.5 -> 111 of 254, spans dark 3 -> 54
+of 107, dark spans' emissions 25 % of the network's (the only physical gain, if their optics can be
+switched off; upper bound under the 45 % optical share), lit graph nearly a tree (bridges 1.5 -> 55),
+hops per byte 2.54 -> 3.08, 73 % of bytes pay more (idle emissions spread flat), a link > 100 % in 5 %
+of hours (80 % cap: same 54 dark spans, no link > 100 % (0.5 % of hours with `--carry`), > 80 % in
+2-3 % of hours, where the rounds stop at 200 without settling: 15 % of hours, 5 % with `--carry`). Continuous
+(`--carry`): 54 spans dark for the whole block (E / 0 = never chosen again: lock-in), lit set changes 72
+times in 2,511 h (vs ~every hour when restarted). Static rate E / capacity: no concentration (3.6 spans
+dark, hops +12 %) but routes change in 2,095 of 2,511 hours. Which spans go dark follows today's load
+(Spearman with the share of hours dark: load -0.44, grid g/kWh +0.03): usage-priced "greenest" = busiest.
+
+Greenest paths on the measured 2021 matrix (`artifacts/internet2/green_paths/tm2021`, old network
+2021-03-01 -> 03-28, 672 h, 43 PoPs, 134 directed links, 67 spans, 719 Gbit/s of tunnel traffic; power
+of the current PoPs, EIA-930 March 2021 grid; today = each tunnel's path in each hour, 72.6 % of bytes
+traced, ECMP for the rest, link-load WAPE 20 % vs ECMP inverse-capacity 30 %, hops 41 %). One PoP pair
+alone: 19 % of bytes have a greener path, bill -18 % bytes-weighted (p90 -29 %; per source PoP
+p10/50/90 -3.6/-15/-34 %), movers' hops x0.97 (tunnel paths are not shortest). Everyone: links empty
+0 -> 45 of 134, spans dark 0 -> 22.6 of 67 (a spanning tree leaves 25), dark spans' emissions 15.8 %,
+hops 2.25 -> 2.39, bridges 2 -> 34.5, no link > 100 %, > 80 % in 5.7 % of hours (cap: 0.3 %), 77 % of
+bytes pay more; continuous: 24.6 dark, 15 dark all four weeks, lit set changes 21 times in 671 h. Same
+with ECMP as today: 22.1 dark, 14.5 %; with the matrix estimated from counters (EM, ECMP; OD-level
+error 105 % of bytes): 22.2 dark, 15.9 %, hops 2.38, bridges 32, unilateral -13.2 % vs -13.8 % measured
+(same baseline). Dark share follows today's load (Spearman -0.66), not the grid (+0.13). Both networks
+end near a spanning tree: the dark share is the topology's redundancy (2021 34 %, 2025-26 51 %).
+
+Paper evaluation (2026-11-06, `artifacts/paper`, `recipes/paper`; test blocks Switch 2026-03-22 -> 07-10,
+I2 2026-07-19 -> 10-31; traffic and per-link forecasts Timestral 24 w zero-shot, grid Timestral median + 7-day
+correction). Per GB over a year: Switch 0.013 g, I2 0.107 g; backbone 0.47 / 0.33 Wh/GB. Per byte, p10-p90 over
+hours 15x (Switch) / 3.2x (I2), over city pairs 4x / 7x (bytes-weighted); log-rate variance from the grid 82 % (Switch),
+from traffic 78 % (I2); hour-of-day median rate max/min 4.6 / 2.3. Entities: Switch 218 (median 10 kg/yr, top 10
+= 50 %, access equipment 26 % of bills, 5 of the top 10 are missing routers), I2 124 (median 1.4 t/yr, MAX 40.5 t);
+path vs flat moves 32 % / 20 % between entities. Bill error by period (hour / day / 7-day / 30-day): Switch 41.3 / 25.5
+/ 9.4 / 3.9 % (perfect traffic 23.1 % a day, perfect grid 6.6 %), bias +5.3 %; I2 5.2 / 3.6 / 1.4 / 0.5 %; daily abs
+error 4.8 kg (Switch) vs 61 kg (I2). Idle-link cap on I2: 5.6x the flat rate (0.60 g/GB, 9 % of resource-hours
+capped, 8.9 % of emissions spread flat; classic mu + 2 sigma would be 108x); day-ahead resource rate error factor p90
+at < 0.01 % load 4,200x uncapped, 1.44x capped; path rate a host sees 21 % (bytes-weighted WAPE; flat 6.3 %); router
+path bills do not cancel (30-day 9.0 % vs flat 0.6 %). On Switch the same rule caps at 9,000x (107 of 388 resources
+< 1 Mbit/s). CIRo-style (I2, PoP pairs, chosen on day-ahead rates, scored settled): 64 % of pairs gain, 33 % >= 20 %,
+12 % >= 50 %, median 7 % (oracle 16 %), bytes 14 %, 20 % of pairs worse. Everyone on day-ahead rates (closed loop,
+80 % cap): dark spans 35 -> 53 of 107 within two weeks (block mean 51.7, 37 dark >= 90 % of hours = 17.6 % of
+emissions), no link > 80 %, hops 2.54 -> 3.15, 70 % of bytes pay more; centralized static sleeping (Hypnos-like,
+greedy, 80 %): 48 spans, 21.7 %. Dark share vs today's load Spearman -0.40.
+
+Margin (2026-11-08, `artifacts/paper/margin/`; own share = 1 - sum bills / sum shared emissions; DEV SWITCHlan 2025-03-22 ->
+2026-03-21, I2 2026-03-01 -> 07-18; SWITCHlan traffic Jul 11 -> Oct 28 2026 rebuilt from the S3 cache, matches the mirror to 3e-8):
+m = 6.0 % / 0.5 %; test own share -5.32 -> +1.00 % / +0.14 -> +0.64 %; 30-day error (every window) 3.91 -> 3.42 % / 0.53 -> 0.81 %,
+full calendar months 5.59 -> 1.70 % / 0.77 -> 0.92 %; SWITCHlan Jul-Oct own share -4.17 -> +2.08 %. Path choices unchanged under a
+uniform margin (checked: one pair 0/200 hours differ, closed loop identical dark spans in all 2,492 hours). I2 path rates over-bill:
+posted path rate x actual traffic = 108.7 % of emissions over the test block (own share -8.7 %, every 30-day window negative): the
+cap's flat add-on is set from forecast loads while capped/idle resources are billed at actual loads. Energy per byte (site, 12 months
+to block end): SWITCHlan 0.56 Wh/GB shared pool / 0.78 all equipment, I2 0.33 (0.58x / 0.42x, not "similar"). SWITCHlan 2025 mean
+factor 21.2 g/kWh energy-weighted (21.6 = CH zone alone). Controller: 48 spans asleep (21.0 %), 49 dark (21.7 %; + core1.dall5-core2.dall3,
+never used). Hosts: dark spans block mean 51.7, from day 15 on 53.2, >= 90 % of hours 37 (17.6 %).
+
+Paper appendix (2026-11-06, `recipes/paper/appendix.py`, `artifacts/paper/appendix/`). Day-ahead daily bill with the paper's
+grid forecast, every model: Switch 25.5-28.3 % (persistence 28.2, GBDT 26.4, Timestral 25.5: the grid dominates), I2 12.5
+(persistence) / 6.0 (GBDT) / 3.9 (Chronos-2) / 3.6 % (Timestral). Per-link training (GPU minutes, jobs sharing one GPU):
+Switch DLinear 22, PatchTST 64, GRU 65, TCN 82; I2 17 / 46 / 23 / 61; Switch total 4-10. Horizon (median link hourly WAPE,
+Timestral): I2 1 h 9.4, 8 h 14.5, day 16.2, week 20.6; Switch 8 h 24.7, day 28.1, week 32.5. Decision quality (I2, one pair
+alone): 93 % of bytes make the same choice on day-ahead as on settled rates, 83 % of the oracle reduction captured; worse
+pairs 20 % (12 % of bytes), median loss 5.8 %. Cap k = 1 / 2 / 3 / none: cap 1.3x / 5.6x / 24x / -, path-rate error 14 / 21 / 36
+% / 6e7 %, pairs >= 20 % 26 / 33 / 33 / 24 %, dark spans (closed loop, block mean) 46.6 / 51.7 / 53.3 / 54.0.
+Four networks on the hourly totals (`recipes/paper/total_neural.py`, 4 w hourly input, mean scaling, L1, 3 seeds): I2
+DLinear 6.2 / GRU 5.7 / TCN 5.3 / PatchTST 5.4 % hourly WAPE (GBDT 7.1, Chronos-2 4.8, Timestral 4.3), daily bill 4.4 / 4.2 /
+4.1 / 3.9 %; Switch hourly check 12.7 / 12.4 / 11.7 / 12.9 % (5-min ladder 12.9 / 11.7 / 11.3 / 12.5). Parameters: per-link
+DLinear 8.1 M, PatchTST 13.6 M, GRU 1.8 / 0.4 M, TCN 1.7 / 0.4 M (Switch with calendar / I2); hourly totals 0.03-2.3 M;
+Chronos-2 120 M, Timestral 209 M. Switch grid bias by month over DEV + TEST + Jul-Oct 2026 (`appendix.py`, 19 months):
+Timestral median low in 17 of 19 (to -16 %), corrected median within +-4 % in 18 of 19, period bias +1.1 / +4.3 / +2.5 %;
+rule -0.5 / +3.9 / -0.5 %; 50/50 blend +0.3 / +4.1 / +1.0 %, 30-day 1.4 / 3.0 / 1.5 %.
+Accuracy vs cost (`recipes/paper/tradeoff.py`, RTX PRO 4500, one day of forecasts): totals, zero-shot by context 1 / 2 / 4 /
+12 / 24 / 48 w: Timestral Switch 14.4 / 12.5 / 11.2 / 10.6 / 10.6 / 10.6 %, I2 7.5 / 5.1 / 4.5 / 4.5 / 4.3 / 4.3 %; Chronos-2 12.9 /
+11.4 / 11.1 / 10.7 / 10.7 / 10.7 and 7.6 / 5.7 / 5.0 / 4.9 / 4.8 / 4.8 %; TimesFM-2.5 13.1 ... 10.8 and 8.4 ... 4.9-5.0 %: with 1 week
+every pretrained model is worse than the trained ones. Time per day: totals 10-30 ms (Chronos-2, Timestral), 65-410 ms
+(TimesFM); all links Timestral 24 w 3.3 s (Switch, 534) / 0.70 s (I2, 113), 2 w 0.53 / 0.12 s; trained nets < 1-170 ms
+(+ training). Pareto: per link Timestral >= 2 w is the frontier below the best trained (32.5 / 18.4 %); totals: GBDT ties
+on Switch (10.7 vs 10.6), pretrained lead on I2 (4.3 vs 5.3 %). Learning curve (I2, data_size_runs): 6 months -> 5 years
+of history moves 4-w PatchTST 18.7 -> 18.4 %, 24-w 22.0 -> 19.0 %; + doors 18.4 / 18.7; best trained ~18 %; Timestral
+16.2, fine-tuned on 5 years 16.1. On the last 13 training weeks: trained 24 w 17.8, 4 w 18.4, Timestral (unseen) 16.6 %.
 
 Abilene (`artifacts/abilene`): 19 weeks, 3.2 Gbit/s; 44 kW at the sites, 611 g/kWh, flat
 rate 18.4 g/GB; per-link median ratio vs persistence 0.555 at 8 h (PatchTST), 0.677 at a
@@ -376,6 +595,65 @@ Design decisions worth keeping:
     --tables-dir dense_fm/tables_<x>`. A `meta.json` copied from `dense/` still lists the rolling
     logs (rewrite its `modes`, or let `gr-dense predict` rewrite it). Timestral at 5-minute input
     with 32k steps of context costs ~60 ms per forecast (209M); hourly input is better and cheaper.
+35. **Compare models on equal information.** The ladder (1 week of input) vs Timestral (24 weeks)
+    read as "trained models are weak"; Timestral with 1 week is no better than the ladder, and a
+    trained model with 1 week beats it. Before ranking models, match context length and resolution
+    (`recipes/ladder_diagnosis/timestral_ctx.py` runs Timestral at any context).
+36. **5-minute log-space targets on small, bursty links.** On Switch LAN 12.5 % of the log 5-minute
+    variance is within-hour (I2 6.6 %); a day-ahead model trained on 5-minute values in log1p is
+    biased low (the hourly mean is above the within-hour geometric mean) and 2.6 points worse than
+    the same model on hourly means (~2.0 points from the 5-minute input, ~0.7 from the 5-minute
+    targets). The bias is a symptom: an oracle per-link rescale to zero bias
+    raises WAPE (absolute error wants the median). For day/week horizons, forecast hourly means.
+37. **Long context needs history before the panel.** With only the panel window (~30 weeks before
+    the training end), most 24-week training windows are padding and long-context models over-fit
+    (I2 linear 24 w 26.1 vs 20.5 at 12 w). The extra history exists: I2 `data/links_hourly.csv.gz`
+    from 2024-11 (u->v + v->u = the panel link, +-0.3 %), Switch hourly 2024-01 -> 2025-07 from the
+    frozen S3 cache (`recipes/ladder_diagnosis/switch_history.py`).
+38. **Fine-tuning Timestral with a context-mean-scaled pinball loss** explodes on windows whose
+    context is ~0 but whose target is not (a link waking up): loss 0.08 -> 1,742 in three epochs.
+    Cap the per-window loss and floor the scale (1 Mbit/s); `ft_timestral.py` does.
+39. **2021 tunnel paths change within the month.** 1,061 of the 1,977 traceable tunnels cross more
+    than one circuit set over March 2021 (re-routes), so a walk over the union of a tunnel's circuits
+    is no path, and `tunnels.py`'s walk iterates a Python `set` (hash-seeded): its own-path numbers
+    (`own_paths_*`) change from run to run (the bills there use ECMP and are not affected). Trace each
+    tunnel-hour from that hour's circuits, sorted (`green_paths/setup_2021.py`): 72.6 % of bytes,
+    link-load WAPE 20 %.
+40. **EIA-930 files before mid-2024 use coarser fuel stems** ("Solar", "Wind", "Hydropower and
+    Pumped Storage"); `us_grid.load_balance` crashed on them. It now reads both (exact match, newer
+    files bit-identical).
+41. **Recent-mean scaling explodes with long context.** Dividing a window by the mean of its last
+    week leaves old weeks unbounded: on a link that is idle now and was busy months ago they reach
+    1e5-1e7 (p99 of a window's largest input on I2: 46 at 1 week, 739,439 at 24 weeks). A model
+    without normalisation layers diverges (profile MLP, loss in the thousands, I2 27.5 % at 24 w).
+    Bound the scaled input (`long5m.py --squash 10`: identity to 10, then 10 + log1p): 18.6 %.
+42. **Validation can favour long context that the test does not.** A 24-week model fits the training
+    months better than a 4-week one (I2 -0.64) and ties or beats it on validation, then loses on the
+    test block (+0.30). Score the last training weeks next to validation and test
+    (`uses_context.py`) before trusting a long-context gain; compare with Timestral's scores on the
+    same periods (period difficulty).
+43. **Context ablations on pretrained models: blank, do not tile.** Replacing old weeks by copies of
+    recent ones makes Timestral repeat the exact pattern (error 37-55 % vs 16-28 %); blanking them gives
+    its shorter-context score. TSDS node names are FQDNs (`core1.chic.net.internet2.edu`); a short
+    name returns nothing, without an error.
+44. **Electricity Maps' forecast cannot be backtested.** `/v3/carbon-intensity/forecast` returns the
+    forecast made now (25 hourly points); a past `datetime` is ignored and the current one comes back.
+    Log it going forward (`recipes/carbon/em_forecast.py log`, hourly; the last fetch before 00:00 UTC
+    is the day-ahead forecast of the next day) and score it later (`... score`). Use
+    `emissionFactorType=direct` like the history. First log 2026-11-06.
+45. **A mu + k sigma cap on usage rates is set by the outliers it should cut.** Per-resource log rates are not
+    normal (I2 skew 3.2): nearly idle resources sit at 1e5-1e6x the flat rate and inflate sigma (cap 108x at 2 sigma,
+    1,500x at 3). Use median + k x 1.4826 MAD (`path_rate.idle_cap`). On a network of many thin resources (Switch:
+    107 of 388 under 1 Mbit/s) even the robust cap is loose (9,000x): the spread is real, not outliers.
+46. **The Overleaf checkout is the owner's paper repo.** `6aea077f0929c9a3a1ac5660/` is a git clone of Overleaf,
+    gitignored here; edit only what the owner asks for, never commit or push there.
+
+47. **Overlapping windows are not billing periods.** The paper's "per week / per month" errors are WAPE over every 7- / 30-day
+    window (one-day step); edge days count in fewer windows, so the result can fall below the period bias: SWITCHlan test 3.9 %
+    "monthly" vs +5.3 % bias (the over-billed, high-emission late March is under-weighted); non-overlapping windows 5.8 %, full
+    calendar months 5.6 % (`factcheck.py` `window_definitions`). State which definition a number uses.
+48. **Matplotlib's style forces a tight bbox.** `paper.mplstyle` sets `savefig.bbox: tight`; `bbox_inches=None` still means tight. For
+    an exact size use `plt.rc_context({"savefig.bbox": "standard"})` (as `figures.fig_power_traffic`).
 
 ## 9. Conventions for changes
 
@@ -404,7 +682,16 @@ Design decisions worth keeping:
 - **Graph WaveNet at year scale** — blocked on the 6 GB laptop, feasible on 46 GB.
 - **Per-link fine-tuning** for the ~11 % of links the global model loses on
   (`--online` machinery exists; compute-bound).
-- **Foundation models** (TimesFM, Chronos) zero-shot on the same origins.
+- **Foundation models** (TimesFM, Chronos) zero-shot on the same origins. Timestral done
+  (2026-11-03/04); the ladder diagnosis says: per-link day/week forecasts should use it, or a
+  trained model rebuilt on hourly means with long context and all history (Section 6).
+- **Ladder rebuild** (if a trained model is kept): hourly targets for day/week, mean scaling +
+  L1/pinball, extended history, profile features; port from `recipes/ladder_diagnosis/hourly_train.py`
+  into `prediction/` behind flags (default = old behaviour). Not done: LoRA fine-tuning of
+  Timestral, Switch fine-tuning, calendar covariates per link. At 5 minutes use 4 weeks of context
+  (multi-resolution transformer in `long5m.py`, bounded inputs); 24 weeks gave nothing more, even
+  with 5 years of I2 history and door series (why: `docs/reports/why-long-context.html`). Fine-tuning
+  Timestral on I2 (5 years) and Switch: done, no gain.
 - **Grid-factor forecast**: the bill's main error (28 % of 31 %). Log Electricity Maps'
   forecast endpoint daily and score it against `carbon.grid.RULES`; consider weather and
   imports.

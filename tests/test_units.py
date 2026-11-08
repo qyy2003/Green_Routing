@@ -86,3 +86,30 @@ def test_artifacts_dir_follows_the_environment(tmp_path):
         env={"GR_ARTIFACTS_DIR": str(tmp_path), "PATH": "/usr/bin:/bin"},
         capture_output=True, text=True, check=True)
     assert out.stdout.strip() == str(tmp_path.resolve())
+
+
+def test_capped_rates_add_up_and_respect_the_cap():
+    from green_routing.carbon import path_rate
+    rng = np.random.default_rng(0)
+    E = rng.uniform(1, 10, 30)
+    U = rng.uniform(0, 100, 30)
+    U[:3], U[3] = 0.0, 1e-6                                   # idle and nearly idle resources
+    per, add = path_rate.capped_rates(E, U, 400.0, 3.0)
+    assert np.isclose((per * U).sum() + add * 400.0, E.sum())  # the bills still add up
+    assert per.max() <= 3.0 * E.sum() / U.sum() * (1 + 1e-12)
+    assert add > 0
+
+
+def test_idle_cap_is_causal_and_robust():
+    from green_routing.carbon import path_rate
+    rng = np.random.default_rng(1)
+    H = pd.date_range("2026-01-01", periods=24 * 40, freq="h", tz="UTC")
+    E = rng.uniform(1, 2, (len(H), 20))
+    U = np.exp(rng.normal(3, 0.5, (len(H), 20)))
+    m = path_rate.idle_cap(E, U, H)
+    U2 = U.copy()
+    U2[24 * 35:, :5] = 1e-2                                   # links go idle on day 35
+    m2 = path_rate.idle_cap(E, U2, H)
+    assert np.allclose(m[: 24 * 36], m2[: 24 * 36])           # the cap of day d uses days before d only
+    # a robust statistic: a few idle links barely move it, a classic mu + 2 sigma would jump
+    assert m2[-1] < 1.5 * m[-1]

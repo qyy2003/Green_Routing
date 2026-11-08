@@ -1,0 +1,7 @@
+# preprocessing ablation in the same transformer, i2: ladder (log1p+RevIN+Huber) and Timestral's scaler (causal per-patch mean/std + asinh, L1 = median); 'mine' = L5s_* runs
+--ds i2 --ctx 2016 --model seg --seg full --lr 5e-4 --norm log_revin --loss huber --tag L5n_ladder_full_1w
+--ds i2 --ctx 2016 --model seg --seg full --lr 5e-4 --norm ts --loss l1 --tag L5n_ts_full_1w
+--ds i2 --ctx 8064 --model seg --seg multires --lr 5e-4 --norm log_revin --loss huber --tag L5n_ladder_multires_4w
+--ds i2 --ctx 8064 --model seg --seg multires --lr 5e-4 --norm ts --loss l1 --tag L5n_ts_multires_4w
+--ds i2 --ctx 48384 --model seg --seg multires --lr 5e-4 --norm log_revin --loss huber --tag L5n_ladder_multires_24w
+--ds i2 --ctx 48384 --model seg --seg multires --lr 5e-4 --norm ts --loss l1 --tag L5n_ts_multires_24w

@@ -1,0 +1,1 @@
+--ds i2 --ctx 48384 --model seg --seg full --lr 5e-4 --squash 10 --epochs 20 --patience 5 --tag L5s_seg_full_24w_ep20

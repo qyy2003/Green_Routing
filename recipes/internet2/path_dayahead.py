@@ -49,11 +49,13 @@ def bills_at(A_res, E, X_rate, X_bill, n, cap=None):
     return out
 
 
-def main(model: str | None = None, total: str = "Chronos-2, no training", dense: Path = DENSE,
-         totals_csv: Path | None = None, out: Path | None = C / "path_dayahead.json") -> dict:
-    """``model``: the link forecast (a block log in ``dense``; default the best by hourly WAPE);
+def forecast_inputs(model: str | None = None, total: str = "Chronos-2, no training", dense: Path = DENSE,
+                    totals_csv: Path | None = None) -> dict:
+    """The test block's inputs (test_setup.npz) and the day-ahead forecast of its traffic matrix.
+    ``model``: the link forecast (a block log in ``dense``; default the best by hourly WAPE);
     ``total``: the day-ahead total that splits into router door totals (a column of
-    ``totals_csv``, default carbon/dayahead_hourly.csv). ``out`` None: return the dict only."""
+    ``totals_csv``, default carbon/dayahead_hourly.csv). Returns a dict (T, n, A_res, A_link, In,
+    Eg, Y, X_em, E, E_da, Y_fc, X_fc, ok, model)."""
     DENSE = Path(dense)
     S = np.load(C / "test_setup.npz", allow_pickle=True)
     A_res, A_link = sp.load_npz(C / "A_res.npz").tocsr(), sp.load_npz(C / "A_link.npz").tocsr()
@@ -108,6 +110,17 @@ def main(model: str | None = None, total: str = "Chronos-2, no training", dense:
     X_fc = np.array([tomography.em(A_link, Y_fc[h], In_fc[h], Eg_fc[h]) if ok[h] else X_em[h]
                      for h in range(len(T))])
     X_fc[X_fc < TINY] = 0.0
+    return dict(model=model, T=T, n=n, A_res=A_res, A_link=A_link, In=In, Eg=Eg, Y=Y, X_em=X_em, E=E,
+                E_da=E_da, Y_fc=Y_fc, X_fc=X_fc, ok=ok)
+
+
+def main(model: str | None = None, total: str = "Chronos-2, no training", dense: Path = DENSE,
+         totals_csv: Path | None = None, out: Path | None = C / "path_dayahead.json") -> dict:
+    """Scores (see the module docstring) of ``forecast_inputs(model, total, dense, totals_csv)``.
+    ``out`` None: return the dict only."""
+    F = forecast_inputs(model, total, dense, totals_csv)
+    model, n, A_res, Y, X_em, E, E_da, Y_fc, X_fc, ok = (
+        F[k] for k in ("model", "n", "A_res", "Y", "X_em", "E", "E_da", "Y_fc", "X_fc", "ok"))
     Xa = X_em                                                         # the actual matrix (counters)
     ok &= np.isfinite(E_da).all(axis=1)
     E_da = np.nan_to_num(E_da)
