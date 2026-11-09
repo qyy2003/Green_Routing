@@ -26,9 +26,11 @@ C, NET = ARTIFACTS_DIR / "carbon", ARTIFACTS_DIR / "network"
 I2D, I2C = ARTIFACTS_DIR / "internet2" / "data", ARTIFACTS_DIR / "internet2" / "carbon"
 GB_PER_MBPS_H = 3600 / 8 / 1000
 
-WINDOWS = {"switch_year_to_block_end": ("2025-07-11", "2026-07-10"), "switch_test": ("2026-03-22", "2026-07-10"),
-           "calendar_2025": ("2025-01-01", "2025-12-31"), "overlap": ("2025-11-15", "2026-07-10"),
-           "i2_year_to_block_end": ("2025-11-15", "2026-10-31"), "i2_test": ("2026-07-19", "2026-10-31")}
+sys.path.insert(0, str(HERE))
+import periods as PER                                                 # noqa: E402
+
+# round 2: the same windows for both networks (periods.py); calendar 2025 for SWITCHlan's inventory
+WINDOWS = {"annual": PER.ANNUAL, "test": PER.TEST, "calendar_2025": ("2025-01-01", "2025-12-31")}
 
 
 def hours(a, b):
@@ -75,12 +77,14 @@ def i2_site_power() -> pd.Series:
     import carbon as IC
     from green_routing.dataset import internet2 as i2
     links, LH, D, DI, DO, W = IC.load()
-    H = pd.date_range(IC.YEAR0, IC.YEAR1, freq="h", inclusive="left", tz="UTC")
+    sys.path.insert(0, str(HERE))
+    import periods as PER
+    H = pd.date_range(*PER.I2_EMISSIONS, freq="h", inclusive="left", tz="UTC")   # i2_carbon_common.py's window
     core = sorted(set(links.u) | set(links.v) | set(D.node))
     pop_of = {r: i2.pop_of(r) for r in core}
     core_pops = sorted(set(pop_of.values()))
     W = W[W.dc & W["pop"].notna()]
-    per_sys = W.pivot_table(index="time", columns="node", values="watts", aggfunc="sum").reindex(H)
+    per_sys = W.groupby(["time", "node"]).watts.sum(min_count=1).unstack().reindex(H)   # as carbon.py
     med = per_sys.median()
     live = med[med > 0].index
     per_sys = per_sys[live].fillna(per_sys[live].median())
@@ -269,7 +273,8 @@ def cap_and_rates() -> dict:
     out = {"robust_cap_over_flat_median": float(np.median(robust)) * conv, "classic_cap_over_flat_median": float(np.median(classic)) * conv,
            "log_rate_skew_median": float(np.median(sk)),
            "rate_over_flat_load_below_0.01pct_p50_p90": np.quantile(ratio[idle], [.5, .9]).tolist()}
-    for m in (0.0, 0.005):
+    m_i2 = float(json.load(open(PER.ROOT / "flat" / "flat.json"))["i2"]["m"])          # Internet2's flat-rate margin
+    for m in (0.0, m_i2):
         R2 = dict(R)
         R2["per_post"], R2["add_post"], R2["E_da"] = R["per_post"] * (1 - m), R["add_post"] * (1 - m), R["E_da"] * (1 - m)
         pe = IR.path_rate_error(R2, A_res)
@@ -310,18 +315,19 @@ def timing() -> dict:
 
 def main():
     out = {}
-    for k in ("switch_year_to_block_end", "switch_test", "calendar_2025", "overlap"):
+    for k in ("annual", "test", "calendar_2025"):
         out[f"switch_{k}"] = switch_window(*WINDOWS[k])
     kw = i2_site_power()
-    for k in ("i2_year_to_block_end", "i2_test", "overlap"):
+    for k in ("annual", "test"):
         out[f"i2_{k}"] = i2_window(*WINDOWS[k], kw)
     out["within_day"] = within_day()
     out["top_customers"] = top_customers()
     out["path_bill_sum_i2"] = path_bill_sum()
-    out["window_definitions"] = window_definitions()
-    out["steering"] = steering_stats()
-    out["cap_and_rates"] = cap_and_rates()
-    out["timing"] = timing()
+    for name, f in (("steering", steering_stats), ("cap_and_rates", cap_and_rates), ("timing", timing)):
+        try:
+            out[name] = f()
+        except FileNotFoundError as e:
+            print(f"[skip] {name}: {e}", flush=True)
     json.dump(out, open(P / "factcheck.json", "w"), indent=1)
     print(json.dumps(out, indent=1))
 

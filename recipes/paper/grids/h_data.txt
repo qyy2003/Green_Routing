@@ -1,0 +1,37 @@
+# round 2: as recipes/ladder_diagnosis/grids/h_data.txt (training months counted back from periods.TRAIN_END)
+# I2 data-size learning curves (hourly, history from 2021 = ext21): training targets from the last N months only; one budget (100k windows x <= 12 epochs)
+--ds i2 --model profmlp --ctx 672 --norm mean --loss l1 --hist ext21 --train-months 6 --lr 1e-3 --samples 100000 --epochs 12 --patience 4 --seed 0 --tag N_profmlp_c672_m6_s0
+--ds i2 --model profmlp --ctx 4032 --norm mean --loss l1 --hist ext21 --train-months 6 --lr 1e-3 --samples 100000 --epochs 12 --patience 4 --seed 0 --tag N_profmlp_c4032_m6_s0
+--ds i2 --model patchtst --ctx 672 --norm mean --loss l1 --hist ext21 --train-months 6 --lr 3e-4 --samples 100000 --epochs 12 --patience 4 --seed 0 --tag N_patchtst_c672_m6_s0
+--ds i2 --model patchtst --ctx 4032 --norm mean --loss l1 --hist ext21 --train-months 6 --lr 3e-4 --samples 100000 --epochs 12 --patience 4 --seed 0 --tag N_patchtst_c4032_m6_s0
+--ds i2 --model profmlp --ctx 672 --norm mean --loss l1 --hist ext21 --train-months 12 --lr 1e-3 --samples 100000 --epochs 12 --patience 4 --seed 0 --tag N_profmlp_c672_m12_s0
+--ds i2 --model profmlp --ctx 4032 --norm mean --loss l1 --hist ext21 --train-months 12 --lr 1e-3 --samples 100000 --epochs 12 --patience 4 --seed 0 --tag N_profmlp_c4032_m12_s0
+--ds i2 --model patchtst --ctx 672 --norm mean --loss l1 --hist ext21 --train-months 12 --lr 3e-4 --samples 100000 --epochs 12 --patience 4 --seed 0 --tag N_patchtst_c672_m12_s0
+--ds i2 --model patchtst --ctx 4032 --norm mean --loss l1 --hist ext21 --train-months 12 --lr 3e-4 --samples 100000 --epochs 12 --patience 4 --seed 0 --tag N_patchtst_c4032_m12_s0
+--ds i2 --model profmlp --ctx 672 --norm mean --loss l1 --hist ext21 --train-months 24 --lr 1e-3 --samples 100000 --epochs 12 --patience 4 --seed 0 --tag N_profmlp_c672_m24_s0
+--ds i2 --model profmlp --ctx 4032 --norm mean --loss l1 --hist ext21 --train-months 24 --lr 1e-3 --samples 100000 --epochs 12 --patience 4 --seed 0 --tag N_profmlp_c4032_m24_s0
+--ds i2 --model patchtst --ctx 672 --norm mean --loss l1 --hist ext21 --train-months 24 --lr 3e-4 --samples 100000 --epochs 12 --patience 4 --seed 0 --tag N_patchtst_c672_m24_s0
+--ds i2 --model patchtst --ctx 4032 --norm mean --loss l1 --hist ext21 --train-months 24 --lr 3e-4 --samples 100000 --epochs 12 --patience 4 --seed 0 --tag N_patchtst_c4032_m24_s0
+--ds i2 --model profmlp --ctx 672 --norm mean --loss l1 --hist ext21 --train-months 61 --lr 1e-3 --samples 100000 --epochs 12 --patience 4 --seed 0 --tag N_profmlp_c672_m61_s0
+--ds i2 --model profmlp --ctx 4032 --norm mean --loss l1 --hist ext21 --train-months 61 --lr 1e-3 --samples 100000 --epochs 12 --patience 4 --seed 0 --tag N_profmlp_c4032_m61_s0
+--ds i2 --model patchtst --ctx 672 --norm mean --loss l1 --hist ext21 --train-months 61 --lr 3e-4 --samples 100000 --epochs 12 --patience 4 --seed 0 --tag N_patchtst_c672_m61_s0
+--ds i2 --model patchtst --ctx 4032 --norm mean --loss l1 --hist ext21 --train-months 61 --lr 3e-4 --samples 100000 --epochs 12 --patience 4 --seed 0 --tag N_patchtst_c4032_m61_s0
+--ds i2 --model profmlp --ctx 672 --norm mean --loss l1 --hist ext21 --train-months 6 --lr 1e-3 --samples 100000 --epochs 12 --patience 4 --seed 1 --tag N_profmlp_c672_m6_s1
+--ds i2 --model profmlp --ctx 4032 --norm mean --loss l1 --hist ext21 --train-months 6 --lr 1e-3 --samples 100000 --epochs 12 --patience 4 --seed 1 --tag N_profmlp_c4032_m6_s1
+--ds i2 --model patchtst --ctx 672 --norm mean --loss l1 --hist ext21 --train-months 6 --lr 3e-4 --samples 100000 --epochs 12 --patience 4 --seed 1 --tag N_patchtst_c672_m6_s1
+--ds i2 --model patchtst --ctx 4032 --norm mean --loss l1 --hist ext21 --train-months 6 --lr 3e-4 --samples 100000 --epochs 12 --patience 4 --seed 1 --tag N_patchtst_c4032_m6_s1
+--ds i2 --model profmlp --ctx 672 --norm mean --loss l1 --hist ext21 --train-months 12 --lr 1e-3 --samples 100000 --epochs 12 --patience 4 --seed 1 --tag N_profmlp_c672_m12_s1
+--ds i2 --model profmlp --ctx 4032 --norm mean --loss l1 --hist ext21 --train-months 12 --lr 1e-3 --samples 100000 --epochs 12 --patience 4 --seed 1 --tag N_profmlp_c4032_m12_s1
+--ds i2 --model patchtst --ctx 672 --norm mean --loss l1 --hist ext21 --train-months 12 --lr 3e-4 --samples 100000 --epochs 12 --patience 4 --seed 1 --tag N_patchtst_c672_m12_s1
+--ds i2 --model patchtst --ctx 4032 --norm mean --loss l1 --hist ext21 --train-months 12 --lr 3e-4 --samples 100000 --epochs 12 --patience 4 --seed 1 --tag N_patchtst_c4032_m12_s1
+--ds i2 --model profmlp --ctx 672 --norm mean --loss l1 --hist ext21 --train-months 24 --lr 1e-3 --samples 100000 --epochs 12 --patience 4 --seed 1 --tag N_profmlp_c672_m24_s1
+--ds i2 --model profmlp --ctx 4032 --norm mean --loss l1 --hist ext21 --train-months 24 --lr 1e-3 --samples 100000 --epochs 12 --patience 4 --seed 1 --tag N_profmlp_c4032_m24_s1
+--ds i2 --model patchtst --ctx 672 --norm mean --loss l1 --hist ext21 --train-months 24 --lr 3e-4 --samples 100000 --epochs 12 --patience 4 --seed 1 --tag N_patchtst_c672_m24_s1
+--ds i2 --model patchtst --ctx 4032 --norm mean --loss l1 --hist ext21 --train-months 24 --lr 3e-4 --samples 100000 --epochs 12 --patience 4 --seed 1 --tag N_patchtst_c4032_m24_s1
+--ds i2 --model profmlp --ctx 672 --norm mean --loss l1 --hist ext21 --train-months 61 --lr 1e-3 --samples 100000 --epochs 12 --patience 4 --seed 1 --tag N_profmlp_c672_m61_s1
+--ds i2 --model profmlp --ctx 4032 --norm mean --loss l1 --hist ext21 --train-months 61 --lr 1e-3 --samples 100000 --epochs 12 --patience 4 --seed 1 --tag N_profmlp_c4032_m61_s1
+--ds i2 --model patchtst --ctx 672 --norm mean --loss l1 --hist ext21 --train-months 61 --lr 3e-4 --samples 100000 --epochs 12 --patience 4 --seed 1 --tag N_patchtst_c672_m61_s1
+--ds i2 --model patchtst --ctx 4032 --norm mean --loss l1 --hist ext21 --train-months 61 --lr 3e-4 --samples 100000 --epochs 12 --patience 4 --seed 1 --tag N_patchtst_c4032_m61_s1
+--ds i2 --model patchtst --ctx 168 --norm mean --loss l1 --hist ext21 --train-months 6 --lr 3e-4 --samples 100000 --epochs 12 --patience 4 --seed 0 --tag N_patchtst_c168_m6_s0
+--ds i2 --model patchtst --ctx 168 --norm mean --loss l1 --hist ext21 --train-months 24 --lr 3e-4 --samples 100000 --epochs 12 --patience 4 --seed 0 --tag N_patchtst_c168_m24_s0
+--ds i2 --model patchtst --ctx 168 --norm mean --loss l1 --hist ext21 --train-months 61 --lr 3e-4 --samples 100000 --epochs 12 --patience 4 --seed 0 --tag N_patchtst_c168_m61_s0

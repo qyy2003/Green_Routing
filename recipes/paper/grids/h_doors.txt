@@ -1,0 +1,10 @@
+# round 2: as recipes/ladder_diagnosis/grids/h_doors.txt (training months counted back from periods.TRAIN_END)
+# I2 with 6x more series: the 113 links + 567 door directions as training-only series (hourly, history from 2021); compare with N_*_m61 (links only)
+--ds i2 --model profmlp --ctx 672 --norm mean --loss l1 --hist ext21 --extra i2doors --lr 1e-3 --samples 100000 --epochs 12 --patience 4 --seed 0 --tag D2_profmlp_c672_doors_s0
+--ds i2 --model profmlp --ctx 4032 --norm mean --loss l1 --hist ext21 --extra i2doors --lr 1e-3 --samples 100000 --epochs 12 --patience 4 --seed 0 --tag D2_profmlp_c4032_doors_s0
+--ds i2 --model patchtst --ctx 672 --norm mean --loss l1 --hist ext21 --extra i2doors --lr 3e-4 --samples 100000 --epochs 12 --patience 4 --seed 0 --tag D2_patchtst_c672_doors_s0
+--ds i2 --model patchtst --ctx 4032 --norm mean --loss l1 --hist ext21 --extra i2doors --lr 3e-4 --samples 100000 --epochs 12 --patience 4 --seed 0 --tag D2_patchtst_c4032_doors_s0
+--ds i2 --model profmlp --ctx 672 --norm mean --loss l1 --hist ext21 --extra i2doors --lr 1e-3 --samples 100000 --epochs 12 --patience 4 --seed 1 --tag D2_profmlp_c672_doors_s1
+--ds i2 --model profmlp --ctx 4032 --norm mean --loss l1 --hist ext21 --extra i2doors --lr 1e-3 --samples 100000 --epochs 12 --patience 4 --seed 1 --tag D2_profmlp_c4032_doors_s1
+--ds i2 --model patchtst --ctx 672 --norm mean --loss l1 --hist ext21 --extra i2doors --lr 3e-4 --samples 100000 --epochs 12 --patience 4 --seed 1 --tag D2_patchtst_c672_doors_s1
+--ds i2 --model patchtst --ctx 4032 --norm mean --loss l1 --hist ext21 --extra i2doors --lr 3e-4 --samples 100000 --epochs 12 --patience 4 --seed 1 --tag D2_patchtst_c4032_doors_s1

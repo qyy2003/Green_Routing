@@ -1,19 +1,24 @@
-"""The appendix's forecasting and steering details (paper appendix E-I), from results of this project:
+"""The appendix's forecasting and steering details (paper appendix E-L), on the common periods of periods.py
+(round 2, 2026-11-08): the same test block, development year and training window for both networks.
 
-- models:   every forecaster on the network total and per link, both networks: hourly traffic error,
-            daily bill error with the paper's grid forecast, training cost (GPU minutes from the
-            training logs); per link from the dense block logs (day ahead, median link hourly WAPE).
-- time:     context length (Timestral 1-24 weeks vs trained 5-minute multi-resolution models,
-            recipes/ladder_diagnosis), input resolution, forecast horizon (1 h ... week).
+- models:   every forecaster on the network total and per link, both networks: hourly traffic error, daily bill
+            error with the paper's grid forecast, training cost (GPU minutes from the training logs); per link
+            from the block logs of ladder_common.sh and timestral_links.py (day ahead, median link hourly WAPE).
+- time:     context length (Timestral 1-24 weeks, the hourly architectures and the 5-minute transformer of
+            appendix_runs.sh), input resolution, forecast horizon (1 h ... week).
 - levels:   Level 1 (one rate) vs Level 2 (per path): error of traffic, rate, bills.
-- grid:     the grid-forecast candidates on SWITCHlan (development year, test block).
+- grid:     the grid-forecast candidates on SWITCHlan (development year, test block; flat_common.py grid).
 - decision: does the day-ahead choice equal the choice made on the settled rates (steering.py).
 - cap:      the cap's k (1, 2, 3, none): level, share capped, rate error, steering (steering.py --k).
-- bias:     where forecast bias sits (traffic / grid, network / link, bill), SWITCHlan's grid forecasts by
-            month over the development year, the test block and Jul-Oct 2026 (Timestral re-run, GPU).
+- bias:     where forecast bias sits (traffic / grid, network / link, bill), SWITCHlan's grid forecasts by month
+            over the development year, the test block and the later period.
 - params:   parameters of every trained network (checkpoints).
 
-usage: python appendix.py            (after the rest of recipes/paper and steering.py --k=1/3/none)
+Errors over periods are on calendar days, 7-day blocks from the period start and calendar months (no overlapping
+windows). Run with the overlay root, after flat_common.py, i2_rates.py, steering.py (k = 2, 1, 3, none),
+total_neural.py, ladder_common.sh (links, total) and appendix_runs.sh:
+
+usage: GR_ARTIFACTS_DIR=$PAPER_COMMON/root python appendix.py
 writes $GR_ARTIFACTS_DIR/paper/appendix/*.csv, numbers.json and the PDFs into
 <repo>/6aea077f0929c9a3a1ac5660/figure_appendix (or the directory given as the first argument).
 """
@@ -21,7 +26,6 @@ from __future__ import annotations
 
 import json
 import re
-import shutil
 import sys
 from pathlib import Path
 
@@ -31,21 +35,33 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt            # noqa: E402
 import numpy as np                         # noqa: E402
 import pandas as pd                        # noqa: E402
-from matplotlib.lines import Line2D        # noqa: E402
 
 from green_routing.paths import ARTIFACTS_DIR, REPO_ROOT   # noqa: E402
 
 HERE = Path(__file__).resolve().parent
-A = ARTIFACTS_DIR
+sys.path.insert(0, str(HERE))
+import periods as PER                      # noqa: E402
+
+A = ARTIFACTS_DIR                          # the overlay root
 P = A / "paper"
 OUT = P / "appendix"
-plt.style.use(HERE / "paper.mplstyle")
-if shutil.which("latex"):
-    plt.rcParams["text.usetex"] = True
+PC = PER.ROOT
+plt.style.use(HERE / "paper.mplstyle")     # matplotlib's own fonts, also where LaTeX is installed
 SW, I2 = "#348ABD", "#A60628"
-PCT = "\\%" if plt.rcParams["text.usetex"] else "%"
+PCT = "%"
 PNG = None
-DENSE = {"switch": A / "pred_year_sym" / "merged", "i2": A / "internet2" / "links" / "merged"}
+DENSE = {n: PC / "links" / n / "merged" for n in ("switch", "i2")}
+FM = {n: PC / "links" / n / "dense_fm" for n in ("switch", "i2")}
+LDC = A / "ladder_diagnosis"               # appendix_runs.sh's cache (overlay)
+# recipes/ladder_diagnosis/common.py's DS on the round-2 runs (as appendix_runs.sh sets them)
+import os                                  # noqa: E402
+for _n in ("i2", "switch"):
+    _p = sorted((PC / f"cache_{_n}").glob("panel_*.npz"))
+    os.environ.setdefault(f"GR_LD_RUN_{_n.upper()}", str(DENSE[_n]))
+    if _p:
+        os.environ.setdefault(f"GR_LD_PANEL_{_n.upper()}", str(_p[0]))
+    os.environ.setdefault(f"GR_LD_FM_{_n.upper()}", str(FM[_n]))
+sys.path.insert(0, str(HERE.parent / "ladder_diagnosis"))
 
 
 def save(fig, out: Path, name: str):
@@ -72,57 +88,76 @@ def train_minutes(log: Path) -> dict:
 
 def costs() -> pd.DataFrame:
     rows = []
-    for net, base in (("switch", A / "pred_year_sym"), ("i2", A / "internet2" / "links")):
+    for net in ("switch", "i2"):
         for part in ("part_dlinear_patchtst", "part_gru", "part_tcn"):
-            for model, d in train_minutes(base / part / "run.log").items():
+            for model, d in train_minutes(PC / "links" / net / part / "run.log").items():
                 rows.append(dict(network=net, target="links", model=model, **d))
-    for part in ("part_dlinear_patchtst", "part_gru", "part_tcn"):
-        for model, d in train_minutes(A / "carbon_rates" / "flat" / "logs" / f"{part}.out").items():
-            rows.append(dict(network="switch", target="total", model=model, **d))
+    for m in ("dlinear", "gru", "tcn", "patchtst"):
+        for s in (0, 1, 2):
+            for model, d in train_minutes(PC / "total" / f"{m}_uw1_s{s}" / "run.log").items():
+                rows.append(dict(network="switch", target=f"total (seed {s})", model=model, **d))
     return pd.DataFrame(rows)
 
 
 # --- the network total: every forecaster, traffic and bill ---------------------------------------
 SWITCH_MODELS = {"Persistence (same hour yesterday)": None, "Same hour last week": "rule: same hour last week",
                  "GBDT": "gbdt: current (168 h, basic calendar)",
-                 "DLinear": "5-min dlinear: symmetric loss, mean of 3 seeds", "GRU": "5-min gru: symmetric loss, mean of 3 seeds",
-                 "TCN": "5-min tcn: symmetric loss, mean of 3 seeds", "PatchTST": "5-min patchtst: symmetric loss, mean of 3 seeds",
-                 "Chronos-2": "chronos-2: 24 weeks", "TimesFM-2.5": "timesfm-2.5: 48 weeks",
-                 "Timestral": "timestral: 24 weeks + calendar covariates"}
+                 "Chronos-2": "chronos-2: 24 weeks", "TimesFM-2.5": "timesfm-2.5: 48 weeks"}
 I2_MODELS = {"Persistence (same hour yesterday)": ("d", "persistence (same hour yesterday)"),
              "Same hour last week": ("d", "same hour last week"), "GBDT": ("d", "GBDT"),
-             "Chronos-2": ("t", "Chronos-2, 24 weeks"), "Timestral": ("t", "Timestral-209M, 24 weeks")}
+             "Chronos-2": ("t", "Chronos-2, 24 weeks")}
 
 
 def bill_scores(T, Tf, E, Ef) -> dict:
+    """Traffic hourly WAPE and bias; bill error per calendar day, 7-day block and calendar month (test block)."""
     ok = T.notna() & Tf.notna() & E.notna() & Ef.notna()
     T, Tf, E, Ef = T[ok], Tf[ok], E[ok], Ef[ok]
     bill = Ef * T / Tf
-    day = T.index.floor("D")
-    bd, ed = bill.groupby(day).sum(), E.groupby(day).sum()
-    r30 = lambda s: s.rolling(30).sum().dropna()                                   # noqa: E731
+    g = bill.index.floor("D").tz_localize(None)
+    D = pd.DataFrame({"bill": bill.groupby(g).sum(), "E": E.groupby(g).sum(), "A": 0.0, "Af": 0.0})
+    import flat_common as FC
     return {"traffic_hourly_wape": float((Tf - T).abs().sum() / T.sum()),
             "traffic_bias": float(Tf.sum() / T.sum() - 1),
-            "bill_day_wape": float((bd - ed).abs().sum() / ed.sum()),
-            "bill_30day_wape": float((r30(bd) - r30(ed)).abs().sum() / r30(ed).sum()), "hours": int(ok.sum())}
+            "bill_day_wape": FC.wape(FC.period_sums(D, PER.TEST, "day")),
+            "bill_week_wape": FC.wape(FC.period_sums(D, PER.TEST, "week")),
+            "bill_month_wape": FC.wape(FC.period_sums(D, PER.TEST, "month")), "hours": int(ok.sum())}
+
+
+def ladder_total(m: str, uw: int = 1) -> pd.Series | None:
+    """The 5-minute ladder on SWITCHlan's total (ladder_common.sh total): mean of three seeds, hourly, one-way."""
+    sys.path.insert(0, str(HERE.parent / "flat_forecast"))
+    import run as R
+    seeds = [R.ladder_hourly(PC / "total" / f"{m}_uw{uw}_s{s}", m) for s in range(3)]
+    seeds = [x for x in seeds if x is not None]
+    return sum(seeds) / len(seeds) if len(seeds) == 3 else None
+
+
+def flat_hours(net: str) -> pd.DataFrame:
+    h = pd.read_csv(PC / "flat" / f"hourly_{net}.csv.gz", index_col=0, parse_dates=True)
+    return h[h.period == "TEST"]
 
 
 def total_models() -> pd.DataFrame:
     sys.path.insert(0, str(HERE.parent / "flat_forecast"))
     import run as R
-    hs = pd.read_csv(P / "hourly_switch.csv", index_col=0, parse_dates=True)
+    hs = flat_hours("switch")
     cache = R.cache()
     rows = []
-    for name, key in SWITCH_MODELS.items():
-        Tf = R.S.shift(24) if key is None else cache[key]
+    fc = {name: (R.S.shift(24) if key is None else cache[key]) for name, key in SWITCH_MODELS.items()}
+    for m, lab in (("dlinear", "DLinear"), ("gru", "GRU"), ("tcn", "TCN"), ("patchtst", "PatchTST")):
+        f = ladder_total(m)
+        if f is not None:
+            fc[lab] = f
+    fc["Timestral"] = hs.Tf
+    for name, Tf in fc.items():
         rows.append(dict(network="switch", model=name, **bill_scores(hs["T"], Tf.reindex(hs.index), hs.E, hs.Ef)))
-    hi = pd.read_csv(P / "hourly_i2.csv", index_col=0, parse_dates=True)
-    C = A / "internet2" / "carbon"
-    d = pd.read_csv(C / "dayahead_hourly.csv", index_col=0, parse_dates=True)
-    t = pd.read_csv(C / "timestral_total.csv", index_col=0, parse_dates=True)
+    hi = flat_hours("i2")
+    d = pd.read_csv(A / "internet2" / "carbon" / "dayahead_hourly.csv", index_col=0, parse_dates=True)
+    t = pd.read_csv(A / "internet2" / "carbon" / "timestral_total.csv", index_col=0, parse_dates=True)
     for name, (src, col) in I2_MODELS.items():
         Tf = (d if src == "d" else t)[col].reindex(hi.index)
         rows.append(dict(network="i2", model=name, **bill_scores(hi["T"], Tf, hi.E, hi.Ef)))
+    rows.append(dict(network="i2", model="Timestral", **bill_scores(hi["T"], hi.Tf, hi.E, hi.Ef)))
     for net, h in (("i2", hi), ("switch", hs)):
         f = OUT / f"total_neural_{net}.csv"
         if not f.exists():
@@ -137,8 +172,8 @@ def total_models() -> pd.DataFrame:
 def link_models() -> pd.DataFrame:
     """Day-ahead median link hourly WAPE per model (common links and targets with Timestral)."""
     rows = []
-    for net, base in DENSE.items():
-        p = pd.read_csv(base / "dense_fm" / "tables_both" / "block" / "per_link.csv")
+    for net in DENSE:
+        p = pd.read_csv(FM[net] / "tables_both" / "block" / "per_link.csv")
         t = p[p.horizon_name == "day"].groupby("model").wape_1h.median()
         for m, v in t.items():
             rows.append(dict(network=net, model=m, link_day_wape=v / 100, links=int(p.link.nunique())))
@@ -146,12 +181,12 @@ def link_models() -> pd.DataFrame:
 
 
 def horizons() -> pd.DataFrame:
-    """Median link hourly WAPE by horizon: the ladder's full block logs (all horizons) and
-    Timestral's hourly-input logs (1 h on I2 only, 8 h, day, week)."""
+    """Median link hourly WAPE by horizon: the ladder's full block logs (all horizons) and Timestral's
+    hourly-input logs (1 h on Internet2 only, 8 h, day, week)."""
     rows = []
-    for net, base in DENSE.items():
-        p = pd.read_csv(base / "dense" / "block" / "per_link.csv")
-        q = pd.read_csv(base / "dense_fm" / "tables_1h_24w" / "block" / "per_link.csv")
+    for net in DENSE:
+        p = pd.read_csv(DENSE[net] / "dense" / "block" / "per_link.csv")
+        q = pd.read_csv(FM[net] / "tables_1h_24w" / "block" / "per_link.csv")
         q = q[q.model == "timestral@1h_24w"]
         for src in (p, q):
             g = src.groupby(["model", "horizon_name"]).wape_1h.median()
@@ -160,47 +195,82 @@ def horizons() -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def context() -> pd.DataFrame:
-    """Day-ahead median link hourly WAPE by context (weeks): Timestral (hourly input), the trained
-    5-minute multi-resolution transformer (mean of 3 seeds), and the ladder (PatchTST, 1 week)."""
-    a = pd.read_csv(A / "ladder_diagnosis" / "all_runs.csv")
-    l5 = pd.read_csv(A / "ladder_diagnosis" / "long5m_runs.csv")
+def _ds(net):
+    sys.path.insert(0, str(HERE.parent / "ladder_diagnosis"))
+    from common import DS
+    return DS(net)
+
+
+def timestral_context() -> pd.DataFrame:
+    """Timestral by context (timestral_links.py ctx): median link hourly WAPE, day and week, on the points every
+    reference forecasts (the ladder's PatchTST, Timestral 24 w), as timestral_ctx.py scores them."""
+    from common import score
     rows = []
-    for _, r in a[a.model == "timestral-209M"].iterrows():
-        rows.append(dict(network="i2" if r.ds == "i2" else "switch", model="Timestral (hourly)", weeks=r.ctx / 168, day=r.day / 100))
-    # bounded inputs (squash 10), no dropout of old weeks, no profile queries; at 1 week the
-    # multi-resolution model is the full-resolution one (one week has a single resolution)
-    m = l5[(l5.model == "seg") & (l5.squash == 10) & (l5["drop"] == 0) & (l5.qprof == 0)
-           & ((l5.seg == "multires") | ((l5.seg == "full") & (l5.weeks == 1)))]
-    for (ds, w), g in m.groupby(["ds", "weeks"]):
-        rows.append(dict(network="i2" if ds == "i2" else "switch", model="trained (5-min)", weeks=float(w),
-                         day=float(g.day.mean()) / 100, seeds=int(len(g))))
-    for net in ("i2", "switch"):
+    for net in DENSE:
+        ds = _ds(net)
+        A_ = ds.actual_test()
+        for hz in ("day", "week"):
+            refs = {m: ds.load_dense_block(m, hz) for m in ("patchtst", "timestral@1h_24w")}
+            for f in sorted((PC / "links" / net / "ctx").glob(f"pred_{hz}_c*.npy")):
+                ctx = int(f.stem.split("_c")[1])
+                df, _ = score({**refs, "x": np.load(f)}, A_, ref="patchtst")
+                r = df.set_index("model").loc["x"]
+                rows.append(dict(network=net, horizon=hz, ctx=ctx, weeks=ctx / 168, median_wape=float(r.median_wape),
+                                 median_link_bias=float(r.median_link_bias), beats_patchtst=float(r.beats_ref)))
+    return pd.DataFrame(rows)
+
+
+def run_summary(net: str, tag: str) -> dict | None:
+    f = LDC / net / "runs" / tag / "summary.json"
+    return json.load(open(f)) if f.exists() else None
+
+
+def context() -> pd.DataFrame:
+    """Day-ahead median link hourly WAPE by context (weeks): Timestral (hourly input), the 5-minute
+    multi-resolution transformer (mean of 3 seeds), the hourly architectures, the ladder (PatchTST, 1 week)."""
+    rows = []
+    tc = timestral_context()
+    tc.to_csv(OUT / "timestral_context.csv", index=False)
+    for _, r in tc[tc.horizon == "day"].iterrows():
+        rows.append(dict(network=r.network, model="Timestral (hourly)", weeks=r.weeks, day=r.median_wape / 100))
+    for net in DENSE:
+        for w, tags in ((1, ["L5s_seg_full_1w", "L5s_seg_full_1w_s1", "L5s_seg_full_1w_s2"]),
+                        (4, ["L5s_seg_multires_4w", "L5s_seg_multires_4w_s1", "L5s_seg_multires_4w_s2"]),
+                        (12, ["L5s_seg_multires_12w"]),
+                        (24, ["L5s_seg_multires_24w", "L5s_seg_multires_24w_s1", "L5s_seg_multires_24w_s2"])):
+            v = [run_summary(net, t) for t in tags]
+            v = [x["test"]["day"]["median_wape"] for x in v if x]
+            if v:
+                rows.append(dict(network=net, model="trained (5-min)", weeks=float(w), day=float(np.mean(v)) / 100,
+                                 seeds=len(v)))
         for arch in ("dlinear", "gru", "tcn", "patchtst"):
             for ctx in (168, 672, 4032):
-                f = A / "ladder_diagnosis" / net / "runs" / f"H_{arch}_c{ctx}" / "summary.json"
-                if f.exists():
-                    d = json.load(open(f))
+                d = run_summary(net, f"H_{arch}_c{ctx}")
+                if d:
                     rows.append(dict(network=net, model=f"{arch} (hourly)", weeks=ctx / 168,
                                      day=d["test"]["day"]["median_wape"] / 100))
-    for net in DENSE:
         lk = link_models()
-        v = lk[(lk.network == net) & (lk.model == "patchtst")].link_day_wape.iloc[0]
-        rows.append(dict(network=net, model="ladder PatchTST (5-min)", weeks=1.0, day=v))
-        for tag, w in (("timestral@5m_4w", 4.0),):
-            u = lk[(lk.network == net) & (lk.model == tag)].link_day_wape
-            if len(u):
-                rows.append(dict(network=net, model="Timestral (5-min)", weeks=w, day=float(u.iloc[0])))
+        v = lk[(lk.network == net) & (lk.model == "patchtst")].link_day_wape
+        if len(v):
+            rows.append(dict(network=net, model="ladder PatchTST (5-min)", weeks=1.0, day=float(v.iloc[0])))
+        u = lk[(lk.network == net) & (lk.model == "timestral@5m_4w")].link_day_wape
+        if len(u):
+            rows.append(dict(network=net, model="Timestral (5-min)", weeks=4.0, day=float(u.iloc[0])))
+        for tag in ("D_pt_5m_log_huber", "A_pt_c168_log_huber"):
+            d = run_summary(net, tag)
+            if d:
+                rows.append(dict(network=net, model=f"resolution check {tag}", weeks=1.0,
+                                 day=d["test"]["day"]["median_wape"] / 100))
     return pd.DataFrame(rows)
 
 
 def grid_table() -> pd.DataFrame:
-    g = pd.read_csv(A / "flat_forecast" / "grid_scores.csv")
+    g = pd.read_csv(PC / "flat" / "grid_scores.csv")
     keep = ["rule: yesterday same hour", "Timestral: median", "Timestral: mean", "chronos-2", "timesfm-2.5",
             "GBDT (log, squared error)"]
     keep = keep + [k + " + bias corr. 7 d" for k in keep]
     g = g[g.forecast.isin(keep)]
-    w = g.pivot(index="forecast", columns="period", values=["bias %", "max |month bias| %", "day %", "30-day %"])
+    w = g.pivot(index="forecast", columns="period", values=["bias %", "worst month %", "day %", "week %", "month %"])
     w.columns = [f"{a} {b}" for a, b in w.columns]
     return w.reindex(keep)
 
@@ -211,8 +281,8 @@ def levels() -> dict:
     lk = link_models()
     tm = total_models()
     pooled = {}
-    for net, base in DENSE.items():
-        w = pd.read_csv(base / "dense_fm" / "tables_both" / "block" / "wape.csv")
+    for net in DENSE:
+        w = pd.read_csv(FM[net] / "tables_both" / "block" / "wape.csv")
         r = w[(w.model == "timestral@1h_24w") & (w.horizon_name == "day")]
         pooled[net] = float(r.pooled_wape.iloc[0]) / 100 if len(r) else None
     return {"traffic_total": {n: float(tm[(tm.network == n) & (tm.model == "Timestral")].traffic_hourly_wape.iloc[0]) for n in ("switch", "i2")},
@@ -220,12 +290,11 @@ def levels() -> dict:
             "traffic_link_pooled_note": "pooled = sum of absolute errors over all links / sum of traffic (5-minute WAPE)",
             "traffic_link_pooled": pooled,
             "rate_flat_hourly": pe["flat_rate_hourly_wape"], "rate_path_bytes": pe["path_rate_wape_bytes_capped"],
-            "router_bill_flat": {k: s[f"flat_router_{k}_wape"] for k in ("hour", "day", "30day")},
-            "router_bill_path": {k: s[f"path_router_{k}_wape"] for k in ("hour", "day", "30day")}}
+            "router_bill_flat": {k: s[f"flat_router_{k}_wape"] for k in ("hour", "day", "week", "month", "30day")},
+            "router_bill_path": {k: s[f"path_router_{k}_wape"] for k in ("hour", "day", "week", "month", "30day")}}
 
 
 def cap_table() -> pd.DataFrame:
-    sys.path.insert(0, str(HERE))
     import i2_rates as IR
     import scipy.sparse as sp
     A_res = sp.load_npz(IR.OUT / "A_res.npz").tocsr()
@@ -246,128 +315,108 @@ def cap_table() -> pd.DataFrame:
                          resource_hours_capped=float(capped[live].mean()),
                          emissions_spread_flat=float((R["add_set"] * X.sum(1)).sum() / E.sum()),
                          path_rate_wape=pe["path_rate_wape_bytes_capped"],
-                         router_bill_day=be["path_router_day_wape"], router_bill_30day=be["path_router_30day_wape"],
+                         router_bill_day=be["path_router_day_wape"], router_bill_month=be["path_router_month_wape"],
                          pairs_ge20=uni.get("pairs_reduction_forecast_ge_20pct"),
                          bytes_reduction=uni.get("bytes_weighted_reduction_forecast"),
                          same_choice=uni.get("bytes_same_choice"),
-                         spans_dark=ev.get("mean", {}).get("spans_dark"), dark_E=ev.get("mean", {}).get("dark_E_share"),
+                         spans_dark_block_mean=ev.get("mean", {}).get("spans_dark"),
+                         spans_dark_from_day15=ev.get("from_day15_mean", {}).get("spans_dark"),
+                         spans_dark_ge90_from_day15=ev.get("from_day15_spans_dark_ge90"),
+                         E_share_dark_ge90_from_day15=ev.get("from_day15_E_share_spans_dark_ge90"),
+                         dark_E=ev.get("mean", {}).get("dark_E_share"),
                          spans_dark_all_block=ev.get("spans_dark_all_block")))
     return pd.DataFrame(rows)
 
 
 # --- bias ---------------------------------------------------------------------------------------
-LATER = ("2026-07-11", "2026-10-28")          # the held-out period after the test block (grid only)
-
-
 def grid_monthly() -> pd.DataFrame:
-    """SWITCHlan's day-ahead grid (backbone emissions) forecasts on the development year, the test
-    block and the later period, hourly: actual, the rule, Timestral's median and mean, the median
-    with the 7-day correction, and the 50/50 blend of the rule and the corrected median."""
-    cache = OUT / "grid_hourly_three_periods.csv.gz"
-    if cache.exists():
-        return pd.read_csv(cache, index_col=0, parse_dates=True)
-    sys.path.insert(0, str(HERE.parent / "flat_forecast"))
-    import grid_forecast as G
-    from bias import timestral_quantiles
-    from green_routing.carbon import dayahead as DA, grid
-    c = pd.read_csv(G.CAND, index_col=0, parse_dates=True)
-    a = c["actual"]
-    parts = [pd.DataFrame({"actual": a, "rule": c["rule: yesterday same hour"], "median": c["Timestral: median"],
-                           "mean": c["Timestral: mean"]})]
-    days = pd.date_range(*LATER, freq="D", tz="UTC")
-    E = G.switch_emissions(LATER[1])
-    pre = pd.date_range(days[0] - pd.Timedelta(days=7), days[0] - pd.Timedelta(days=1), freq="D")
-    Q, lv = timestral_quantiles(E, pre.append(days))
-    w = DA._quantile_mean_weights(lv)
-    rule = grid.RULES["yesterday same hour"](E.asfreq("h").interpolate())
-    parts.append(pd.DataFrame({"actual": E.reindex(Q.index), "rule": rule.reindex(Q.index), "median": Q[0.5],
-                               "mean": (Q * w).sum(1)}))
-    df = pd.concat(parts).sort_index()
-    df = df[~df.index.duplicated(keep="first")]
-    df["median_corr"] = G.bias_corrected(df["median"], df["actual"], 7)
-    df["blend"] = (df["rule"] + df["median_corr"]) / 2
-    period = pd.Series("dev", index=df.index)
-    period[df.index >= pd.Timestamp(G.TEST[0])] = "test"
-    period[df.index >= pd.Timestamp(LATER[0], tz="UTC")] = "later"
-    df["period"] = period
-    keep = (df.index.normalize().isin(G.DEV) | df.index.normalize().isin(G.TEST) | df.index.normalize().isin(days))
-    df = df[keep]
-    df.to_csv(cache)
-    return df
+    """SWITCHlan's day-ahead grid (backbone emissions) forecasts, hourly, from appendix.py round 1's series
+    (2025-03-22 -> 2026-10-28: grid_forecast.py's candidates, then Timestral re-run on Jul-Oct 2026), labelled by
+    the common periods and cut to DEV + TEST + LATER."""
+    G3 = pd.read_csv(REPO_ROOT / "artifacts" / "paper" / "appendix" / "grid_hourly_three_periods.csv.gz",
+                     index_col=0, parse_dates=True)
+    import flat_common as FC
+    lab = FC.label(G3.index)
+    df = G3.drop(columns="period")
+    df["period"] = lab.str.lower().to_numpy()
+    return df[df.period.isin(["dev", "test", "later"])]
 
 
 def grid_bias_tables(df: pd.DataFrame):
-    """Bias per calendar month (months with >= 20 days) and per period."""
+    """Bias per calendar month and per period; errors per calendar day / 7-day block / calendar month."""
+    import flat_common as FC
     cols = ["rule", "median", "mean", "median_corr", "blend"]
     m = df.index.tz_localize(None).to_period("M")
     g = df[cols + ["actual"]].groupby(m).sum()
-    n = df.groupby(m).size() / 24
-    months = ((g[cols].div(g.actual, axis=0) - 1) * 100)[n >= 20]
-    months["period"] = df.groupby(m).period.agg(lambda x: x.mode()[0])[n >= 20]
-    per = df.groupby("period")[cols + ["actual"]].sum()
-    periods = (per[cols].div(per.actual, axis=0) - 1) * 100
-    day = df.index.normalize()
+    months = (g[cols].div(g.actual, axis=0) - 1) * 100
+    months["period"] = df.groupby(m).period.agg(lambda x: x.mode()[0])
     rows = []
-    for p_, d in df.groupby("period"):
-        dd = d[cols + ["actual"]].groupby(d.index.normalize()).sum()
+    for p_, per in (("dev", PER.DEV), ("test", PER.TEST), ("later", PER.LATER)):
         for c in cols:
-            r30 = lambda x: x.rolling(30).sum().dropna()                         # noqa: E731
-            rows.append(dict(period=p_, forecast=c, bias=float(d[c].sum() / d.actual.sum() - 1) * 100,
-                             day=float((dd[c] - dd.actual).abs().sum() / dd.actual.sum()) * 100,
-                             d30=float((r30(dd[c]) - r30(dd.actual)).abs().sum() / r30(dd.actual).sum()) * 100,
-                             worst_month=float(months[months.period == p_][c].abs().max())))
-    del day
+            s = FC.grid_scores(df[c], df.actual, per)
+            rows.append(dict(period=p_, forecast=c, bias=s["bias %"], day=s["day %"], week=s["week %"],
+                             month=s["month %"], worst_month=s["worst month %"], months_low=s["months low"],
+                             months_within_4=s["months within 4 %"], months=s["months"]))
+    periods = pd.DataFrame(rows).pivot(index="forecast", columns="period", values="bias")
     return months, periods, pd.DataFrame(rows)
 
 
 def bias_summary() -> dict:
-    """Where the bias sits: traffic vs grid, network vs link, and the bill (test blocks)."""
-    b = pd.read_csv(A / "flat_forecast" / "bias.csv")
-    pick = lambda net, ser, fc: b[(b.network == net) & (b.series == ser) & (b.forecast == fc)].iloc[0]   # noqa: E731
+    """Where the bias sits: traffic vs grid, network vs link, and the bill (test block, flat_common.py)."""
+    fj = json.load(open(PC / "flat" / "flat.json"))
     out = {}
-    for net, key in (("Switch LAN", "switch"), ("I2 Network", "i2")):
-        for ser, fc, name in (("traffic", "Timestral, median", "traffic_total"),
-                              ("emissions (grid)", "same hour yesterday", "grid_rule"),
-                              ("emissions (grid)", "Timestral, median", "grid_median"),
-                              ("emissions (grid)", "Timestral, mean", "grid_mean")):
-            r = pick(net, ser, fc)
-            out[f"{key}_{name}"] = [float(r["bias %"]), float(r["95 % low"]), float(r["95 % high"])]
-            if name == "traffic_total":
-                out[f"{key}_traffic_top10_days"] = float(r["bias on top-10 % days"])
-                out[f"{key}_traffic_calibration_q10_q50_q90_q99"] = [float(r[f"actual <= q{q}"]) for q in (10, 50, 90, 99)]
-            if name == "grid_median":
-                out[f"{key}_grid_calibration_q50_q99"] = [float(r["actual <= q50"]), float(r["actual <= q99"])]
-                out[f"{key}_grid_q99_over_actual"] = float(r["q99 / actual, mean"])
-    a = pd.read_csv(A / "ladder_diagnosis" / "all_runs.csv")
+    q = pd.read_csv(PC / "flat" / "traffic_quantiles_test.csv", index_col=0, parse_dates=True)
+    gq = pd.read_csv(PC / "flat" / "grid_quantiles_test.csv", index_col=0, parse_dates=True)
     for net in ("switch", "i2"):
-        r = a[(a.ds == net) & (a.tag == "timestral_c4032")].iloc[0]
-        out[f"{net}_link_median_bias_timestral"] = float(r.day_bias)
-        h = pd.read_csv(P / f"hourly_{net}.csv", index_col=0, parse_dates=True).dropna()
-        out[f"{net}_grid_corrected_bias"] = float(h.Ef.sum() / h.E.sum() - 1) * 100
-        out[f"{net}_bill_bias"] = float((h.Ef * h["T"] / h.Tf).sum() / h.E.sum() - 1) * 100
-    src = pd.read_csv(A / "flat_forecast" / "bias_sources.csv")
-    r = src[(src.network == "Switch LAN") & (src.forecast == "Timestral: median")].iloc[0]
-    out["switch_grid_median_under_over"] = [float(r["actual > forecast %"]), float(r["under-forecasts, % of mean"]),
-                                            float(r["over-forecasts, % of mean"])]
-    out["log_error_sigma"] = {n: float(src[(src.network == n) & (src.forecast == "Timestral: median")]["sigma of log error"].iloc[0])
-                              for n in ("Switch LAN", "I2 Network")}
-    s = pd.read_csv(A / "flat_forecast" / "scores_test.csv").set_index("forecast")
-    out["switch_total_ladder_bias"] = {m: [float(s.loc[f"5-min {m}: peak-aware loss, mean of 3 seeds", "bias"]) * 100,
-                                           float(s.loc[f"5-min {m}: symmetric loss, mean of 3 seeds", "bias"]) * 100]
-                                       for m in ("dlinear", "gru", "tcn", "patchtst")}
-    gl = pd.read_csv(A / "flat_forecast" / "grid_losses.csv")
-    out["grid_gbdt_losses_dev_test"] = {r["forecast"]: [float(r["bias %"])] for _, r in gl[gl.period == "DEV"].iterrows()}
-    for _, r in gl[gl.period == "TEST"].iterrows():
-        out["grid_gbdt_losses_dev_test"][r["forecast"]].append(float(r["bias %"]))
+        bt = fj[net]["bias_table"]
+        for k, v in bt.items():
+            out[f"{net}_{k}"] = [v["bias %"], v["95 % low"], v["95 % high"]]
+            out[f"{net}_{k}_top10_days"] = v["bias on top-10 % days"]
+            out[f"{net}_{k}_by_month"] = v["by month"]
+        h = flat_hours(net).dropna(subset=["T"])
+        qq = q[q.network == net].reindex(h.index)
+        out[f"{net}_traffic_calibration_q10_q50_q90_q99"] = [float(100 * (h["T"] <= qq[c]).mean())
+                                                             for c in ("q10", "q50", "q90", "q99")]
+        out[f"{net}_traffic_timestral_median_bias_no_covariates"] = float(100 * (qq.q50.sum() / h["T"].sum() - 1))
+        g = gq[gq.network == net]
+        out[f"{net}_grid_q99_over_actual"] = float((g.q99 / g.actual).mean())
+        out[f"{net}_grid_calibration_q50_q99"] = [float(100 * (g.actual <= g.q50).mean()), float(100 * (g.actual <= g.q99).mean())]
+        tc = pd.read_csv(OUT / "timestral_context.csv")
+        r = tc[(tc.network == net) & (tc.horizon == "day") & (tc.ctx == 4032)]
+        out[f"{net}_link_median_bias_timestral"] = float(r.median_link_bias.iloc[0]) if len(r) else None
+    # the Swiss grid: how often Timestral's median is right, and how large its misses are (bias_sources.py)
+    sys.path.insert(0, str(HERE.parent / "flat_forecast"))
+    import bias_sources as BS
+    hs = flat_hours("switch")
+    out["switch_grid_median_shape"] = BS.shape(hs.Ef_raw, hs.E)
+    hi = flat_hours("i2")
+    out["i2_grid_median_shape"] = BS.shape(hi.Ef_raw, hi.E)
+    gs = pd.read_csv(PC / "flat" / "grid_scores.csv")
+    out["grid_gbdt_losses_dev_test"] = {f: gs[gs.forecast == f].set_index("period")["bias %"].to_dict() for f in
+                                        ("GBDT log, squared error (current)", "GBDT log, quantile 2/3 (peak-aware)",
+                                         "GBDT linear, squared error (mean)", "GBDT log-normal, mean of the fitted distribution")}
+    # the loss and the bias: round 1's 5-minute ladder on SWITCHlan's total, both losses, three seeds each
+    # (recipes/flat_forecast/run.sh ladder: trained to 2026-02-15, before the test block), on the common test block
+    tot = {}
+    hs_ = flat_hours("switch").dropna(subset=["T"])
+    import run as R
+    for m in ("dlinear", "gru", "tcn", "patchtst"):
+        tot[m] = {}
+        for uw, lab in ((2, "peak-aware"), (1, "symmetric")):
+            seeds = [R.ladder_hourly(R.LADDER / f"{m}_uw{uw}_s{s}", m) for s in range(3)]
+            if all(x is not None for x in seeds):
+                f = (sum(seeds) / 3).reindex(hs_.index)
+                tot[m][lab] = float(100 * (f.sum() / hs_["T"][f.notna()].sum() - 1))
+    out["switch_total_ladder_bias_round1_runs"] = tot
     return out
 
 
 def model_params() -> pd.DataFrame:
-    """Parameters of every trained per-link network (from its checkpoint) and of the pretrained models."""
+    """Parameters of every trained per-link network (from its checkpoint)."""
     import torch
     rows = []
-    for net, base in (("switch", A / "pred_year_sym"), ("i2", A / "internet2" / "links")):
-        for f in sorted(base.glob("part_*/checkpoints/*.pt")):
+    for net in DENSE:
+        for f in sorted((PC / "links" / net).glob("part_*/checkpoints/*.pt")):
             if ".train." in f.name:
                 continue
             sd = torch.load(f, map_location="cpu", weights_only=False)
@@ -376,7 +425,6 @@ def model_params() -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-# --- figures ----------------------------------------------------------------------------------
 ARCH = {"dlinear": ("DLinear", "#188487", "-.", "D"), "gru": ("GRU", "#467821", ":", "^"),
         "tcn": ("TCN", "#E24A33", "--", "v"), "patchtst": ("PatchTST", "#7A68A6", "--", "s")}
 
@@ -402,8 +450,10 @@ def fig_context(C: pd.DataFrame, out: Path):
         ax.tick_params(labelsize=8)
         ax.grid(True, which="major")
     axes[0].set_ylabel(f"Link error ({PCT})", fontsize=9)
-    axes[0].set_ylim(26, 40)
-    axes[1].set_ylim(15, 24)
+    for ax, net in ((axes[0], "switch"), (axes[1], "i2")):     # every point visible, headroom for the legend
+        v = C[(C.network == net) & C.model.isin(["Timestral (hourly)", "trained (5-min)"] +
+                                               [f"{a} (hourly)" for a in ARCH])].day * 100
+        ax.set_ylim(np.floor(v.min() - 1), np.ceil(v.max() + 0.35 * (v.max() - v.min()) + 1))
     axes[1].legend(loc="upper right", frameon=False, ncol=2, fontsize=7, handlelength=2.0, columnspacing=0.8,
                    borderaxespad=0.1)
     save(fig, out, "app_context")
@@ -431,7 +481,7 @@ def fig_horizon(H: pd.DataFrame, out: Path):
         ax.set_title(title, fontsize=9, pad=2)
         ax.set_xlabel("Forecast horizon", fontsize=9)
         ax.tick_params(labelsize=8)
-        ax.set_ylim(0, 80)
+        ax.set_ylim(0, 90)                     # room for the legend above the seasonal rule (47.6 % on SWITCHlan)
         ax.grid(True, which="major")
     axes[0].set_ylabel(f"Link error ({PCT})", fontsize=9)
     axes[0].legend(loc="upper left", frameon=False, ncol=2, fontsize=7, handlelength=2.0, columnspacing=0.8,
@@ -480,6 +530,17 @@ def fig_bias(months: pd.DataFrame, out: Path):
     save(fig, out, "app_bias")
 
 
+
+
+def step(name, f, *a):
+    """Run one part; a missing input skips it (and says so) instead of stopping the rest."""
+    try:
+        return f(*a)
+    except FileNotFoundError as e:
+        print(f"[skip] {name}: {e}", flush=True)
+        return None
+
+
 def main():
     global PNG
     args = [a for a in sys.argv[1:] if not a.startswith("--png=")]
@@ -494,48 +555,60 @@ def main():
     CO = costs()
     CO.to_csv(OUT / "train_cost.csv", index=False)
     print(CO.round(1).to_string(index=False), flush=True)
-    TM = total_models()
-    TM.to_csv(OUT / "total_models.csv", index=False)
-    print(TM.round(4).to_string(index=False), flush=True)
-    LM = link_models()
-    LM.to_csv(OUT / "link_models.csv", index=False)
-    HZ = horizons()
-    HZ.to_csv(OUT / "horizons.csv", index=False)
-    CX = context()
-    CX.to_csv(OUT / "context.csv", index=False)
-    print(CX.round(4).to_string(index=False), flush=True)
+    TM = step("total models", total_models)
+    if TM is not None:
+        TM.to_csv(OUT / "total_models.csv", index=False)
+        print(TM.round(4).to_string(index=False), flush=True)
+    LM = step("link models", link_models)
+    if LM is not None:
+        LM.to_csv(OUT / "link_models.csv", index=False)
+        print(LM.round(4).to_string(index=False), flush=True)
+    HZ = step("horizons", horizons)
+    if HZ is not None:
+        HZ.to_csv(OUT / "horizons.csv", index=False)
+        fig_horizon(HZ, out)
+    CX = step("context", context)
+    if CX is not None:
+        CX.to_csv(OUT / "context.csv", index=False)
+        print(CX.round(4).to_string(index=False), flush=True)
+        fig_context(CX, out)
     GT = grid_table()
     GT.to_csv(OUT / "grid_candidates.csv")
     print(GT.round(1).to_string(), flush=True)
-    LV = levels()
-    CT = cap_table()
-    CT.to_csv(OUT / "cap_sensitivity.csv", index=False)
-    print(CT.round(4).to_string(index=False), flush=True)
-    uni = json.load(open(P / "i2" / "unilateral.json"))
-    U = pd.read_csv(P / "i2" / "unilateral_pairs.csv")
-    dec = {"bytes_same_choice": uni.get("bytes_same_choice"),
-           "captured_share_of_oracle_bytes": uni["bytes_weighted_reduction_forecast"] / uni["bytes_weighted_reduction_oracle"],
-           "pairs_forecast_within_5pts_of_oracle": float(((U.reduction_oracle - U.reduction_forecast) <= 0.05).mean()),
-           "pairs_corr_forecast_oracle": float(np.corrcoef(U.reduction_oracle, U.reduction_forecast)[0, 1]),
-           "pairs_same_choice_median": float(U.same_choice.median()) if "same_choice" in U else None}
-    json.dump({"levels": LV, "decision": dec}, open(OUT / "numbers.json", "w"), indent=1)
-    print(json.dumps({"levels": LV, "decision": dec}, indent=1), flush=True)
-    fig_context(CX, out)
-    fig_horizon(HZ, out)
-    fig_decision(out)
+    LV = step("levels", levels)
+    CT = step("cap table", cap_table)
+    if CT is not None:
+        CT.to_csv(OUT / "cap_sensitivity.csv", index=False)
+        print(CT.round(4).to_string(index=False), flush=True)
+    dec = None
+    if (P / "i2" / "unilateral.json").exists():
+        uni = json.load(open(P / "i2" / "unilateral.json"))
+        U = pd.read_csv(P / "i2" / "unilateral_pairs.csv")
+        worse = U[U.reduction_forecast < -0.001]
+        dec = {"bytes_same_choice": uni.get("bytes_same_choice"),
+               "captured_share_of_oracle_bytes": uni["bytes_weighted_reduction_forecast"] / uni["bytes_weighted_reduction_oracle"],
+               "pairs_forecast_within_5pts_of_oracle": float(((U.reduction_oracle - U.reduction_forecast) <= 0.05).mean()),
+               "pairs_corr_forecast_oracle": float(np.corrcoef(U.reduction_oracle, U.reduction_forecast)[0, 1]),
+               "pairs_worse": float(len(worse) / len(U)), "bytes_worse": float(worse.GB.sum() / U.GB.sum()),
+               "worse_median_loss": float(-worse.reduction_forecast.median()) if len(worse) else None,
+               "worse_p90_loss": float(-worse.reduction_forecast.quantile(.1)) if len(worse) else None}
+        fig_decision(out)
+    json.dump({"levels": LV, "decision": dec}, open(OUT / "numbers.json", "w"), indent=1, default=float)
+    print(json.dumps({"levels": LV, "decision": dec}, indent=1, default=float), flush=True)
     GM = grid_monthly()
     months, periods, gper = grid_bias_tables(GM)
     months.to_csv(OUT / "grid_bias_months.csv")
     gper.to_csv(OUT / "grid_bias_periods.csv", index=False)
     print(months.round(1).to_string(), flush=True)
     print(gper.round(2).to_string(index=False), flush=True)
-    BS = bias_summary()
-    json.dump(BS, open(OUT / "bias.json", "w"), indent=1)
-    print(json.dumps(BS, indent=1), flush=True)
+    fig_bias(months, out)
+    BS = step("bias summary", bias_summary)
+    if BS is not None:
+        json.dump(BS, open(OUT / "bias.json", "w"), indent=1, default=float)
+        print(json.dumps(BS, indent=1, default=float), flush=True)
     MP = model_params()
     MP.to_csv(OUT / "model_params.csv", index=False)
     print(MP.to_string(index=False), flush=True)
-    fig_bias(months, out)
     print("figures ->", out)
 
 

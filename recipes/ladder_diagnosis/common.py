@@ -12,6 +12,7 @@ mean of 12 raw values when all 12 are finite, per-link WAPE = sum|F-A| / sum A.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -24,6 +25,11 @@ RUNS = {"i2": ARTIFACTS_DIR / "internet2/links/merged",
         "switch": ARTIFACTS_DIR / "pred_year_sym/merged"}
 PANELS = {"i2": ARTIFACTS_DIR / "internet2/cache_links/panel_0faa1bd57c28.npz",
           "switch": ARTIFACTS_DIR / "panel_19ea24bef019.npz"}
+# other runs (the paper's common periods, recipes/paper/appendix_runs.sh): GR_LD_RUN_<DS>, GR_LD_PANEL_<DS>,
+# and GR_LD_FM_<DS> for the folder of the pretrained models' block logs (default <run>/dense_fm)
+for _k in list(RUNS):
+    RUNS[_k] = Path(os.environ.get(f"GR_LD_RUN_{_k.upper()}", RUNS[_k]))
+    PANELS[_k] = Path(os.environ.get(f"GR_LD_PANEL_{_k.upper()}", PANELS[_k]))
 CACHE = ARTIFACTS_DIR / "ladder_diagnosis"
 
 
@@ -75,11 +81,15 @@ class DS:
         """Absolute hour indices of block-window starts for an H-hour horizon."""
         return np.arange(self.hlo, self.nh, H)
 
+    def fm_dir(self, sub: str) -> Path:
+        e = os.environ.get(f"GR_LD_FM_{self.name.upper()}")
+        return Path(e) if (e and sub == "dense_fm") else self.run / sub
+
     def load_dense_block(self, model: str, horizon: str, sub: str = "dense_fm") -> np.ndarray:
         """A model's block log at ``horizon`` (5-min) -> hourly means [L, n_test_hours]."""
-        meta = json.loads((self.run / sub / "meta.json").read_text())
+        meta = json.loads((self.fm_dir(sub) / "meta.json").read_text())
         hn = [h["name"] for h in meta["horizons"]]
-        P = np.load(self.run / sub / f"pred_block_{model}.npy", mmap_mode="r")
+        P = np.load(self.fm_dir(sub) / f"pred_block_{model}.npy", mmap_mode="r")
         p = np.asarray(P[:, hn.index(horizon), :], np.float64)          # [L, n_t]
         n = self.n_test_hours()
         p = p[:, :n * 12].reshape(self.L, n, 12)
@@ -97,9 +107,9 @@ class DS:
 
     def load_dense_block5(self, model: str, horizon: str, sub: str = "dense_fm") -> np.ndarray:
         """A model's block log at ``horizon``, 5-minute values [L, n_test_steps]."""
-        meta = json.loads((self.run / sub / "meta.json").read_text())
+        meta = json.loads((self.fm_dir(sub) / "meta.json").read_text())
         hn = [h["name"] for h in meta["horizons"]]
-        P = np.load(self.run / sub / f"pred_block_{model}.npy", mmap_mode="r")
+        P = np.load(self.fm_dir(sub) / f"pred_block_{model}.npy", mmap_mode="r")
         return np.asarray(P[:, hn.index(horizon), :self.n_test_steps()], np.float32)
 
 

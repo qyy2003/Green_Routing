@@ -1,12 +1,14 @@
 """The evaluation's plots, as PDF, from the CSVs the other scripts of this directory write.
 
 usage: python figures.py [OUTDIR] [--png=DIR]     default OUTDIR: <repo>/6aea077f0929c9a3a1ac5660/figures (the paper)
-Inputs: $GR_ARTIFACTS_DIR/paper (bill_periods.py, facts.py, i2_rates.py, switch_rates.py, steering.py).
+Inputs: $GR_ARTIFACTS_DIR/paper (facts.py, i2_rates.py, switch_rates.py, steering.py; run with the overlay root
+$PAPER_COMMON/root for the common periods), $PAPER_COMMON/flat (flat_common.py: bill errors by period), and
+Fig. 2's power and traffic samples from <repo>/artifacts/paper (power_traffic.py; its windows do not change).
+Matplotlib's own fonts, also where LaTeX is installed (the paper's figures were made so).
 """
 from __future__ import annotations
 
 import json
-import shutil
 import sys
 from pathlib import Path
 
@@ -14,6 +16,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.dates as mdates          # noqa: E402
+import matplotlib.ticker                    # noqa: E402
 import matplotlib.pyplot as plt            # noqa: E402
 import numpy as np                         # noqa: E402
 import pandas as pd                        # noqa: E402
@@ -22,10 +25,12 @@ from matplotlib.lines import Line2D        # noqa: E402
 from green_routing.paths import ARTIFACTS_DIR, REPO_ROOT   # noqa: E402
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import periods as PER                      # noqa: E402
+
 P = ARTIFACTS_DIR / "paper"
+PT = REPO_ROOT / "artifacts" / "paper"    # Fig. 2's samples (power_traffic.py, round 1's fixed windows)
 plt.style.use(HERE / "paper.mplstyle")
-if shutil.which("latex"):
-    plt.rcParams["text.usetex"] = True
 SW, I2 = "#348ABD", "#A60628"
 PNG = None
 PURPLE, GREEN = "#7A68A6", "#467821"
@@ -88,33 +93,26 @@ def fig_bills(out: Path):
 
 
 def fig_periods(out: Path):
-    """Bill error of the day-ahead rate by accounting period, and where it comes from. With margin.py's
-    outputs, the solid line is the posted bill (rate lowered by each network's margin m); the dotted
-    line (actual grid) has no margin, as the margin only offsets the grid forecast's bias."""
-    B = pd.read_csv(P / "bill_periods.csv")
-    MB = P / "margin" / "bill_periods_margin.csv"
-    if MB.exists():
-        Mg = pd.read_csv(MB)
-        chosen = json.load(open(P / "margin" / "margin.json"))["chosen"]
-        posted = []
-        for net, key in (("Switch LAN", "SWITCHlan"), ("I2 Network", "Internet2")):
-            d = Mg[(Mg.network == key) & (Mg.variant == "forecast") & np.isclose(Mg.m, chosen[key])]
-            posted.append(d.assign(network=net))
-        B = pd.concat([B[B.variant != "forecast"], pd.concat(posted)[["network", "variant", "period", "wape", "bias"]]])
+    """Bill error of the day-ahead rate by billing period on the test block (flat_common.py bill_periods.csv: hours,
+    calendar days, 7-day blocks, calendar months), and where it comes from. The solid line is the posted bill (rate
+    lowered by each network's margin m); the dotted line (actual grid) has no margin, as the margin only offsets
+    the grid forecast's bias."""
+    B = pd.read_csv(PER.ROOT / "flat" / "bill_periods.csv")
+    B = B[B.variant.isin(["forecast", "perfect grid"])]
     per = ["hour", "day", "week", "month"]
-    hours = np.array([1, 24, 168, 720])                     # period length; week / month = every 7- / 30-day window
+    hours = np.array([1, 24, 168, 730])                     # period length; week = 7-day block, month = calendar month
     fig, ax = plt.subplots()
     # "perfect grid" leaves only the traffic forecast wrong: the gap to "both forecast" is the grid's
     # share of the error ("grid error only", i.e. perfect traffic, is quoted in the text, not drawn)
     styles = {"forecast": ("-", "o", "both forecast"), "perfect grid": (":", "^", "traffic error only")}
-    for net, col in (("Switch LAN", SW), ("I2 Network", I2)):
+    for net, col in (("switch", SW), ("i2", I2)):
         ys = {}
         for v, (ls, mk, _) in styles.items():
             ys[v] = B[(B.network == net) & (B.variant == v)].set_index("period").wape.reindex(per).to_numpy() * 100
             ax.plot(hours, ys[v], color=col, ls=ls, marker=mk, ms=3.5, mfc=col if ls == "-" else "white", mew=0.8)
         ax.fill_between(hours, ys["perfect grid"], ys["forecast"], color=col, alpha=0.12, lw=0)
     # errors that cancel like independent days shrink as 1 / sqrt(period): a reference from SWITCHlan's day
-    d0 = B[(B.network == "Switch LAN") & (B.variant == "forecast") & (B.period == "day")].wape.iloc[0] * 100
+    d0 = B[(B.network == "switch") & (B.variant == "forecast") & (B.period == "day")].wape.iloc[0] * 100
     ref = np.array([24, 720])
     ax.plot(ref, d0 * np.sqrt(24 / ref) * 1.6, color="0.6", lw=0.6)
     ax.text(150, d0 * np.sqrt(24 / 150) * 1.6, "$\\propto 1/\\sqrt{t}$", fontsize=8, color="0.4", ha="left", va="bottom")
@@ -124,7 +122,7 @@ def fig_periods(out: Path):
     ax.set_xlim(0.6, 1300)
     ax.set_xticks(hours, ["Hour", "Day", "Week", "Month"])
     ax.minorticks_off()
-    ax.set_ylabel("Bill error (\\%)" if plt.rcParams["text.usetex"] else "Bill error (%)")
+    ax.set_ylabel("Bill error (%)")
     ax.grid(True, which="major")
     h = [Line2D([], [], color=SW, label="SWITCHlan"), Line2D([], [], color=I2, label="Internet2")] + \
         [Line2D([], [], color="k", ls=ls, marker=mk, ms=3.5, mfc="k" if ls == "-" else "white", mew=0.8, label=lab)
@@ -143,7 +141,9 @@ def fig_rate_error(out: Path):
         ax.plot(range(len(loads)), d.p90, color=col, marker="o", ms=3, label=f"{kind}, 90th pct.")
         ax.plot(range(len(loads)), d["median"], color=col, marker="o", ms=3, ls="--", label=f"{kind}, median")
     ax.set_yscale("log")
-    pct = "\\%" if plt.rcParams["text.usetex"] else "%"
+    ax.set_ylim(0.9, max(13.0, 1.4 * float(F.p90.max())))         # at least one decade; decade labels only
+    ax.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
+    pct = "%"
     ax.set_xticks(range(len(loads)), [s.replace("%", pct).replace("-", "–") for s in loads], fontsize=8)
     ax.set_xlabel("Load of the link or router (share of capacity)")
     ax.set_ylabel("Error factor")
@@ -160,7 +160,7 @@ def fig_pairs(out: Path):
     for col, c, lab in (("reduction_forecast", I2, "chosen on day-ahead rates"),
                         ("reduction_oracle", "k", "chosen on settled rates")):
         ax.plot([(U[col] * 100 >= v).mean() for v in x], x, color=c, ls="-" if c == I2 else ":", label=lab)
-    pct = "\\%" if plt.rcParams["text.usetex"] else "%"
+    pct = "%"
     ax.set_ylabel(f"Reduction ({pct})")
     ax.set_xlabel("Share of PoP pairs")
     ax.set_xlim(0, 1)
@@ -177,6 +177,10 @@ def fig_steer(out: Path):
     d = D.set_index("hour")[["spans_dark", "today_spans_dark"]].resample("D").mean()
     fig, ax = plt.subplots()
     ax.plot(d.index, d.spans_dark, color=I2, label="hosts follow day-ahead rates")
+    # the number the text quotes: the mean over the hours from day 15 on
+    t15 = d.index[0] + pd.Timedelta(days=14)
+    m15 = D[D.hour >= t15].spans_dark.mean()
+    ax.plot([t15, d.index[-1]], [m15, m15], color=I2, lw=0.6, ls=(0, (1, 1)))
     ax.axhline(C["dark"], color="k", ls=":", label="centralized link sleeping")
     ax.plot(d.index, d.today_spans_dark, color="0.5", ls="--", label="today's routing")
     ax.set_ylabel(f"Dark spans (of {C['spans']})")
@@ -184,7 +188,7 @@ def fig_steer(out: Path):
     ax.xaxis.set_major_locator(mdates.MonthLocator())
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
     ax.grid(True, which="major", axis="y")
-    ax.legend(loc="lower right", frameon=False, handlelength=1.8, borderaxespad=0.1)
+    ax.legend(loc="lower right", bbox_to_anchor=(1, 0.14), frameon=False, handlelength=1.8, borderaxespad=0.1)  # above today's line
     save(fig, out, "eval_steer")
 
 
@@ -200,7 +204,7 @@ def power_traffic_bins() -> dict:
     (power_traffic.py)."""
     out = {}
     for net in ("switch", "i2"):
-        d = pd.read_csv(P / f"power_traffic_{net}.csv.gz")
+        d = pd.read_csv(PT / f"power_traffic_{net}.csv.gz")
         d = d[(d.W > 0) & (d.gbps > 0)]
         g = d.groupby("device")
         x, y = d.gbps / g.gbps.transform("max"), d.W / g.W.transform("median")
@@ -221,7 +225,7 @@ def _pt_axes(ax, xlabel=True, ticks=(0, 0.25, 0.5, 0.75, 1)):
     ax.minorticks_off()
     ax.grid(True, which="major")
     ax.tick_params(labelsize=8)
-    pct = "\\%" if plt.rcParams["text.usetex"] else "%"
+    pct = "%"
     if xlabel:
         ax.set_xlabel(f"Traffic ({pct} of device maximum)", fontsize=8, labelpad=1)
 
@@ -261,7 +265,7 @@ def fig_power_traffic_two(out: Path):
         ax.set_title(f"{lab} ({n})", fontsize=7, pad=2)
     axes[1].tick_params(labelleft=False)
     axes[0].set_ylabel("Power (rel. to median)", fontsize=8, labelpad=2)
-    pct = "\\%" if plt.rcParams["text.usetex"] else "%"
+    pct = "%"
     fig.text(0.545, 0.02, f"Traffic ({pct} of device maximum)", fontsize=8, ha="center", va="bottom")
     with plt.rc_context({"savefig.bbox": "standard"}):
         fig.savefig(out / "power_vs_traffic_twopanel.pdf")
@@ -281,7 +285,7 @@ def power_traffic_numbers() -> dict:
                     "band_p10_min": float(s.lo.min()), "band_p90_max": float(s.hi.max()),
                     "pooled_p10_p90": [float(y.quantile(.1)), float(y.quantile(.9))],
                     "median_top_bin": float(s.med.iloc[-1]), "median_bottom_bin": float(s.med.iloc[0])}
-    json.dump(res, open(P / "power_vs_traffic.json", "w"), indent=1)
+    json.dump(res, open(PT / "power_vs_traffic.json", "w"), indent=1)
     return res
 
 

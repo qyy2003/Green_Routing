@@ -1,0 +1,30 @@
+# round 2 (common periods): the ladder's architectures on hourly input at 1 / 4 / 24 weeks (h_arch.txt),
+# training origins from 2025-02-01 on both networks (periods.TRAIN_START_HOURLY), context may reach further back
+--ds i2 --model dlinear --ctx 168 --norm mean --loss l1 --hist ext --lr 1e-3 --bs 512 --samples 100000 --epochs 12 --patience 4 --tag H_dlinear_c168 --train-from 2025-02-01
+--ds switch --model dlinear --ctx 168 --norm mean --loss l1 --hist ext --lr 1e-3 --bs 512 --samples 100000 --epochs 12 --patience 4 --tag H_dlinear_c168 --train-from 2025-02-01
+--ds i2 --model dlinear --ctx 672 --norm mean --loss l1 --hist ext --lr 1e-3 --bs 512 --samples 100000 --epochs 12 --patience 4 --tag H_dlinear_c672 --train-from 2025-02-01
+--ds switch --model dlinear --ctx 672 --norm mean --loss l1 --hist ext --lr 1e-3 --bs 512 --samples 100000 --epochs 12 --patience 4 --tag H_dlinear_c672 --train-from 2025-02-01
+--ds i2 --model dlinear --ctx 4032 --norm mean --loss l1 --hist ext --lr 1e-3 --bs 512 --samples 100000 --epochs 12 --patience 4 --tag H_dlinear_c4032 --train-from 2025-02-01
+--ds switch --model dlinear --ctx 4032 --norm mean --loss l1 --hist ext --lr 1e-3 --bs 512 --samples 100000 --epochs 12 --patience 4 --tag H_dlinear_c4032 --train-from 2025-02-01
+--ds i2 --model patchtst --ctx 168 --norm mean --loss l1 --hist ext --lr 3e-4 --bs 512 --samples 100000 --epochs 12 --patience 4 --tag H_patchtst_c168 --train-from 2025-02-01
+--ds switch --model patchtst --ctx 168 --norm mean --loss l1 --hist ext --lr 3e-4 --bs 512 --samples 100000 --epochs 12 --patience 4 --tag H_patchtst_c168 --train-from 2025-02-01
+--ds i2 --model patchtst --ctx 672 --norm mean --loss l1 --hist ext --lr 3e-4 --bs 512 --samples 100000 --epochs 12 --patience 4 --tag H_patchtst_c672 --train-from 2025-02-01
+--ds switch --model patchtst --ctx 672 --norm mean --loss l1 --hist ext --lr 3e-4 --bs 512 --samples 100000 --epochs 12 --patience 4 --tag H_patchtst_c672 --train-from 2025-02-01
+--ds i2 --model patchtst --ctx 4032 --norm mean --loss l1 --hist ext --lr 3e-4 --bs 512 --samples 100000 --epochs 12 --patience 4 --tag H_patchtst_c4032 --train-from 2025-02-01
+--ds switch --model patchtst --ctx 4032 --norm mean --loss l1 --hist ext --lr 3e-4 --bs 512 --samples 100000 --epochs 12 --patience 4 --tag H_patchtst_c4032 --train-from 2025-02-01
+--ds i2 --model gru --ctx 168 --norm mean --loss l1 --hist ext --lr 1e-3 --bs 256 --samples 100000 --epochs 12 --patience 4 --tag H_gru_c168 --eval-bs 256 --train-from 2025-02-01
+--ds switch --model gru --ctx 168 --norm mean --loss l1 --hist ext --lr 1e-3 --bs 256 --samples 100000 --epochs 12 --patience 4 --tag H_gru_c168 --eval-bs 256 --train-from 2025-02-01
+--ds i2 --model gru --ctx 672 --norm mean --loss l1 --hist ext --lr 1e-3 --bs 256 --samples 100000 --epochs 12 --patience 4 --tag H_gru_c672 --eval-bs 256 --train-from 2025-02-01
+--ds switch --model gru --ctx 672 --norm mean --loss l1 --hist ext --lr 1e-3 --bs 256 --samples 100000 --epochs 12 --patience 4 --tag H_gru_c672 --eval-bs 256 --train-from 2025-02-01
+--ds i2 --model tcn --ctx 168 --norm mean --loss l1 --hist ext --lr 1e-3 --bs 256 --samples 100000 --epochs 12 --patience 4 --tag H_tcn_c168 --train-from 2025-02-01
+--ds switch --model tcn --ctx 168 --norm mean --loss l1 --hist ext --lr 1e-3 --bs 256 --samples 100000 --epochs 12 --patience 4 --tag H_tcn_c168 --train-from 2025-02-01
+--ds i2 --model tcn --ctx 672 --norm mean --loss l1 --hist ext --lr 1e-3 --bs 256 --samples 100000 --epochs 12 --patience 4 --tag H_tcn_c672 --train-from 2025-02-01
+--ds switch --model tcn --ctx 672 --norm mean --loss l1 --hist ext --lr 1e-3 --bs 256 --samples 100000 --epochs 12 --patience 4 --tag H_tcn_c672 --train-from 2025-02-01
+--ds i2 --model gru --ctx 4032 --norm mean --loss l1 --hist ext --lr 1e-3 --bs 128 --samples 100000 --epochs 12 --patience 4 --tag H_gru_c4032 --eval-bs 256 --train-from 2025-02-01
+--ds switch --model gru --ctx 4032 --norm mean --loss l1 --hist ext --lr 1e-3 --bs 128 --samples 100000 --epochs 12 --patience 4 --tag H_gru_c4032 --eval-bs 256 --train-from 2025-02-01
+--ds i2 --model tcn --ctx 4032 --norm mean --loss l1 --hist ext --lr 1e-3 --bs 128 --samples 100000 --epochs 12 --patience 4 --tag H_tcn_c4032 --eval-bs 256 --train-from 2025-02-01
+--ds switch --model tcn --ctx 4032 --norm mean --loss l1 --hist ext --lr 1e-3 --bs 128 --samples 100000 --epochs 12 --patience 4 --tag H_tcn_c4032 --eval-bs 256 --train-from 2025-02-01
+# resolution: PatchTST, one week, 5-minute vs hourly input (panel only: training from the panel start 2025-11-15)
+--ds switch --model patchtst --res 5m --ctx 2016 --H 2016 --patch 16 --norm log_revin --loss huber --lr 3e-4 --tag D_pt_5m_log_huber
+--ds switch --model patchtst --ctx 168 --norm log_revin --loss huber --lr 3e-4 --tag A_pt_c168_log_huber
+--ds i2 --model patchtst --ctx 168 --norm log_revin --loss huber --lr 3e-4 --tag A_pt_c168_log_huber

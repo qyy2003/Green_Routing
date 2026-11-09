@@ -22,6 +22,7 @@ import i2_rates as IR                     # noqa: E402
 import simulate as SIM                    # noqa: E402
 
 P = IR.ARTIFACTS_DIR / "paper"
+import periods as PER                     # noqa: E402
 
 
 def wq(v: pd.Series, w: pd.Series, ps) -> list:
@@ -38,20 +39,24 @@ def main():
         out[f"{net}_citypair_unweighted_p10_p50_p90"] = [round(x, 5) for x in c.g_per_GB.quantile([.1, .5, .9])]
         h = pd.read_csv(P / f"hourly_year_{net}.csv", index_col=0)
         out[f"{net}_hours_bytes_p10_p50_p90"] = wq(h.r, h.T_gbps, (.1, .5, .9))
-        d = pd.read_csv(P / f"hourly_{net}.csv", index_col=0, parse_dates=True).dropna()
-        bill = d.Ef * d["T"] / d.Tf
+        d = pd.read_csv(PER.ROOT / "flat" / f"hourly_{net}.csv.gz", index_col=0, parse_dates=True)
+        d = d[d.period == "TEST"].dropna(subset=["T", "Tf", "E", "Ef"])
+        bill = d.Ef * d["T"] / d.Tf                                    # no margin (flat_common.py has both)
         D = pd.DataFrame({"b": bill.groupby(d.index.floor("D")).sum(), "e": d.E.groupby(d.index.floor("D")).sum()})
         out[f"{net}_daily_emissions_kg"] = float(D.e.mean() / 1e3)
         out[f"{net}_daily_abs_bill_error_kg"] = float((D.b - D.e).abs().mean() / 1e3)
     R = IR.load_rates()
     net = SIM.Net()
-    s = pd.read_csv(P / "i2" / "everyone_spans.csv", index_col=0).share_hours_dark
+    S = pd.read_csv(P / "i2" / "everyone_spans.csv", index_col=0)
+    s = S.share_hours_dark
     idx = [net.res.index(r) for r in s.index]
     e_share = R["E"][:, idx].sum(0) / R["E"].sum()
     for thr in (0.9, 0.99):
         m = (s >= thr).to_numpy()
         out[f"spans_dark_ge{int(thr * 100)}"] = int(m.sum())
         out[f"E_share_spans_dark_ge{int(thr * 100)}"] = float(e_share[m].sum())
+    ev = json.load(open(P / "i2" / "everyone.json"))                 # from day 15 on (steering.py)
+    out["from_day15"] = {k: ev[k] for k in ev if k.startswith("from_day15")}
     out["spearman_dark_vs_load_today"] = float(spearmanr(s, R["U"][:, idx].mean(0)).correlation)
     E = pd.read_csv(P / "i2" / "entity_bills.csv", index_col=0)
     out["i2_named_examples_kg_per_year"] = E.loc[["MAX", "CENIC", "GPN"], ["flat_kg_per_year", "path_kg_per_year"]].round(0).to_dict("index")

@@ -19,6 +19,9 @@ import pandas as pd
 from green_routing.paths import ARTIFACTS_DIR
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import periods as PER                                                # noqa: E402
+
 OUT = ARTIFACTS_DIR / "paper"
 I2C = ARTIFACTS_DIR / "internet2" / "carbon"
 
@@ -29,7 +32,7 @@ def switch_year() -> pd.DataFrame:
     import run as R
     from green_routing.carbon import assumptions as A
     E = G.switch_emissions()                                      # g/h, backbone, actual grid
-    H = pd.date_range(R.TEST[-1] - pd.Timedelta(days=364), R.TEST[-1] + pd.Timedelta(hours=23), freq="h")
+    H = PER.hours(PER.ANNUAL)                                     # the annual window (periods.py)
     T = R.T.reindex(H)                                            # Gbit/s, truth
     df = pd.DataFrame({"E": E.reindex(H), "T_gbps": T})
     df["r"] = df.E / (df.T_gbps * 1e3 * A.GB_PER_MBPS_HOUR)       # g/GB
@@ -37,7 +40,7 @@ def switch_year() -> pd.DataFrame:
 
 
 def i2_year() -> pd.DataFrame:
-    fr = pd.read_csv(I2C / "flat_rate_hourly.csv", index_col=0, parse_dates=True)
+    fr = pd.read_csv(I2C / "flat_rate_hourly.csv", index_col=0, parse_dates=True).reindex(PER.hours(PER.ANNUAL))
     df = pd.DataFrame({"E": fr.E_g_per_h, "T_gbps": fr.V_mbps / 1e3, "r": fr.flat_g_per_GB})
     return df.dropna()
 
@@ -73,7 +76,7 @@ def switch_kwh_per_gb() -> dict:
     from green_routing.carbon import assumptions as A, bills
     from green_routing.paths import reference_dir
     C, NET = ARTIFACTS_DIR / "carbon", ARTIFACTS_DIR / "network"
-    H = pd.date_range(R.TEST[0], R.TEST[-1] + pd.Timedelta(hours=23), freq="h")
+    H = PER.hours(PER.ANNUAL)                                     # the annual window (periods.py)
     doors = pd.read_csv(C / "allocation" / "doors.csv")
     tiers = pd.read_csv(NET / "routers.csv").set_index("dev").tier
     _, Pbb, _ = bills.window_power(pd.read_csv(C / "inventory" / "routers.csv"),
@@ -87,17 +90,29 @@ def switch_kwh_per_gb() -> dict:
 
 
 def i2_kwh_and_power() -> dict:
+    """Site kW and kWh/GB over the annual window (carbon.py's power, PUE 1.5, scored hours); day-ahead
+    persistence of PoP power over the test block."""
     s = json.load(open(I2C / "summary.json"))
-    kwh_gb = s["site_kW"] * s["year_hours"] / (s["PB_year"] * 1e6)
+    sys.path.insert(0, str(HERE))
+    import factcheck as FC
+    kw = FC.i2_site_power().reindex(PER.hours(PER.ANNUAL))
+    fr = pd.read_csv(I2C / "flat_rate_hourly.csv", index_col=0, parse_dates=True).reindex(kw.index)
+    ok = fr.flat_g_per_GB.notna() & kw.notna()
+    kwh_gb = float(kw[ok].sum() / (fr.V_mbps[ok].sum() * 3600 / 8 / 1e3))
+    s = dict(s, site_kW=float(kw[ok].mean()))
     W = pd.read_csv(ARTIFACTS_DIR / "internet2" / "data" / "power_hourly.csv.gz", parse_dates=["time"])
     W = W[W.dc & W["pop"].notna()]
-    P = W.pivot_table(index="time", columns="pop", values="watts", aggfunc="sum")
-    P = P.loc[(P.index >= s["test"][0]) & (P.index < s["test"][1])]
+    W = W[(W.time >= s["test"][0]) & (W.time < s["test"][1])]
+    # a PoP-hour counts only when every circuit of the PoP reports (missing readings are export gaps)
+    g = W.groupby(["time", "pop"]).watts
+    P = g.sum(min_count=1).unstack().where(g.count().unstack() == g.size().unstack())
     P = P.loc[:, P.median() > 0]
-    tot = P.sum(axis=1)
+    P = P.reindex(pd.date_range(P.index.min(), P.index.max(), freq="h"))         # a regular grid for the shift
+    tot = P.sum(axis=1, min_count=P.shape[1])                                     # hours with every PoP complete
     pers = tot.shift(24)
     ok = pers.notna() & tot.notna()
-    pop_err = ((P - P.shift(24)).abs().sum() / P.sum()).median()
+    D = (P - P.shift(24)).abs()
+    pop_err = (D.sum() / P.where(D.notna()).sum()).median()
     return {"site_kW": s["site_kW"], "kWh_per_GB": kwh_gb,
             "power_dayahead_persistence_wape_total": float((pers[ok] - tot[ok]).abs().sum() / tot[ok].sum()),
             "power_dayahead_persistence_wape_median_pop": float(pop_err),

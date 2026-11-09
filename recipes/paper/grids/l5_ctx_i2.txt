@@ -1,0 +1,13 @@
+# round 2: the 5-minute long-context transformer (long5m.py) as in Fig. app-context, training from 2025-11-15
+--ds i2 --model seg --lr 5e-4 --squash 10 --ctx 2016 --seg full --seed 0 --train-from 2025-11-15 --tag L5s_seg_full_1w
+--ds i2 --model seg --lr 5e-4 --squash 10 --ctx 8064 --seg multires --seed 0 --train-from 2025-11-15 --tag L5s_seg_multires_4w
+--ds i2 --model seg --lr 5e-4 --squash 10 --ctx 48384 --seg multires --seed 0 --train-from 2025-11-15 --tag L5s_seg_multires_24w
+--ds i2 --model seg --lr 5e-4 --squash 10 --ctx 2016 --seg full --seed 1 --train-from 2025-11-15 --tag L5s_seg_full_1w_s1
+--ds i2 --model seg --lr 5e-4 --squash 10 --ctx 8064 --seg multires --seed 1 --train-from 2025-11-15 --tag L5s_seg_multires_4w_s1
+--ds i2 --model seg --lr 5e-4 --squash 10 --ctx 48384 --seg multires --seed 1 --train-from 2025-11-15 --tag L5s_seg_multires_24w_s1
+--ds i2 --model seg --lr 5e-4 --squash 10 --ctx 2016 --seg full --seed 2 --train-from 2025-11-15 --tag L5s_seg_full_1w_s2
+--ds i2 --model seg --lr 5e-4 --squash 10 --ctx 8064 --seg multires --seed 2 --train-from 2025-11-15 --tag L5s_seg_multires_4w_s2
+--ds i2 --model seg --lr 5e-4 --squash 10 --ctx 48384 --seg multires --seed 2 --train-from 2025-11-15 --tag L5s_seg_multires_24w_s2
+--ds i2 --model seg --lr 5e-4 --squash 10 --ctx 24192 --seg multires --train-from 2025-11-15 --tag L5s_seg_multires_12w
+--ds i2 --squash 10 --seed 3 --save 1 --ctx 8064 --model seg --seg multires --lr 5e-4 --train-from 2025-11-15 --tag L5s_seg_multires_4w_s3
+--ds i2 --squash 10 --seed 3 --save 1 --ctx 48384 --model seg --seg multires --lr 5e-4 --train-from 2025-11-15 --tag L5s_seg_multires_24w_s3

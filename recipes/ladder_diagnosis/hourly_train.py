@@ -484,6 +484,9 @@ def run(args):
         tr_s, tr_j, va_s, va_j = data.origins(args.ctx, args.H, WEEK)
     else:
         lo = 0 if not args.train_months else max(0, data.train_end - int(args.train_months * 730.5 * sph))
+        if args.train_from:                 # first training origin (context may reach further back)
+            t = pd.Timestamp(args.train_from, tz="UTC").value // 10**9
+            lo = max(lo, int((t - (int(data.ds.hts[0]) - 3600 * data.pre)) // (3600 // sph)))
         tr_s, tr_j = valid_origins(data, lo, data.train_end, args.ctx, args.H, WEEK * sph)
         va_s, va_j = valid_origins(data, data.val[0], data.val[1], args.ctx, args.H,
                                    WEEK * sph, step=6 * sph)
@@ -660,6 +663,7 @@ def main():
     ap.add_argument("--joint", default="", help="train on several networks, e.g. i2,switch")
     ap.add_argument("--eval-bs", type=int, default=4096, help="validation batch (GRU/TCN at long context: 256)")
     ap.add_argument("--extra", default="", help="i2doors: train also on every I2 door series")
+    ap.add_argument("--train-from", default="", help="first training origin (date)")
     ap.add_argument("--train-months", type=float, default=0,
                     help="training targets only from the last N months before the cutoff")
     args = ap.parse_args()

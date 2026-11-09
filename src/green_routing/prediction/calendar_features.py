@@ -35,6 +35,16 @@ K_CAL = 11
 # Apr 6, Ascension May 14, Whit Monday May 25, Corpus Christi Jun 4 (catholic
 # cantons; included — SWITCH sites in FR/LU/TI/VS observe it).
 HOLIDAYS = {
+    # first half of 2025 (added 2026-11-08 for training windows from 2025-02; Easter 2025: Apr 20).
+    # Windows that start on or after 2025-07-01 (the year run) are unchanged.
+    "2025-01-01",  # New Year
+    "2025-01-02",  # Berchtoldstag (most cantons)
+    "2025-04-18",  # Good Friday
+    "2025-04-21",  # Easter Monday
+    "2025-05-01",  # Labour Day (several cantons incl. ZH, BS)
+    "2025-05-29",  # Ascension
+    "2025-06-09",  # Whit Monday
+    "2025-06-19",  # Corpus Christi (catholic cantons)
     "2025-08-01",  # National Day 2025 (year-scale window)
     "2025-12-25",  # Christmas
     "2025-12-26",  # St. Stephen's Day
@@ -49,7 +59,7 @@ HOLIDAYS = {
     "2026-08-01",  # National Day
 }
 # Table validity range — build_calendar refuses timestamps beyond this.
-_TABLE_SPAN = ("2025-06-01", "2026-08-31")
+_TABLE_SPAN = ("2025-01-01", "2026-08-31")
 
 
 def build_calendar(timestamps: np.ndarray) -> np.ndarray:

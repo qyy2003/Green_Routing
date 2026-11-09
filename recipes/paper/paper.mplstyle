@@ -1,7 +1,7 @@
 # The paper's plot style (owner's config, 2026-11-06), adapted to matplotlib 3.11:
 # axes.color_cycle -> axes.prop_cycle; "pdf.fonttype = 42" -> "pdf.fonttype: 42";
-# ps.usedistiller dropped (PostScript only). text.usetex is switched on by figures.py when a
-# LaTeX installation is found; without one, STIX (Times-like) fonts stand in.
+# ps.usedistiller dropped (PostScript only). text.usetex stays off, also where LaTeX is
+# installed (owner's request, round 2): matplotlib's STIX (Times-like) fonts.
 font.family: serif
 font.serif: Times, Times New Roman, STIXGeneral
 mathtext.fontset: stix

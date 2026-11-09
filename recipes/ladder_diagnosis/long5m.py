@@ -343,7 +343,12 @@ def run(args):
     data = Data5(ds, args.hist)
     C, H = args.ctx, W
     Wn = Windows5(data, C, H, dev, args.squash, args.norm)
-    tr_s, tr_j = valid_origins(data, 12 + data.h0, data.train_end, C, H, W, step=12)
+    lo = 12 + data.h0
+    if args.train_from:                     # first training origin (context may reach further back)
+        t = pd.Timestamp(args.train_from, tz="UTC").value // 10**9
+        lo = max(lo, int((t - (int(ds.ts[0]) - 300 * data.pre)) // 300))
+        lo += (data.h0 - lo) % 12
+    tr_s, tr_j = valid_origins(data, lo, data.train_end, C, H, W, step=12)
     va_s, va_j = valid_origins(data, data.val[0], data.val[1], C, H, W, step=D)
     print(f"[{args.tag}] train windows {len(tr_s):,}  val windows {len(va_s):,}  "
           f"pre={data.pre}  coarse share of train contexts ~"
@@ -517,6 +522,7 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--save", type=int, default=0, help="1: keep the selected weights (model.pt)")
     ap.add_argument("--tag", required=True)
+    ap.add_argument("--train-from", default="", help="first training origin (date); default the first possible")
     run(ap.parse_args())
 
 

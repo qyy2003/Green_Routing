@@ -161,7 +161,7 @@ def everyone(seed: int = 0):
     hist_E = {t: e for t, e in zip(Tp, P["E"])}
     hist_X = {t: x.sum() for t, x in zip(Tp, P["X_em"])}
     K = S.n * S.n
-    rows, span_dark = [], []
+    rows, span_dark, span_E = [], [], []
     mult, cur_day = None, None
     for h in range(len(T)):
         t = T[h]
@@ -215,6 +215,7 @@ def everyone(seed: int = 0):
                          today_util_max=float(((S.A_link @ x) / S.cap).max()),
                          today_hops_per_byte=float((np.asarray(S.A_link.sum(axis=0)).ravel() * x).sum() / x.sum())))
         span_dark.append(dark[S.is_span])
+        span_E.append(E[S.is_span])
         hist_U[t], hist_E[t] = U, E
         if h % 168 == 0:
             log(f"  {t} dark spans {dark.sum()} util max {util.max():.2f} rounds {rounds} moved {rows[-1]['bytes_moved']:.2f}")
@@ -229,6 +230,23 @@ def everyone(seed: int = 0):
     res = {"mean": D.drop(columns=["hour"]).mean().to_dict(), "last_4_weeks_mean": last.drop(columns=["hour"]).mean().to_dict(),
            "spans_dark_all_block": int((sd.mean() == 1).sum()), "spans_dark_last_4_weeks_all": int((sd.iloc[-24 * 28:].mean() == 1).sum()),
            "spans": int(len(names))}
+    # from day 15 on (the paper's "within two weeks"), and the spans dark in >= 90 % of hours with their share
+    # of the network's emissions over the same hours (whole block / from day 15)
+    hrs = pd.to_datetime(D.hour)
+    late = (hrs >= hrs.iloc[0].floor("D") + pd.Timedelta(days=14)).to_numpy()
+    Esp = np.array(span_E)
+    Etot = np.array([R["E"][h].sum() for h in range(len(T)) if R["ok"][h]])
+    res["from_day15_mean"] = D[late].drop(columns=["hour"]).mean().to_dict()
+    res["from_day15_median_spans_dark"] = float(D[late].spans_dark.median())
+    res["from_day15_hours"] = int(late.sum())
+    for tag, m in (("block", np.ones(len(D), bool)), ("from_day15", late)):
+        share = sd[m].mean()
+        for thr in (0.9, 0.99, 1.0):
+            k = (share >= thr - 1e-12).to_numpy()
+            res[f"{tag}_spans_dark_ge{int(round(100 * thr))}"] = int(k.sum())
+            res[f"{tag}_E_share_spans_dark_ge{int(round(100 * thr))}"] = float(Esp[m][:, k].sum() / Etot[m].sum())
+    pd.DataFrame({"share_hours_dark": sd.mean(), "share_hours_dark_from_day15": sd[late].mean()}).to_csv(
+        OUT / f"everyone_spans{_tag()}.csv")
     json.dump(res, open(OUT / f"everyone{_tag()}.json", "w"), indent=1)
     log(json.dumps(res, indent=1))
 

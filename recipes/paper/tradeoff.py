@@ -18,7 +18,6 @@ writes $GR_ARTIFACTS_DIR/paper/appendix/{sweep_totals.csv, timing.csv, tradeoff_
 from __future__ import annotations
 
 import json
-import shutil
 import sys
 import time
 from pathlib import Path
@@ -29,12 +28,18 @@ import pandas as pd
 from green_routing.paths import ARTIFACTS_DIR, REPO_ROOT
 
 HERE = Path(__file__).resolve().parent
-A = ARTIFACTS_DIR
+sys.path.insert(0, str(HERE))
+import periods as PER                                              # noqa: E402
+
+A = ARTIFACTS_DIR                                                  # run with the overlay root (round 2)
 OUT = A / "paper" / "appendix"
 FIG = REPO_ROOT / "6aea077f0929c9a3a1ac5660" / "figure_appendix"
 CTXS = (168, 336, 672, 2016, 4032, 8064)
 PRETRAINED = ("timestral", "chronos-2", "timesfm-2.5")
-N_LINKS = {"switch": 534, "i2": 113}
+N_LINKS = {"switch": 555, "i2": 113}                               # the per-link runs of ladder_common.sh
+TIMING_LINKS = {"switch": 534, "i2": 113}                          # links in round 1's timing.csv (same machine)
+PC = PER.ROOT
+LDC = A / "ladder_diagnosis"
 PNG = None
 
 
@@ -50,8 +55,10 @@ def totals():
     import timestral_total as TT
     C = A / "internet2" / "carbon"
     tab = pd.read_csv(C / "dayahead_hourly.csv", index_col=0, parse_dates=True)
-    i2_days = pd.date_range(tab.index.min().floor("D"), tab.index.max().floor("D"), freq="D")
-    return {"switch": (R.S, R.TEST, R.T), "i2": (TT.total_series(), i2_days, tab.actual)}
+    sys.path.insert(0, str(HERE))
+    import periods as PER
+    days = PER.days(PER.TEST)                                      # the common test block (periods.py)
+    return {"switch": (R.S, days, R.T), "i2": (TT.total_series(), days, tab.actual)}
 
 
 def sweep():
@@ -91,6 +98,8 @@ def timing():
     rows = []
 
     def add(**kw):
+        tg = kw.get("target", "")
+        kw["links"] = N_LINKS[tg.split("_", 1)[1]] if tg.startswith("links_") else 1   # links timed (for rescaling)
         rows.append(kw)
         log(f"[timing] {kw}")
 
@@ -176,27 +185,36 @@ def timing():
 
 # --- points: (configuration, error, inference time) ----------------------------------------------
 def points() -> pd.DataFrame:
+    """Error (test block) against inference time. Times: timing.csv (`tradeoff.py timing`; if missing, round 1's
+    measurement on this machine is copied from <repo>/artifacts/paper/appendix and its per-link times are scaled
+    to the runs' link counts)."""
+    if not (OUT / "timing.csv").exists():
+        import shutil
+        shutil.copy(REPO_ROOT / "artifacts" / "paper" / "appendix" / "timing.csv", OUT / "timing.csv")
     T = pd.read_csv(OUT / "timing.csv")
+    for net in ("switch", "i2"):
+        k = T.target == f"links_{net}"
+        timed = T.loc[k, "links"] if "links" in T else TIMING_LINKS[net]   # round 1's file has no "links" column
+        T.loc[k, "seconds"] *= N_LINKS[net] / timed
     S = pd.read_csv(OUT / "sweep_totals.csv")
     tm = lambda **k: float(T.loc[np.logical_and.reduce([T[a] == b for a, b in k.items()]), "seconds"].iloc[0])  # noqa: E731
     rows = []
-    a = pd.read_csv(A / "ladder_diagnosis" / "all_runs.csv")
+    a = pd.read_csv(OUT / "timestral_context.csv")                     # appendix.py: Timestral per link by context
     for net in ("switch", "i2"):
         tgt = f"links_{net}"
         # per link: Timestral by context (hourly), Timestral 5-minute 4 w, the ladder, the hourly architectures
-        for _, r in a[(a.ds == net) & (a.model == "timestral-209M")].iterrows():
+        for _, r in a[(a.network == net) & (a.horizon == "day")].iterrows():
             rows.append(dict(network=net, level="links", family="Timestral", label=f"{int(r.ctx) // 168} w",
-                             weeks=r.ctx / 168, error=r.day, seconds=tm(model="timestral-209M", target=tgt, context=int(r.ctx))))
-        base = {"switch": A / "pred_year_sym" / "merged", "i2": A / "internet2" / "links" / "merged"}[net]
-        p = pd.read_csv(base / "dense_fm" / "tables_both" / "block" / "per_link.csv")
+                             weeks=r.ctx / 168, error=r.median_wape, seconds=tm(model="timestral-209M", target=tgt, context=int(r.ctx), step="1h")))
+        p = pd.read_csv(PC / "links" / net / "dense_fm" / "tables_both" / "block" / "per_link.csv")
         med = p[p.horizon_name == "day"].groupby("model").wape_1h.median()
         rows.append(dict(network=net, level="links", family="Timestral (5-min)", label="4 w", weeks=4,
-                         error=med["timestral@5m_4w"], seconds=tm(model="timestral-209M", target=tgt, context=8064)))
+                         error=med["timestral@5m_4w"], seconds=tm(model="timestral-209M", target=tgt, context=8064, step="5min")))
         for m in ("dlinear", "gru", "tcn", "patchtst"):
             rows.append(dict(network=net, level="links", family=f"{m} (5-min)", label="1 w", weeks=1, error=med[m],
                              seconds=tm(model=f"{m} (5-min, 1 w)", target=tgt)))
             for ctx in (168, 672, 4032):
-                f = A / "ladder_diagnosis" / net / "runs" / f"H_{m}_c{ctx}" / "summary.json"
+                f = LDC / net / "runs" / f"H_{m}_c{ctx}" / "summary.json"
                 if f.exists():
                     rows.append(dict(network=net, level="links", family=f"{m} (hourly)", label=f"{ctx // 168} w", weeks=ctx / 168,
                                      error=json.load(open(f))["test"]["day"]["median_wape"],
@@ -210,7 +228,7 @@ def points() -> pd.DataFrame:
             mname = "timestral-209M" if r.model == "timestral" else r.model
             rows.append(dict(network=net, level="total", family=fam, label=f"{int(r.context_h) // 168} w",
                              weeks=r.context_h / 168, error=100 * r.hourly_wape,
-                             seconds=tm(model=mname, target="total", context=int(r.context_h))))
+                             seconds=tm(model=mname, target="total", context=int(r.context_h), step="1h")))
         tmods = pd.read_csv(OUT / "total_models.csv")
         tmods = tmods[tmods.network == net].set_index("model")
         for m, lab in (("dlinear", "DLinear"), ("gru", "GRU"), ("tcn", "TCN"), ("patchtst", "PatchTST")):
@@ -290,6 +308,7 @@ def fig_pareto(P: pd.DataFrame):
             if j == 0:
                 ax.set_ylabel("Error (%)", fontsize=8)
             hi = np.percentile(g.error, 85) * 1.15
+            hi = max(hi, g[g.family == "Timestral"].error.max() * 1.04)   # keep Timestral's whole context line in view
             ax.set_ylim(min(g.error) * 0.9, hi)
     h = [Line2D([], [], color=STYLE[k][0], marker=STYLE[k][1], ls="-" if STYLE[k][2] else "", ms=3.5,
                 mfc=STYLE[k][0] if k != "Timestral (5-min)" else "white", label=k) for k in STYLE if k != "rule"] + \
@@ -301,10 +320,31 @@ def fig_pareto(P: pd.DataFrame):
     _save(fig, "app_pareto")
 
 
+def data_size_table() -> pd.DataFrame:
+    """Internet2's learning-curve runs (appendix_runs.sh data: tags N_*, D2_*) from their summaries."""
+    rows = []
+    for f in sorted((LDC / "i2" / "runs").glob("*/summary.json")):
+        if not f.parent.name.startswith(("N_", "D2_")):
+            continue
+        s = json.load(open(f))
+        g = s["args"]
+        rows.append(dict(tag=f.parent.name, model=g["model"], ctx=g["ctx"],
+                         months=g.get("train_months") or 61.0, extra=g.get("extra", ""), seed=g["seed"],
+                         day=s["test"]["day"]["median_wape"], week=s["test"]["week"]["median_wape"],
+                         val=s.get("best_val"), ep=s.get("epochs_run"), windows=s.get("train_windows")))
+    d = pd.DataFrame(rows)
+    d.to_csv(OUT / "data_size_runs.csv", index=False)
+    return d
+
+
 def fig_learning():
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
-    d = pd.read_csv(A / "ladder_diagnosis" / "i2" / "data_size_runs.csv")
+    d = data_size_table()
+    tc = pd.read_csv(OUT / "timestral_context.csv")
+    t24 = float(tc[(tc.network == "i2") & (tc.horizon == "day") & (tc.ctx == 4032)].median_wape.iloc[0])
+    ft = [json.load(open(f)) for f in sorted((LDC / "i2" / "runs").glob("F2_ft_i2_*/summary.json"))]
+    ft = min(ft, key=lambda s: s["best_val"])["test"]["day"]["median_wape"] if ft else np.nan   # chosen on validation
     d["cond"] = np.where(d.extra.fillna("") == "i2doors", "61+", d.months.astype(float).astype(str))
     order = ["6.0", "12.0", "24.0", "61.0", "61+"]
     labels = ["6 months", "1 year", "2 years", "5 years", "5 years\n+ doors"]
@@ -313,13 +353,15 @@ def fig_learning():
                                 (("profmlp", 672), "#188487", "--", "D"), (("profmlp", 4032), "#188487", "-", "D")):
         g = d[(d.model == m) & (d.ctx == ctx)].groupby("cond").day.mean().reindex(order)
         ax.plot(range(len(order)), g.to_numpy(), color=c, ls=ls, marker=mk, ms=3, mfc="white" if ctx == 672 else c)
-    ax.axhline(16.22, color="k", lw=1.2)
-    ax.axhline(16.07, color="k", lw=0.8, ls=":")
-    ax.text(0, 16.35, "Timestral, no training", fontsize=7, va="bottom")
+    ax.axhline(t24, color="k", lw=1.2)
+    ax.axhline(ft, color="k", lw=0.8, ls=":")
+    ax.text(0, t24 + 0.13, "Timestral, no training", fontsize=7, va="bottom")
     ax.set_xticks(range(len(order)), labels, fontsize=7)
     ax.set_ylabel("Link error (%)")
     ax.set_xlabel("History the trained models learn from")
-    ax.set_ylim(15.5, 22.5)
+    top = max(np.nanmax(d.groupby(["model", "ctx", "cond"]).day.mean()), t24) + 2.6   # room for the legend above the curves
+    ax.set_ylim(np.floor(min(t24, ft) - 1.2), top)
+    ax.yaxis.set_major_locator(plt.MultipleLocator(2))
     ax.grid(True, which="major", axis="y")
     h = [Line2D([], [], color="#7A68A6", marker="s", ms=3, label="PatchTST"),
          Line2D([], [], color="#188487", marker="D", ms=3, label="profile MLP"),
@@ -332,9 +374,7 @@ def fig_learning():
 def main():
     global PNG
     import matplotlib.pyplot as plt
-    plt.style.use(HERE / "paper.mplstyle")
-    if shutil.which("latex"):
-        plt.rcParams["text.usetex"] = True
+    plt.style.use(HERE / "paper.mplstyle")              # matplotlib's own fonts, also where LaTeX is installed
     args = [a for a in sys.argv[1:] if not a.startswith("--png=")]
     png = [a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--png=")]
     PNG = Path(png[0]) if png else None

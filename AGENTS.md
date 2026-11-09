@@ -5,7 +5,7 @@ from the code: the state of the work, the facts the numbers rest on, the decisio
 and the traps already fallen into. The user-facing docs are in `docs/`; this file links to
 them rather than repeating them.
 
-Last updated: 2026-11-08.
+Last updated: 2026-11-09.
 
 ## 1. State of the project
 
@@ -101,6 +101,12 @@ Last updated: 2026-11-08.
     report `6aea077f0929c9a3a1ac5660/REPORT.md`): posted flat rate x (1 - m) after the 7-day grid correction, m = smallest
     on a 0.5 % grid with own share >= 0 in >= 90 % of the development period's 30-day windows: SWITCHlan 6.0 %, I2 0.5 %;
     every main-text number checked; new Fig. 2 (`figures/power_vs_traffic.pdf`). Paper not compiled (no TeX on the box).
+  - Paper round 2, one set of periods for both networks (2026-11-09, branch `paper-common-periods`; config
+    `recipes/paper/periods.py`, driver `recipes/paper/run_common.sh`, outputs `artifacts/paper_common/`, report
+    `6aea077f…/REPORT2.md` with a replacement table for every number): test 2026-04-01 -> 06-30, development 2025-04-01 ->
+    2026-03-31, annual 2025-07-01 -> 2026-06-30, later 2026-07-01 -> 09-30; per-link models retrained from 2025-11-15 (555
+    SWITCHlan links, 113 I2), hourly models and totals from 2025-02-01. The paper scripts run unchanged on an overlay
+    (`GR_ARTIFACTS_DIR=artifacts/paper_common/root`, `GR_LD_*` overrides for `ladder_diagnosis/common.py`).
 - **Next expected tasks**: improve the day-ahead grid-factor forecast (it causes most of
   the bill error: log Electricity Maps' own forecast daily and score it); get the 31
   routers missing from the export back from SWITCH. The year benchmark was cross-verified
@@ -136,7 +142,7 @@ Last updated: 2026-11-08.
 | `recipes/internet2/` | `fetch.py` (download stages), `make_data.py` (ports, links, doors, power, 5-min mirror), `carbon.py`, `tunnels.py` (2021 matrix check), `run.sh`, `pops.csv` (PoP -> BA), `fuel_factors.csv`, `timestral_total.py` |
 | `recipes/ladder_diagnosis/` | ladder vs Timestral: `common.py` (block hourly-WAPE evaluator, matches `gr-dense metrics`), `hourly_train.py` (ablation harness: resolution, context, normalisation, loss, history, joint networks), `timestral_ctx.py`, `ft_timestral.py`, `compare.py` (paired, day bootstrap; `day5`/`week5` = 5-minute WAPE), `grids/*.txt` + `sweep.py`; `long5m.py` (5-minute input, up to 24 weeks: `--model seg --seg full/coarse/multires/mrh/recent --qprof`, `fold`, `profmlp`; `--squash`, `--drop-ctx`), `refs5m.py`, `switch_history.py [--res 5m]`; `i2_history.py` (I2 hourly 2021 -> 2024), `uses_context.py` (blank old weeks at test time; training / validation / test periods), `decompose.py` (daily volume vs shape error); `hourly_train.py --hist ext21 --train-months N --extra i2doors`, models `dlinear` `gru` `tcn` |
 | `recipes/green_paths/` | `simulate.py {unilateral,static,everyone} [--carry] [--cap-util 0.8] [--setup tm2021 --matrix meas/est --baseline own/ecmp]`: greenest-path routing on I2 from `internet2/carbon/test_setup.npz` (`run.sh`, ~40 min) or the 2021 tunnel matrix (`setup_2021.py`, `run_2021.sh`, ~25 min); `tables.py [tm2021]` |
-| `recipes/paper/` | the paper's Section 6: `run.sh` (`i2_pre_setup`, `i2_rates`, `switch_rates`, `bill_periods`, `facts`, `steering {unilateral,everyone,central}`, `text_numbers`, `figures [--png=DIR]`); outputs `artifacts/paper/`, PDFs into the Overleaf checkout (`6aea077f…/`, gitignored, owner's paper repo) |
+| `recipes/paper/` | the paper's Section 6: `run.sh` (`i2_pre_setup`, `i2_rates`, `switch_rates`, `bill_periods`, `facts`, `steering {unilateral,everyone,central}`, `text_numbers`, `figures [--png=DIR]`); outputs `artifacts/paper/`, PDFs into the Overleaf checkout (`6aea077f…/`, gitignored, owner's paper repo). Round 2 (common periods): `periods.py` (every period), `run_common.sh` (stage order), `ladder_common.sh` (per-link and total ladders), `timestral_links.py`, `i2_carbon_common.py`, `total_mirror.py`, `flat_common.py` (flat rate, margin, grid candidates, billing periods, dedicated equipment), `path_correction.py`, `switch_routing_check.py`, `appendix_runs.sh` + `grids/` (appendix experiments), `report2_numbers.py` (every number with its source) |
 | `recipes/link_difficulty/` | why per-link traffic is hard (`analyze.py`: level vs shape, oracle profile, size, events, cross-link correlation); `fm_tables.py` (zero-shot vs ladder from `dense_fm` tables) |
 | `artifacts/reference/` | curated inputs not in the bucket (sites, external links, DNS snapshots, Zoo sample); gitignored, copy between machines |
 | `src/green_routing/paths.py` | repo root, `GR_ARTIFACTS_DIR` |
@@ -174,7 +180,7 @@ Anaconda's base env ships pandas 3; the pipeline was never validated on it, henc
 | Year panel | `artifacts/panel_19ea24bef019.npz`: 835 links × 108,001 steps (2025-07-01 → 2026-07-11) at coverage ≥ 0.9; **534** after `--min-mean-mbps 1`. Fingerprint (links sha1 `ad22d2bc…`, finite count 57,246,264, finite sum 1.498167e11) in `recipes/year/expected.json`. Rebuilt from the bucket as it was on 2026-10-21: identical (Δ 0), so a later mismatch means the bucket changed after that date. |
 | Year split | train → 2026-02-15, val 2026-02-22 → 03-15, test 2026-03-22 → 07-11 (index 76,032, 31,969 targets). Train/val dates are reconstructed; the test part is verified. |
 | Sampled origins | 160, stride 72 subsampled to ~18 h spacing → only **4 times of day** (≈ 02/08/14/20 h local). Dense logs fix this. |
-| Holidays | `calendar_features.HOLIDAYS` covers 2025-06-01 → 2026-08-31; `--calendar` refuses dates outside. Extend it before using newer windows. |
+| Holidays | `calendar_features.HOLIDAYS` covers 2025-01-01 → 2026-08-31 (extended from 2025-06 in round 2); `--calendar` refuses dates outside. Extend it before using newer windows. |
 | Topology | not in the bucket; the committed `switch-network-topology.txt` is a device-level reconstruction (fine for the graph model, no interface names). The real one is in the research checkout (`GR_RESEARCH_ROOT`). |
 | Power | `router-power/` (PSU) **ends 2024-11-01**, four schemas (`config.PSU_SCHEMAS`: Pin W, Pin_mW, U×I at 12 V, Arista U×I ×1e-4); `eci/apollo/` shelves live; `routers/` headers identify the router family. Router models are not in the bucket: matched from the Network Power Zoo sample (94/114). |
 | Missing routers | 31 routers alive in reverse DNS are absent from the SNMP export (ix3 since 2024-06, ce1 2025-01, ba3 2025-05, ez31, si2, ge3, ez11, bs1, …); ix3/ce1/ba3 hold most external links. SWITCH was asked to re-export them. |
@@ -406,6 +412,25 @@ cap's flat add-on is set from forecast loads while capped/idle resources are bil
 to block end): SWITCHlan 0.56 Wh/GB shared pool / 0.78 all equipment, I2 0.33 (0.58x / 0.42x, not "similar"). SWITCHlan 2025 mean
 factor 21.2 g/kWh energy-weighted (21.6 = CH zone alone). Controller: 48 spans asleep (21.0 %), 49 dark (21.7 %; + core1.dall5-core2.dall3,
 never used). Hosts: dark spans block mean 51.7, from day 15 on 53.2, >= 90 % of hours 37 (17.6 %).
+
+Paper round 2, common periods (2026-11-09, `artifacts/paper_common/`, every number with its source in `report2_numbers.json`;
+test 2026-04-01 -> 06-30 for both networks). Margin on DEV 2025-04 -> 2026-03: SWITCHlan 6.0 %, I2 1.0 % (was 0.5 % on a 4.5-month DEV).
+Test own share no margin -> margin -5.59 -> +0.75 % / +0.35 -> +1.35 %; posted bill error day / 7-day block / calendar month 26.5 / 10.7
+/ 1.7 % and 4.9 / 1.6 / 1.35 % (no margin 28.0 / 11.4 / 5.6 and 4.8 / 1.3 / 0.6 %); perfect traffic 25.8 / 9.8 / 3.0 %, perfect grid
+7.2 / 2.9 / 2.2 % (SWITCHlan); later period Jul-Sep 2026 own share +3.69 / +1.14 %. Bill bias +5.6 / -0.35 %. SWITCHlan with dedicated
+equipment posted from yesterday's zone grid (A_k runs +3.7 % high on the test block): own share over all emissions +1.24 %, months
+-1.32 / +4.04 / +2.01 %, monthly error 2.30 %; m chosen on all emissions would be 4.5 % (test -0.34 %). Grid, SWITCHlan: corrected
+Timestral median DEV bias +1.5 %, daily 17.8 % vs rule 22.1 %, calendar-month 2.0 vs 2.1 %; test +3.0 %, later +1.4 %. I2 path rates:
+posted own share -11.45 %, 7-day correction -0.61 %, + 1 % margin +0.40 % (months +0.17 / -0.18 / +1.14 %), choices unchanged (0 / 200
+hours); c_d p10/50/90 0.81 / 0.92 / 0.95. Cap k = 2: 5.2x (0.57 g/GB), 8 % capped; host-seen error 26.4 % (flat 8.8 %). Steering: alone
+61.5 % of pairs gain >= 1 %, 34.1 % >= 20 %, bytes 12.6 % vs oracle 17.4 %, same choice 88.4 % of bytes (k = 1/2/3/none 88.3-88.7 %:
+"> 90 %" no longer holds); everyone, from day 15: 55.7 spans dark, 42 dark >= 90 % of hours = 18.7 % of emissions; controller 54 spans
+without traffic (52 asleep) = 24.7 % (ratio 0.76, was ~0.8). Totals (hourly WAPE): Timestral 10.4 / 5.9 %, best trained 11.0 (GBDT) /
+7.8 % (TCN). Links (median link, a day): Timestral 29.7 / 17.8 %, PatchTST 38.2 / 21.8 %. Annual window 2025-07 -> 2026-06: SWITCHlan
+84.7 kW, 17.4 t, 0.0131 g/GB, 0.565 / 0.779 Wh/GB; I2 204.6 kW, 592.6 t, 0.1168 g/GB, 0.353 Wh/GB (8.9x the rate). Context use, last 13
+training weeks / test (one seed): I2 24 w 17.3 / 22.1, 4 w 16.7 / 21.2 (no over-fitting signature now), Timestral 15.6 / 17.8; SWITCHlan
+24 w 33.8 / 36.6, 4 w 34.7 / 35.0, Timestral 29.2 / 29.7; blanking Timestral's weeks 5-24 +0.44 / +1.37. Fine-tuned Timestral 17.8 % =
+zero-shot. Learning curve (I2): 4 w PatchTST 20.2 -> 19.8 %, 24 w 22.3 -> 20.2 %, best trained 19.4 % (profile MLP 24 w + doors).
 
 Paper appendix (2026-11-06, `recipes/paper/appendix.py`, `artifacts/paper/appendix/`). Day-ahead daily bill with the paper's
 grid forecast, every model: Switch 25.5-28.3 % (persistence 28.2, GBDT 26.4, Timestral 25.5: the grid dominates), I2 12.5
@@ -654,6 +679,18 @@ Design decisions worth keeping:
     calendar months 5.6 % (`factcheck.py` `window_definitions`). State which definition a number uses.
 48. **Matplotlib's style forces a tight bbox.** `paper.mplstyle` sets `savefig.bbox: tight`; `bbox_inches=None` still means tight. For
     an exact size use `plt.rc_context({"savefig.bbox": "standard"})` (as `figures.fig_power_traffic`).
+49. **`pivot_table(aggfunc="sum")` turns an all-missing group into 0.** `recipes/internet2/carbon.py` summed each plant's circuits that
+    way, so hours with every reading missing became 0 W and the median fill never applied (97 hours; +0.05 % on the scored emissions,
+    and I2's power persistence read 1.6 % instead of 0.48 %). Use `groupby(...).sum(min_count=1)`.
+50. **Do not edit a bash script while it runs.** Bash reads a script as it goes; an edit shifts the offsets and the running copy executes
+    fragments (here a harmless syntax error after the last step). Copy it, or wait for it to finish.
+51. **Wait on markers the job really prints.** A watcher that waited for a log line that never appeared stalled a chain of runs for hours;
+    two jobs sharing a temporary file name (`fm5m` on both networks) collided on the rename. Let each step print an explicit DONE line,
+    chain on it, and give parallel jobs their own temporary names.
+52. **One periods file, read by every script.** Round 2 put every window in `recipes/paper/periods.py`; scripts that hard-code dates
+    drift apart (round 1 had a different test block per network, a different development period for the margin and for the grid choice).
+    Look a timing or score up by every key that identifies it (`tradeoff.points` once took the hourly 8,064-step timing for the
+    5-minute one).
 
 ## 9. Conventions for changes
 

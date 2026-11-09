@@ -229,6 +229,17 @@ def bill_errors(R, A_res) -> dict:
         B_ = pd.DataFrame(b[ok], index=day[ok]).groupby(level=0).sum()
         ra, rb = A_.rolling(30).sum().dropna(), B_.rolling(30).sum().dropna()
         out[f"{name}_router_30day_wape"] = float((ra - rb).abs().to_numpy().sum() / rb.abs().to_numpy().sum())
+        # calendar months (complete months of the block only; no overlapping windows)
+        mon = A_.index.tz_localize(None).to_period("M")
+        full = [p for p in mon.unique() if (mon == p).sum() == p.days_in_month]
+        am, bm = A_.groupby(mon).sum().loc[full], B_.groupby(mon).sum().loc[full]
+        out[f"{name}_router_month_wape"] = float((am - bm).abs().to_numpy().sum() / bm.abs().to_numpy().sum())
+        # 7-day blocks from the block's first day (complete blocks only)
+        k = (A_.index - A_.index[0]).days // 7
+        n = pd.Series(1, index=A_.index).groupby(k).size()
+        kk = n[n == 7].index
+        aw, bw = A_.groupby(k).sum().loc[kk], B_.groupby(k).sum().loc[kk]
+        out[f"{name}_router_week_wape"] = float((aw - bw).abs().to_numpy().sum() / bw.abs().to_numpy().sum())
     return out
 
 

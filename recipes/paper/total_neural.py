@@ -7,9 +7,9 @@ mean of that context (the ladder diagnosis's best normalisation), and forecasts 
 L1 loss, AdamW (lr 1e-3, PatchTST 1e-4; weight decay 1e-4, none on weight-norm directions), batch
 256, early stopping on the validation days (patience 5, at most 40 epochs). Training origins are
 every hour of the training range, validation and test origins 00:00 UTC of each day; three seeds,
-averaged. Splits as the per-link models: Internet2 train to 2026-06-14, validation 06-21 -> 07-12,
-test 07-19 -> 10-31; SWITCHlan (also run, as a check against its 5-minute ladder) train
-2025-02 -> 2026-02-15, validation 02-22 -> 03-15, test 03-22 -> 07-10.
+averaged. Periods (periods.py, the same for both networks): training from TRAIN_START_HOURLY (2025-02-01, the
+start of SWITCHlan's current doors) to TRAIN_END, validation VAL (the last 4 weeks before the test block), test
+block TEST. SWITCHlan is also run, as a check against its 5-minute ladder.
 
 usage: python total_neural.py [i2|switch|all]    writes $GR_ARTIFACTS_DIR/paper/appendix/total_neural_<net>.csv
 """
@@ -26,21 +26,25 @@ from green_routing.paths import ARTIFACTS_DIR
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "ladder_diagnosis"))
+sys.path.insert(0, str(HERE))
+import periods as PER                                                     # noqa: E402
+
 OUT = ARTIFACTS_DIR / "paper" / "appendix"
 CTX, H = 672, 24
-SPLITS = {"i2": ("2026-06-14", "2026-06-21", "2026-07-12", "2026-07-19", "2026-10-31"),
-          "switch": ("2026-02-15", "2026-02-22", "2026-03-15", "2026-03-22", "2026-07-10")}
+# train origins end H before TRAIN_END; validation and test origins: 00:00 UTC of each day, inclusive
+SPLITS = {n: (PER.TRAIN_END, PER.VAL[0], PER.VAL[1], PER.TEST[0], PER.TEST[1]) for n in ("i2", "switch")}
 
 
 def series(net: str) -> pd.Series:
     if net == "i2":
         sys.path.insert(0, str(HERE.parent / "internet2"))
         import timestral_total as TT
-        return TT.total_series()
-    sys.path.insert(0, str(HERE.parent / "flat_forecast"))
-    import run as R
-    s = R.S
-    return s[s.index >= pd.Timestamp("2025-02-01", tz="UTC")]                # pitfall 28
+        s = TT.total_series()
+    else:
+        sys.path.insert(0, str(HERE.parent / "flat_forecast"))
+        import run as R
+        s = R.S
+    return s[s.index >= pd.Timestamp(PER.TRAIN_START_HOURLY, tz="UTC")]      # pitfall 28; the same for both
 
 
 def windows(v: np.ndarray, origins: np.ndarray):

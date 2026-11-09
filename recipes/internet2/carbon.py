@@ -86,7 +86,9 @@ def main():
 
     # --- energy: hourly W per PoP, router side and optical --------------------------------
     W = W[W.dc & W["pop"].notna()]
-    per_sys = W.pivot_table(index="time", columns="node", values="watts", aggfunc="sum").reindex(H)
+    # sum of a system's circuits; an hour in which every circuit is missing stays missing (pivot_table's sum
+    # would make it 0 W: export outages then read as idle PoPs, AGENTS pitfall 49) and is filled below
+    per_sys = W.groupby(["time", "node"]).watts.sum(min_count=1).unstack().reindex(H)
     med = per_sys.median()
     live = med[med > 0].index                                   # systems that report a load
     per_sys = per_sys[live].fillna(per_sys[live].median())      # power is near constant: fill gaps
